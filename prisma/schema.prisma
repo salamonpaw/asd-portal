@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  PARTNER
+  STAFF
+  ADMIN
+}
+
+enum PartnerLevel {
+  STANDARD
+  BRONZE
+  SILVER
+  GOLD
+  STRATEGIC
+}
+
+enum ProjectStatus {
+  NEW
+  VERIFY
+  ACTIVE
+  NOPROT
+  NEEDINFO
+  DUP
+  REJECT
+  EXPIRED
+  DEACT
+  WON
+  LOST
+}
+
+enum Procurement {
+  BIEZACA
+  ZAPYTANIE
+  PRZETARG
+}
+
+// ─── Users ───────────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role
+  partnerId String?
+  repId     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  partner  Partner?  @relation(fields: [partnerId], references: [id])
+  rep      Rep?      @relation(fields: [repId], references: [id])
+  comments Comment[]
+}
+
+// ─── Reps (Handlowcy ASD) ────────────────────────────────────────────────────
+
+model Rep {
+  id       String @id @default(cuid())
+  name     String
+  initials String
+  email    String @unique
+  region   String
+
+  users    User[]
+  partners Partner[]
+  projects Project[]
+}
+
+// ─── Partners ────────────────────────────────────────────────────────────────
+
+model Partner {
+  id               String       @id @default(cuid())
+  name             String
+  short            String
+  city             String
+  country          String
+  level            PartnerLevel @default(BRONZE)
+  discount         Int          @default(5)
+  candidate        Boolean      @default(false)
+  contact          String
+  email            String
+  phone            String
+  since            String
+  machinesReported Int          @default(0)
+  repId            String
+  createdAt        DateTime     @default(now())
+
+  rep      Rep       @relation(fields: [repId], references: [id])
+  users    User[]
+  projects Project[]
+  markets  Market[]
+}
+
+model Market {
+  id        String  @id @default(cuid())
+  name      String
+  partnerId String
+  partner   Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+}
+
+// ─── Projects ────────────────────────────────────────────────────────────────
+
+model Project {
+  id            String        @id
+  partnerId     String
+  repId         String
+  customerName    String
+  customerTaxId   String
+  customerCountry String
+  location        String?
+  branch          String?
+  machines      String
+  procurement   Procurement
+  stage         String
+  description   String
+  decisionDate  String?
+  interested    Boolean
+  wantsSupport  Boolean
+  support       String[]
+  notes         String?
+  status        ProjectStatus @default(VERIFY)
+  protected     Boolean       @default(false)
+  conflictsWith String?
+  createdAt     DateTime      @default(now())
+  acceptedAt    DateTime?
+  expiresAt     DateTime?
+  updatedAt     DateTime      @updatedAt
+
+  partner  Partner          @relation(fields: [partnerId], references: [id])
+  rep      Rep              @relation(fields: [repId], references: [id])
+  history  ProjectHistory[]
+  comments Comment[]
+
+  @@index([customerTaxId])
+}
+
+model ProjectHistory {
+  id        String   @id @default(cuid())
+  projectId String
+  date      DateTime @default(now())
+  who       String
+  text      String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  text      String
+  internal  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+}
