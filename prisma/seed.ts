@@ -30,6 +30,15 @@ const DEFAULT_CONTENT: Array<{ key: string; value: string; label: string; group:
   { key: "landing.hero.title", value: "Zgłaszaj projekty i zabezpiecz swoją relację z klientem", label: "Tytuł hero", group: "Landing page" },
   { key: "landing.hero.subtitle", value: "Rejestrujesz klienta końcowego po NIP / Tax ID, a ASD Systems gwarantuje, że jeśli ten klient zgłosi się bezpośrednio do nas – przekierujemy go do Ciebie.", label: "Podtytuł hero", group: "Landing page" },
   { key: "landing.benefits.title", value: "Co daje zaakceptowane zgłoszenie", label: "Tytuł sekcji korzyści", group: "Landing page" },
+
+  // Projektu — kraje
+  { key: "project.countries", value: "Polska,Czechy,Słowacja,Niemcy,Austria,Litwa,Kanada", label: "Lista krajów (przecinkami)", group: "Projekt — opcje" },
+
+  // Projektu — etapy
+  { key: "project.stages", value: "Rozpoznanie potrzeb,Prezentacja / demo,Oferta,Negocjacje,Decyzja klienta", label: "Lista etapów (przecinkami)", group: "Projekt — opcje" },
+
+  // Projektu — zakresy
+  { key: "project.ranges", value: "1,2–3,4–6,8–10,10–15,16+,Nie wiem / do ustalenia", label: "Szacowana liczba automatów (przecinkami)", group: "Projekt — opcje" },
 ];
 
 async function main() {
