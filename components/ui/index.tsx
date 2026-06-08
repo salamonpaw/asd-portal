@@ -5,19 +5,34 @@ import { Icon } from "./Icon";
 
 // ─── Logo ────────────────────────────────────────────────────────────────────
 
-export function Logo({ size = 30, light = false }: { size?: number; light?: boolean }) {
+export function Logo({
+  size = 30,
+  light = false,
+  width,
+}: {
+  size?: number;
+  light?: boolean;
+  width?: number;
+}) {
   const [imgFailed, setImgFailed] = useState(false);
   const ink = light ? "#fff" : "var(--brand)";
-  const height = Math.round(size * 0.7);
+  const fallbackSize = width ? Math.round(width / 5) : size;
+
+  const imgStyle: React.CSSProperties = {
+    flex: "none",
+    display: "block",
+    filter: light ? "brightness(0) invert(1)" : "none",
+    ...(width ? { width, height: "auto" } : { height: Math.round(size * 0.7), width: "auto" }),
+  };
 
   if (imgFailed) {
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <svg width={size} height={size} viewBox="0 0 40 40" fill="none" style={{ flex: "none" }}>
+        <svg width={fallbackSize} height={fallbackSize} viewBox="0 0 40 40" fill="none" style={{ flex: "none" }}>
           <rect x="2" y="2" width="36" height="36" rx="9" fill={light ? "rgba(255,255,255,.25)" : "var(--brand)"} />
           <text x="20" y="26" textAnchor="middle" fill="#fff" fontSize="13" fontWeight="700" fontFamily="system-ui">ASD</text>
         </svg>
-        <div style={{ fontFamily: "var(--font-display), 'Space Grotesk', sans-serif", fontWeight: 600, fontSize: size * 0.52, color: ink, letterSpacing: "-.02em", lineHeight: 1 }}>
+        <div style={{ fontFamily: "var(--font-display), 'Space Grotesk', sans-serif", fontWeight: 600, fontSize: fallbackSize * 0.52, color: ink, letterSpacing: "-.02em", lineHeight: 1 }}>
           ASD <span style={{ fontWeight: 400, opacity: 0.85 }}>Systems</span>
         </div>
       </div>
@@ -28,8 +43,7 @@ export function Logo({ size = 30, light = false }: { size?: number; light?: bool
     <img
       src="/logo.png"
       alt="ASD Systems"
-      height={height}
-      style={{ height, width: "auto", flex: "none", filter: light ? "brightness(0) invert(1)" : "none" }}
+      style={imgStyle}
       onError={() => setImgFailed(true)}
     />
   );

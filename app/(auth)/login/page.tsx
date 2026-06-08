@@ -39,7 +39,7 @@ export default function LoginPage() {
       {/* Left panel */}
       <div style={{ background: "linear-gradient(165deg, var(--brand), var(--brand-900))", color: "#fff", padding: "48px 56px", display: "flex", flexDirection: "column", justifyContent: "space-between", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(600px 400px at 90% 10%, rgba(224,97,47,.22), transparent 60%)" }} />
-        <div style={{ position: "relative" }}><Logo size={30} light /></div>
+        <div style={{ position: "relative" }}><Logo width={140} light /></div>
         <div style={{ position: "relative" }}>
           <div className="land-eyebrow" style={{ background: "rgba(255,255,255,.12)", color: "#fff" }}>
             <Icon name="shieldCheck" size={15} />Partner Portal

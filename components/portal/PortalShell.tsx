@@ -44,7 +44,9 @@ export function PortalShell({ session, children }: { session: Session; children:
     <div className="shell">
       {/* Sidebar */}
       <aside className="sidebar">
-        <div style={{ padding: "20px 18px 14px" }}><Logo size={28} light /></div>
+        <div style={{ padding: "20px 18px 16px" }}>
+          <Logo width={172} light />
+        </div>
         <nav style={{ padding: "8px 14px", display: "flex", flexDirection: "column", gap: 3, flex: 1 }}>
           <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "rgba(255,255,255,.4)", fontWeight: 600, padding: "10px 14px 6px" }}>
             {isStaff ? "Panel Handlowca" : "Panel Partnera"}
