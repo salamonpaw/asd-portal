@@ -35,9 +35,21 @@ export function CreateOrderClient({
       if (res.ok) {
         setStatus("success");
         setMsg(`Zamówienie ${data.code} zostało utworzone.`);
+
+        const formUrl = process.env.NEXT_PUBLIC_ORDER_FORM_URL;
+        const params = new URLSearchParams({
+          orderId: data.id,
+          code: data.code,
+          projectId: data.projectId,
+        }).toString();
+
+        if (formUrl) {
+          window.open(`${formUrl}?${params}`, "_blank");
+        }
+
         setTimeout(() => {
           router.push(`/partner/orders/${data.id}`);
-        }, 1500);
+        }, 2000);
       } else {
         setStatus("error");
         setMsg(data.error || "Błąd przy tworzeniu zamówienia.");
