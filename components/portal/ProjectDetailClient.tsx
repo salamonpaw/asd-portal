@@ -197,6 +197,7 @@ export function ProjectDetailClient({ project: initial, conflict, isStaff, backH
                 {project.status === "NEEDINFO" && <button className="btn btn-primary" onClick={() => router.push(`/partner/projects/${project.id}/edit`)}><Icon name="send" size={16} />Uzupełnij i wyślij</button>}
                 {project.status === "EXPIRED" && <button className="btn btn-primary" onClick={() => action("extend", {})} disabled={loading}><Icon name="refresh" size={16} />Zgłoś kontynuację</button>}
                 {isActive && expiringSoon && <button className="btn btn-primary" onClick={() => action("extend", {})} disabled={loading}><Icon name="refresh" size={16} />Przedłuż projekt</button>}
+                {isActive && <button className="btn btn-brand" onClick={() => router.push(`/partner/projects/${project.id}/order/new`)}><Icon name="shoppingCart" size={16} />Złóż zamówienie</button>}
                 {(isActive || project.status === "VERIFY" || project.status === "NEEDINFO") && (
                   <button className="btn btn-soft" onClick={() => router.push(`/partner/projects/${project.id}/edit`)}><Icon name="edit" size={16} />Edytuj dane</button>
                 )}

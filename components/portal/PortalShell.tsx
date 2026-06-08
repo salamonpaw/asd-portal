@@ -11,6 +11,7 @@ const NAV_PARTNER = [
   { key: "dashboard",  href: "/partner/dashboard",  label: "Pulpit",           icon: "gauge" },
   { key: "new",        href: "/partner/projects/new",label: "Nowe zgłoszenie", icon: "plus" },
   { key: "projects",   href: "/partner/projects",    label: "Moje projekty",    icon: "layers" },
+  { key: "orders",     href: "/partner/orders",      label: "Moje zamówienia",  icon: "shoppingCart" },
   { key: "profile",    href: "/partner/profile",     label: "Mój profil",       icon: "user" },
 ];
 
@@ -59,7 +60,7 @@ export function PortalShell({ session, children }: { session: Session; children:
               return <div key="sep" style={{ height: 1, background: "rgba(255,255,255,.1)", margin: "8px 0" }} />;
             }
             const active = n.href && (pathname === n.href || pathname.startsWith(n.href + "/") ||
-              (n.href === "/partner/projects" && pathname.startsWith("/partner/projects") && !pathname.includes("/new")) ||
+              (n.href === "/partner/projects" && pathname.startsWith("/partner/projects") && !pathname.includes("/order")) ||
               (n.href === "/staff/projects" && pathname.startsWith("/staff/projects")));
             return (
               <Link key={n.key} href={n.href} className={`navitem ${active ? "active" : ""}`}>

@@ -73,9 +73,11 @@ model Rep {
   photoUrl    String?
   bio         String?
 
-  users    User[]
-  partners Partner[]
-  projects Project[]
+  users         User[]
+  partners      Partner[]
+  projects      Project[]
+  ordersAsRep   Order[]  @relation("supervisorRep")
+  ordersAsBok   Order[]  @relation("supervisorBok")
 }
 
 // ─── Partners ────────────────────────────────────────────────────────────────
@@ -143,6 +145,7 @@ model Project {
   rep      Rep              @relation(fields: [repId], references: [id])
   history  ProjectHistory[]
   comments Comment[]
+  orders   Order[]
 
   @@index([customerTaxId])
 }
@@ -167,6 +170,42 @@ model Comment {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id])
+}
+
+// ─── Orders ──────────────────────────────────────────────────────────────────
+
+model Order {
+  id                String        @id @default(cuid())
+  code              String        @unique
+  projectId         String
+  project           Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  status            String        @default("pending")
+  estimatedDays     Int?
+  deliveryDate      DateTime?
+  supervisorRepId   String?
+  supervisorRep     Rep?          @relation("supervisorRep", fields: [supervisorRepId], references: [id])
+  supervisorBokId   String?
+  supervisorBok     Rep?          @relation("supervisorBok", fields: [supervisorBokId], references: [id])
+  waitingFor        WaitingItem[]
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([projectId])
+  @@index([code])
+}
+
+model WaitingItem {
+  id             String   @id @default(cuid())
+  orderId        String
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type           String
+  status         String   @default("pending")
+  note           String?
+  trackingNumber String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([orderId])
 }
 
 // ─── Content Management ───────────────────────────────────────────────────────
