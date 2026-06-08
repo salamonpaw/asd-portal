@@ -10,17 +10,22 @@ export async function PATCH(req: Request) {
   const repId = (session.user as any).repId as string;
   if (!repId) return NextResponse.json({ error: "Not a rep account" }, { status: 403 });
 
-  const { phone, calendarUrl, photoUrl, bio } = await req.json();
+  try {
+    const { phone, calendarUrl, photoUrl, bio } = await req.json();
 
-  const rep = await db.rep.update({
-    where: { id: repId },
-    data: {
-      phone: phone?.trim() || null,
-      calendarUrl: calendarUrl?.trim() || null,
-      photoUrl: photoUrl?.trim() || null,
-      bio: bio?.trim() || null,
-    },
-  });
+    const rep = await db.rep.update({
+      where: { id: repId },
+      data: {
+        phone: phone?.trim() || null,
+        calendarUrl: calendarUrl?.trim() || null,
+        photoUrl: photoUrl?.trim() || null,
+        bio: bio?.trim() || null,
+      },
+    });
 
-  return NextResponse.json(rep);
+    return NextResponse.json(rep);
+  } catch (err) {
+    console.error("[rep/profile]", err);
+    return NextResponse.json({ error: "Błąd zapisu – sprawdź logi serwera" }, { status: 500 });
+  }
 }
