@@ -18,11 +18,12 @@ function enrich(p: Project) {
 }
 
 export function PartnerDashboardClient({
-  partner, projects, rep,
+  partner, projects, rep, openOrders = 0,
 }: {
   partner: Partner & { markets: Market[] };
   projects: ProjectWithHistory[];
   rep: Rep | null;
+  openOrders?: number;
 }) {
   const router = useRouter();
   const enriched = projects.map(enrich);
@@ -44,11 +45,12 @@ export function PartnerDashboardClient({
         </Link>
       </PageHead>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 16 }}>
         <StatCard icon="shieldCheck" label="Projekty aktywne" value={active.length} tone="var(--ok)" soft="var(--ok-soft)" onClick={() => router.push("/partner/projects?tab=active")} />
         <StatCard icon="clock" label="Do akceptacji" value={pending.length} tone="var(--warn)" soft="var(--warn-soft)" onClick={() => router.push("/partner/projects?tab=pending")} />
         <StatCard icon="alert" label="Wygasają w 30 dni" value={expiring.length} tone="var(--accent)" soft="var(--accent-soft)" onClick={() => router.push("/partner/projects?tab=expiring")} />
         <StatCard icon="layers" label="Wygasłe" value={expired.length} tone="var(--expired)" soft="var(--expired-soft)" onClick={() => router.push("/partner/projects?tab=expired")} />
+        <StatCard icon="shoppingCart" label="Otwarte zamówienia" value={openOrders} tone="var(--brand)" soft="var(--brand-soft)" onClick={() => router.push("/partner/orders")} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 20, marginTop: 20, alignItems: "start" }}>

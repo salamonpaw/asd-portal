@@ -1,6 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
+import { sendOrderCreated } from "@/lib/email";
 
 function generateOrderCode(): string {
   const year = new Date().getFullYear();
@@ -32,6 +33,22 @@ export async function createOrder(projectId: string) {
       waitingFor: true,
     },
   });
+
+  // Send email to rep (handlowiec)
+  try {
+    await sendOrderCreated({
+      to: project.rep.email,
+      repName: project.rep.name,
+      partnerName: project.partner.name,
+      orderId: order.id,
+      orderCode: order.code,
+      projectId: project.id,
+      customerName: project.customerName,
+      portalUrl: process.env.NEXTAUTH_URL || "http://localhost:3000",
+    });
+  } catch (err) {
+    console.error("Failed to send order created email:", err);
+  }
 
   return order;
 }

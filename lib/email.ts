@@ -46,6 +46,28 @@ function base(content: string) {
 
 // ─── Email templates ──────────────────────────────────────────────────────────
 
+export async function sendOrderCreated(opts: {
+  to: string; repName: string; partnerName: string;
+  orderId: string; orderCode: string; projectId: string;
+  customerName: string; portalUrl: string;
+}) {
+  await transporter.sendMail({
+    from: FROM, to: opts.to,
+    subject: `📦 Nowe zamówienie — ${opts.orderCode}`,
+    html: base(`
+      <h1>Nowe zamówienie złożone</h1>
+      <p>Partner <b>${opts.partnerName}</b> złożył nowe zamówienie.</p>
+      <div class="meta">
+        <div><b>Kod zamówienia:</b> <span style="font-family:monospace;font-weight:700">${opts.orderCode}</span></div>
+        <div><b>Projekt:</b> ${opts.customerName}</div>
+        <div><b>Nr projektu:</b> ${opts.projectId}</div>
+      </div>
+      <a href="${opts.portalUrl}/partner/orders/${opts.orderId}" class="btn">Zobacz szczegóły zamówienia →</a>
+      <p style="font-size:13px;color:#767B86">Zamówienie czeka na uzupełnienie szczegółów i realizację.</p>
+    `),
+  });
+}
+
 export async function sendProjectSubmitted(opts: {
   to: string; repName: string; partnerName: string;
   projectId: string; customerName: string; customerTaxId: string; portalUrl: string;

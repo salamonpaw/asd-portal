@@ -11,7 +11,7 @@ export default async function PartnerDashboardPage() {
   const partnerId = (session.user as any).partnerId as string;
   if (!partnerId) redirect("/login");
 
-  const [partner, projects, rep] = await Promise.all([
+  const [partner, projects, rep, orders] = await Promise.all([
     db.partner.findUnique({ where: { id: partnerId }, include: { markets: true } }),
     db.project.findMany({
       where: { partnerId },
@@ -19,9 +19,15 @@ export default async function PartnerDashboardPage() {
       orderBy: { createdAt: "desc" },
     }),
     db.rep.findFirst({ where: { partners: { some: { id: partnerId } } } }),
+    db.order.findMany({
+      where: { project: { partnerId } },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
 
   if (!partner) redirect("/login");
 
-  return <PartnerDashboardClient partner={partner} projects={projects} rep={rep} />;
+  const openOrders = orders.filter((o) => !["delivered", "done"].includes(o.status)).length;
+
+  return <PartnerDashboardClient partner={partner} projects={projects} rep={rep} openOrders={openOrders} />;
 }
