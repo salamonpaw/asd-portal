@@ -14,10 +14,11 @@ function levelColor(level: string) {
   return ({ STANDARD: "#8A8F99", BRONZE: "#A9712F", SILVER: "#7C8893", GOLD: "#C99A2E", STRATEGIC: "var(--brand)" } as any)[level] ?? "var(--brand)";
 }
 
-export function StaffDashboardClient({ rep, projects, partners }: {
+export function StaffDashboardClient({ rep, projects, partners, orders = [] }: {
   rep: Rep;
   projects: ProjectWithPartner[];
   partners: Partner[];
+  orders?: any[];
 }) {
   const router = useRouter();
 
@@ -28,6 +29,7 @@ export function StaffDashboardClient({ rep, projects, partners }: {
     const d = daysUntil(p.expiresAt);
     return d !== null && d <= 30 && d >= 0;
   });
+  const openOrders = orders.filter((o) => !["delivered", "done"].includes(o.status));
 
   return (
     <div className="fadeup">
@@ -36,14 +38,15 @@ export function StaffDashboardClient({ rep, projects, partners }: {
         sub={`${rep.region} · ${partners.length} Partnerów · ${queue.length} zgłoszeń do weryfikacji`}
       />
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 16 }}>
         <StatCard icon="clock" label="Do weryfikacji" value={queue.length} tone="var(--warn)" soft="var(--warn-soft)" onClick={() => router.push("/staff/projects?tab=queue")} />
         <StatCard icon="shieldCheck" label="Aktywne projekty" value={active.length} tone="var(--ok)" soft="var(--ok-soft)" onClick={() => router.push("/staff/projects?tab=active")} />
         <StatCard icon="copy" label="Duplikaty / konflikty" value={dups.length} tone="var(--dup)" soft="var(--dup-soft)" onClick={() => router.push("/staff/duplicates")} />
         <StatCard icon="alert" label="Wygasają w 30 dni" value={expiring.length} tone="var(--accent)" soft="var(--accent-soft)" onClick={() => router.push("/staff/projects?tab=expiring")} />
+        <StatCard icon="shoppingCart" label="Otwarte zamówienia" value={openOrders.length} tone="var(--brand)" soft="var(--brand-soft)" onClick={() => router.push("/staff/orders")} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 20, marginTop: 20, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 320px", gap: 20, marginTop: 20, alignItems: "start" }}>
         <SectionCard title="Zgłoszenia do weryfikacji" pad={false} action={<Link href="/staff/projects?tab=queue" className="btn btn-ghost btn-sm">Wszystkie</Link>}>
           {queue.length === 0 ? (
             <div style={{ padding: 8 }}><EmptyState title="Brak nowych zgłoszeń" sub="Wszystko zweryfikowane – dobra robota." icon="checkCircle" /></div>
@@ -64,6 +67,38 @@ export function StaffDashboardClient({ rep, projects, partners }: {
                   </div>
                   <div style={{ display: "flex", gap: 7, flex: "none" }}>
                     <button className="btn btn-ghost btn-sm" onClick={() => router.push(`/staff/projects/${p.id}`)}>Otwórz</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </SectionCard>
+
+        <SectionCard title="Otwarte zamówienia" pad={false} action={<Link href="/staff/orders" className="btn btn-ghost btn-sm">Wszystkie</Link>}>
+          {openOrders.length === 0 ? (
+            <div style={{ padding: 8 }}><EmptyState title="Brak otwartych zamówień" sub="Wszystkie zamówienia są gotowe." icon="checkCircle" /></div>
+          ) : (
+            <div>
+              {openOrders.slice(0, 8).map((o: any) => (
+                <div key={o.id} className="queue-row">
+                  <div onClick={() => router.push(`/partner/orders/${o.id}`)} style={{ flex: 1, minWidth: 0, cursor: "pointer", display: "flex", alignItems: "center", gap: 13 }}>
+                    <div style={{ width: 38, height: 38, borderRadius: 9, background: "#D97706" + "20", color: "#D97706", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Icon name="shoppingCart" size={18} />
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                        <span style={{ fontWeight: 600, fontSize: 14, fontFamily: "monospace" }}>{o.code}</span>
+                        <span className="badge st-new" style={{ padding: "2px 8px", fontSize: 11 }}>
+                          {o.status === "pending" ? "Oczekujące" : o.status === "confirmed" ? "Potwierdzone" : o.status === "in_progress" ? "W trakcie" : o.status}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 12.5, color: "var(--ink-3)" }}>
+                        {o.project?.customerName} · {o.project?.partner?.short}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 7, flex: "none" }}>
+                    <button className="btn btn-ghost btn-sm" onClick={() => router.push(`/partner/orders/${o.id}`)}>Otwórz</button>
                   </div>
                 </div>
               ))}
