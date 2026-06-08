@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { Logo, Avatar } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
+import { NotificationBell } from "./NotificationBell";
 import type { Session } from "next-auth";
 
 const NAV_PARTNER = [
@@ -80,7 +81,9 @@ export function PortalShell({ session, children }: { session: Session; children:
       <div className="maincol">
         <header className="topbar">
           <div />
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <NotificationBell />
+            <div style={{ width: 1, height: 24, background: "var(--line)" }} />
             <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
               <Avatar initials={initials} size={34} color={isStaff ? "var(--accent)" : "var(--brand)"} />
               <div style={{ lineHeight: 1.2 }}>
