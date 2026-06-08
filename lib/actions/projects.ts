@@ -1,61 +1,125 @@
 import { db } from "@/lib/db";
 import { ProjectStatus } from "@prisma/client";
+import { sendProjectAccepted, sendProjectRejected, sendNeedInfo } from "@/lib/email";
+import { fmtDate } from "@/lib/dates";
 
-function addMonths(date: Date, n: number): Date {
-  const d = new Date(date);
+const PORTAL_URL = process.env.PORTAL_URL ?? "http://localhost:3000";
+
+function addMonths(n: number): Date {
+  const d = new Date();
   d.setMonth(d.getMonth() + n);
   return d;
 }
 
-const TODAY = new Date("2026-06-03");
+const INCLUDE_FULL = {
+  partner: { include: { markets: true } },
+  rep: true,
+  history: { orderBy: { date: "asc" as const } },
+  comments: { include: { user: true } },
+};
+
+// ─── Accept ──────────────────────────────────────────────────────────────────
 
 export async function acceptProject(id: string, repName: string, months: number, discount: number, tender: boolean) {
   const isTender = tender;
-  const expiresAt = addMonths(TODAY, months);
-  return db.project.update({
+  const expiresAt = addMonths(months);
+  const now = new Date();
+  const projectDiscount = Number.isFinite(discount) ? Math.max(0, Math.min(100, Math.round(discount))) : null;
+
+  const project = await db.project.update({
     where: { id },
     data: {
       status: isTender ? ProjectStatus.NOPROT : ProjectStatus.ACTIVE,
       protected: !isTender,
-      acceptedAt: TODAY,
+      discount: isTender ? null : projectDiscount,
+      acceptedAt: now,
       expiresAt,
       conflictsWith: null,
       history: {
         create: {
           who: `Handlowiec · ${repName}`,
           text: isTender
-            ? `Zaakceptowano jako projekt przetargowy (bez ochrony) – do ${expiresAt.toLocaleDateString("pl-PL")}`
-            : `Zaakceptowano – ochrona do ${expiresAt.toLocaleDateString("pl-PL")}`,
+            ? `Zaakceptowano jako projekt przetargowy (bez ochrony) – do ${fmtDate(expiresAt)}`
+            : `Zaakceptowano – ochrona do ${fmtDate(expiresAt)}${projectDiscount !== null ? `, rabat projektu ${projectDiscount}%` : ""}`,
         },
       },
     },
-    include: { partner: { include: { markets: true } }, rep: true, history: { orderBy: { date: "asc" } }, comments: { include: { user: true } } },
+    include: INCLUDE_FULL,
   });
+
+  // Powiadomienie e-mail do Partnera
+  const partnerUser = await db.user.findFirst({ where: { partnerId: project.partnerId } });
+  if (partnerUser?.email) {
+    sendProjectAccepted({
+      to: partnerUser.email,
+      partnerContact: project.partner.contact,
+      projectId: project.id,
+      customerName: project.customerName,
+      expiresAt: fmtDate(expiresAt),
+      portalUrl: PORTAL_URL,
+    }).catch(console.error);
+  }
+
+  return project;
 }
 
+// ─── Reject ──────────────────────────────────────────────────────────────────
+
 export async function rejectProject(id: string, repName: string, reason: string) {
-  return db.project.update({
+  const project = await db.project.update({
     where: { id },
     data: {
       status: ProjectStatus.REJECT,
       history: { create: { who: `Handlowiec · ${repName}`, text: `Odrzucono: ${reason}` } },
     },
-    include: { partner: { include: { markets: true } }, rep: true, history: { orderBy: { date: "asc" } }, comments: { include: { user: true } } },
+    include: INCLUDE_FULL,
   });
+
+  const partnerUser = await db.user.findFirst({ where: { partnerId: project.partnerId } });
+  if (partnerUser?.email) {
+    sendProjectRejected({
+      to: partnerUser.email,
+      partnerContact: project.partner.contact,
+      projectId: project.id,
+      customerName: project.customerName,
+      reason,
+      portalUrl: PORTAL_URL,
+    }).catch(console.error);
+  }
+
+  return project;
 }
+
+// ─── Request info ─────────────────────────────────────────────────────────────
 
 export async function requestInfoProject(id: string, repName: string, repId: string, message: string) {
   const userId = await db.user.findFirst({ where: { repId } });
-  return db.project.update({
+  const project = await db.project.update({
     where: { id },
     data: {
       status: ProjectStatus.NEEDINFO,
       history: { create: { who: `Handlowiec · ${repName}`, text: "Poproszono o uzupełnienie danych" } },
       comments: userId ? { create: { userId: userId.id, text: message, internal: false } } : undefined,
     },
-    include: { partner: { include: { markets: true } }, rep: true, history: { orderBy: { date: "asc" } }, comments: { include: { user: true } } },
+    include: INCLUDE_FULL,
   });
+
+  const partnerUser = await db.user.findFirst({ where: { partnerId: project.partnerId } });
+  if (partnerUser?.email) {
+    sendNeedInfo({
+      to: partnerUser.email,
+      partnerContact: project.partner.contact,
+      projectId: project.id,
+      customerName: project.customerName,
+      message,
+      portalUrl: PORTAL_URL,
+    }).catch(console.error);
+  }
+
+  return project;
 }
+
+// ─── Close ────────────────────────────────────────────────────────────────────
 
 export async function closeProject(id: string, repName: string, kind: "won" | "lost") {
   return db.project.update({
@@ -65,27 +129,31 @@ export async function closeProject(id: string, repName: string, kind: "won" | "l
       protected: false,
       history: { create: { who: `Handlowiec · ${repName}`, text: kind === "won" ? "Zamknięto sukcesem" : "Zamknięto – utracony" } },
     },
-    include: { partner: { include: { markets: true } }, rep: true, history: { orderBy: { date: "asc" } }, comments: { include: { user: true } } },
+    include: INCLUDE_FULL,
   });
 }
+
+// ─── Extend ───────────────────────────────────────────────────────────────────
 
 export async function extendProject(id: string, partnerShort: string) {
   const project = await db.project.findUnique({ where: { id } });
   if (!project) throw new Error("Not found");
   const isTender = project.procurement === "PRZETARG";
-  const expiresAt = addMonths(TODAY, 3);
+  const expiresAt = addMonths(3);
   return db.project.update({
     where: { id },
     data: {
       status: isTender ? ProjectStatus.NOPROT : ProjectStatus.ACTIVE,
       protected: !isTender,
-      acceptedAt: TODAY,
+      acceptedAt: new Date(),
       expiresAt,
-      history: { create: { who: `Partner · ${partnerShort}`, text: `Zgłoszono kontynuację – ochrona do ${expiresAt.toLocaleDateString("pl-PL")}` } },
+      history: { create: { who: `Partner · ${partnerShort}`, text: `Zgłoszono kontynuację – ochrona do ${fmtDate(expiresAt)}` } },
     },
-    include: { partner: { include: { markets: true } }, rep: true, history: { orderBy: { date: "asc" } }, comments: { include: { user: true } } },
+    include: INCLUDE_FULL,
   });
 }
+
+// ─── Deactivate ───────────────────────────────────────────────────────────────
 
 export async function deactivateProject(id: string, partnerShort: string) {
   return db.project.update({
@@ -95,16 +163,16 @@ export async function deactivateProject(id: string, partnerShort: string) {
       protected: false,
       history: { create: { who: `Partner · ${partnerShort}`, text: "Dezaktywowano projekt" } },
     },
-    include: { partner: { include: { markets: true } }, rep: true, history: { orderBy: { date: "asc" } }, comments: { include: { user: true } } },
+    include: INCLUDE_FULL,
   });
 }
 
-export async function addCommentToProject(id: string, userId: string, text: string, repName: string) {
+// ─── Comment ──────────────────────────────────────────────────────────────────
+
+export async function addCommentToProject(id: string, userId: string, text: string) {
   return db.project.update({
     where: { id },
-    data: {
-      comments: { create: { userId, text, internal: true } },
-    },
-    include: { partner: { include: { markets: true } }, rep: true, history: { orderBy: { date: "asc" } }, comments: { include: { user: true } } },
+    data: { comments: { create: { userId, text, internal: true } } },
+    include: INCLUDE_FULL,
   });
 }

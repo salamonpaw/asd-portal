@@ -214,6 +214,7 @@ export function ProjectDetailClient({ project: initial, conflict, isStaff, backH
             <KV label="Data zgłoszenia">{fmtDate(project.createdAt)}</KV>
             {project.acceptedAt && <KV label="Data akceptacji">{fmtDate(project.acceptedAt)}</KV>}
             {project.expiresAt && <KV label="Wygaśnięcie ochrony">{fmtDate(project.expiresAt)}</KV>}
+            {project.discount != null && <KV label="Rabat projektu">{project.discount}%</KV>}
           </div>
         </div>
       </div>

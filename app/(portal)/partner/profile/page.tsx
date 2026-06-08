@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { PageHead, SectionCard, KV } from "@/components/ui";
+import { ChangePasswordCard } from "@/components/portal/ChangePasswordCard";
 import { Icon } from "@/components/ui/Icon";
 
 const LEVEL_COLOR: Record<string, string> = {
@@ -66,6 +67,10 @@ export default async function PartnerProfilePage() {
             </div>
           </SectionCard>
         </div>
+      </div>
+
+      <div style={{ marginTop: 18 }}>
+        <ChangePasswordCard />
       </div>
     </div>
   );

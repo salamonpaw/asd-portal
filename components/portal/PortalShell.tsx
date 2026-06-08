@@ -25,9 +25,12 @@ const NAV_STAFF = [
 const NAV_ADMIN = [
   { key: "dashboard",   href: "/staff/dashboard",   label: "Pulpit",           icon: "gauge" },
   { key: "projects",    href: "/staff/projects",     label: "Projekty",         icon: "layers" },
-  { key: "partners",    href: "/staff/partners",     label: "Partnerzy",        icon: "users" },
+  { key: "apartners",   href: "/staff/partners",     label: "Partnerzy",        icon: "users" },
   { key: "duplicates",  href: "/staff/duplicates",   label: "Duplikaty",        icon: "copy" },
-  { key: "content",     href: "/admin/content",      label: "Treść portalu",    icon: "edit" },
+  { key: "sep", href: "", label: "", icon: "" }, // separator
+  { key: "ausers",     href: "/admin/users",         label: "Użytkownicy",      icon: "user" },
+  { key: "apartners",  href: "/admin/partners",      label: "Zarządzaj Partnerami", icon: "briefcase" },
+  { key: "content",    href: "/admin/content",       label: "Treść portalu",    icon: "edit" },
 ];
 
 export function PortalShell({ session, children }: { session: Session; children: React.ReactNode }) {
@@ -49,15 +52,18 @@ export function PortalShell({ session, children }: { session: Session; children:
         </div>
         <nav style={{ padding: "8px 14px", display: "flex", flexDirection: "column", gap: 3, flex: 1 }}>
           <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "rgba(255,255,255,.4)", fontWeight: 600, padding: "10px 14px 6px" }}>
-            {isStaff ? "Panel Handlowca" : "Panel Partnera"}
+            {isAdmin ? "Panel Admina" : isStaff ? "Panel Handlowca" : "Panel Partnera"}
           </div>
           {nav.map((n) => {
-            const active = pathname === n.href || pathname.startsWith(n.href + "/") ||
+            if (n.key === "sep") {
+              return <div key="sep" style={{ height: 1, background: "rgba(255,255,255,.1)", margin: "8px 0" }} />;
+            }
+            const active = n.href && (pathname === n.href || pathname.startsWith(n.href + "/") ||
               (n.href === "/partner/projects" && pathname.startsWith("/partner/projects") && !pathname.includes("/new")) ||
-              (n.href === "/staff/projects" && pathname.startsWith("/staff/projects"));
+              (n.href === "/staff/projects" && pathname.startsWith("/staff/projects")));
             return (
               <Link key={n.key} href={n.href} className={`navitem ${active ? "active" : ""}`}>
-                <Icon name={n.icon} size={19} />{n.label}
+                {n.icon && <Icon name={n.icon} size={19} />}{n.label}
               </Link>
             );
           })}

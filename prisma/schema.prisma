@@ -130,6 +130,7 @@ model Project {
   wantsSupport    Boolean
   support         String[]
   notes           String?
+  discount        Int?
   status          ProjectStatus @default(VERIFY)
   protected       Boolean       @default(false)
   conflictsWith   String?

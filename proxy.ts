@@ -6,18 +6,21 @@ export async function proxy(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   const { pathname } = req.nextUrl;
 
-  // Root redirect
+  // Root: landing for guests, dashboard for logged-in users
   if (pathname === "/") {
-    if (!token) return NextResponse.redirect(new URL("/login", req.url));
-    const role = (token as any).role as string;
-    if (role === "STAFF" || role === "ADMIN") {
-      return NextResponse.redirect(new URL("/staff/dashboard", req.url));
+    if (token) {
+      const role = (token as any).role as string;
+      return NextResponse.redirect(new URL(
+        role === "STAFF" || role === "ADMIN" ? "/staff/dashboard" : "/partner/dashboard",
+        req.url
+      ));
     }
-    return NextResponse.redirect(new URL("/partner/dashboard", req.url));
+    return NextResponse.next(); // show landing page
   }
 
   // Protect portal routes
-  if (!token && !pathname.startsWith("/api/auth") && pathname !== "/login") {
+  const isPublic = pathname === "/login" || pathname.startsWith("/api/auth");
+  if (!token && !isPublic) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 

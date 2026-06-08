@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { PageHead, SectionCard, Field, Avatar } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
+import { ChangePasswordCard } from "@/components/portal/ChangePasswordCard";
 import type { Rep } from "@prisma/client";
 
 export function RepProfileClient({ rep: initial }: { rep: Rep }) {
@@ -241,6 +242,9 @@ export function RepProfileClient({ rep: initial }: { rep: Rep }) {
             </div>
           </div>
         )}
+      </div>
+      <div style={{ marginTop: 20 }}>
+        <ChangePasswordCard />
       </div>
     </div>
   );
