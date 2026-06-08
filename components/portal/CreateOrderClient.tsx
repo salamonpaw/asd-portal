@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
 import { Field } from "@/components/ui";
 
+interface CreateOrderResponse {
+  id: string;
+  code: string;
+  projectId: string;
+}
+
 export function CreateOrderClient({
   projectId,
   projectName,
@@ -16,12 +22,14 @@ export function CreateOrderClient({
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const [status, setStatus] = useState<"idle" | "error" | "success">("idle");
+  const [orderData, setOrderData] = useState<CreateOrderResponse | null>(null);
 
   async function create() {
     if (loading) return;
     setLoading(true);
     setStatus("idle");
     setMsg("");
+    setOrderData(null);
 
     try {
       const res = await fetch("/api/orders", {
@@ -35,6 +43,7 @@ export function CreateOrderClient({
       if (res.ok) {
         setStatus("success");
         setMsg(`Zamówienie ${data.code} zostało utworzone.`);
+        setOrderData(data);
 
         const formUrl = process.env.NEXT_PUBLIC_ORDER_FORM_URL;
         const params = new URLSearchParams({
@@ -44,12 +53,11 @@ export function CreateOrderClient({
         }).toString();
 
         if (formUrl) {
-          window.open(`${formUrl}?${params}`, "_blank");
+          const opened = window.open(`${formUrl}?${params}`, "_blank");
+          if (!opened) {
+            console.warn("Popup blocked, showing manual link");
+          }
         }
-
-        setTimeout(() => {
-          router.push(`/partner/orders/${data.id}`);
-        }, 2000);
       } else {
         setStatus("error");
         setMsg(data.error || "Błąd przy tworzeniu zamówienia.");
@@ -59,6 +67,19 @@ export function CreateOrderClient({
       setMsg("Błąd sieci. Spróbuj ponownie.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  function openFormManually() {
+    if (!orderData) return;
+    const formUrl = process.env.NEXT_PUBLIC_ORDER_FORM_URL;
+    const params = new URLSearchParams({
+      orderId: orderData.id,
+      code: orderData.code,
+      projectId: orderData.projectId,
+    }).toString();
+    if (formUrl) {
+      window.open(`${formUrl}?${params}`, "_blank");
     }
   }
 
@@ -107,17 +128,48 @@ export function CreateOrderClient({
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
-        <button
-          className="btn btn-primary"
-          onClick={create}
-          disabled={loading}
-          style={{ flex: 1 }}
-        >
-          <Icon name="shoppingCart" size={16} />
-          {loading ? "Tworzenie…" : "Utwórz zamówienie"}
-        </button>
-      </div>
+      {status === "success" && orderData && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 16 }}>
+          <div style={{ padding: 12, background: "#F4F2EC", borderRadius: 8, border: "1px solid #E3E0D7" }}>
+            <p style={{ fontSize: 12, color: "#9AA0AB", marginBottom: 4 }}>Kod zamówienia:</p>
+            <p style={{ fontSize: 18, fontWeight: 700, color: "#22356B", margin: 0, fontFamily: "monospace" }}>
+              {orderData.code}
+            </p>
+          </div>
+
+          <button
+            className="btn btn-brand"
+            onClick={openFormManually}
+            style={{ width: "100%" }}
+          >
+            <Icon name="externalLink" size={16} />
+            Otwórz formularz zamówienia
+          </button>
+
+          <button
+            className="btn btn-soft"
+            onClick={() => router.push(`/partner/orders/${orderData.id}`)}
+            style={{ width: "100%" }}
+          >
+            <Icon name="arrowRight" size={16} />
+            Przejdź do szczegółów zamówienia
+          </button>
+        </div>
+      )}
+
+      {status !== "success" && (
+        <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+          <button
+            className="btn btn-primary"
+            onClick={create}
+            disabled={loading}
+            style={{ flex: 1 }}
+          >
+            <Icon name="shoppingCart" size={16} />
+            {loading ? "Tworzenie…" : "Utwórz zamówienie"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
