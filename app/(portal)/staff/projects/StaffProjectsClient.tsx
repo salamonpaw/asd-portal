@@ -6,9 +6,10 @@ import { PageHead, FilterTabs, EmptyState } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
 import { ProjectsTable } from "@/components/portal/ProjectsTable";
 import { daysUntil } from "@/lib/dates";
-import type { Partner, Project } from "@prisma/client";
+import { exportProjectsToExcel } from "@/lib/export";
+import type { Partner, Project, Rep } from "@prisma/client";
 
-type ProjectWithPartner = Project & { partner: Partner };
+type ProjectWithPartner = Project & { partner: Partner; rep: Rep };
 
 export function StaffProjectsClient({ projects }: { projects: ProjectWithPartner[] }) {
   const searchParams = useSearchParams();
@@ -46,7 +47,18 @@ export function StaffProjectsClient({ projects }: { projects: ProjectWithPartner
 
   return (
     <div className="fadeup">
-      <PageHead title="Projekty Partnerów" sub="Zgłoszenia przypisanych Ci Partnerów." />
+      <PageHead
+        title="Projekty Partnerów"
+        sub="Zgłoszenia przypisanych Ci Partnerów."
+      >
+        <button
+          className="btn btn-soft"
+          onClick={() => exportProjectsToExcel(projects)}
+          title="Eksportuj wszystkie projekty do Excel"
+        >
+          <Icon name="download" size={16} />Excel
+        </button>
+      </PageHead>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 14, flexWrap: "wrap", marginBottom: 18 }}>
         <FilterTabs tabs={tabs} active={tab} onChange={setTab} />
         <div className="searchbox">

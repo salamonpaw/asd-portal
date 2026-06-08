@@ -13,7 +13,7 @@ export default async function StaffProjectsPage() {
 
   const projects = await db.project.findMany({
     where: { repId },
-    include: { partner: true },
+    include: { partner: true, rep: true },
     orderBy: { createdAt: "desc" },
   });
 

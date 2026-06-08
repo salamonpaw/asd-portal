@@ -7,10 +7,10 @@ export function useContentItems(group?: string) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetch() {
+    async function loadData() {
       try {
         const url = group ? `/api/content?group=${encodeURIComponent(group)}` : `/api/content`;
-        const res = await fetch(url);
+        const res = await global.fetch(url);
 
         if (!res.ok) throw new Error("Failed to fetch");
 
@@ -25,7 +25,7 @@ export function useContentItems(group?: string) {
       }
     }
 
-    fetch();
+    loadData();
   }, [group]);
 
   return { items, loading, error };
