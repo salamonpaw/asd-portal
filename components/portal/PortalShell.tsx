@@ -26,11 +26,11 @@ const NAV_STAFF = [
 const NAV_ADMIN = [
   { key: "dashboard",   href: "/staff/dashboard",   label: "Pulpit",           icon: "gauge" },
   { key: "projects",    href: "/staff/projects",     label: "Projekty",         icon: "layers" },
-  { key: "apartners",   href: "/staff/partners",     label: "Partnerzy",        icon: "users" },
+  { key: "partners",    href: "/staff/partners",     label: "Partnerzy",        icon: "users" },
   { key: "duplicates",  href: "/staff/duplicates",   label: "Duplikaty",        icon: "copy" },
   { key: "sep", href: "", label: "", icon: "" }, // separator
   { key: "ausers",     href: "/admin/users",         label: "Użytkownicy",      icon: "user" },
-  { key: "apartners",  href: "/admin/partners",      label: "Zarządzaj Partnerami", icon: "briefcase" },
+  { key: "amanagepartners", href: "/admin/partners", label: "Zarządzaj Partnerami", icon: "briefcase" },
   { key: "content",    href: "/admin/content",       label: "Treść portalu",    icon: "edit" },
 ];
 
