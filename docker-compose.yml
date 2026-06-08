@@ -1,0 +1,65 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: asd-portal-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-asd}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-asd_prod_pass}
+      POSTGRES_DB: ${DB_NAME:-asd_portal}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-asd}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - asd-network
+
+  portal:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: asd-portal-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${DB_USER:-asd}:${DB_PASSWORD:-asd_prod_pass}@postgres:5432/${DB_NAME:-asd_portal}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-change-me-in-production}
+      NEXT_PUBLIC_ORDER_FORM_URL: ${ORDER_FORM_URL:-https://sales.asdsystems.pl/}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-ASD Partner Portal <portal@asdsystems.eu>}
+      PORTAL_URL: ${PORTAL_URL:-http://localhost:3000}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      - ./public/uploads:/app/public/uploads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - asd-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  asd-network:
+    driver: bridge
