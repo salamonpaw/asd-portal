@@ -31,6 +31,27 @@ const DEFAULT_CONTENT: Array<{ key: string; value: string; label: string; group:
   { key: "landing.hero.subtitle", value: "Rejestrujesz klienta końcowego po NIP / Tax ID, a ASD Systems gwarantuje, że jeśli ten klient zgłosi się bezpośrednio do nas – przekierujemy go do Ciebie.", label: "Podtytuł hero", group: "Landing page" },
   { key: "landing.benefits.title", value: "Co daje zaakceptowane zgłoszenie", label: "Tytuł sekcji korzyści", group: "Landing page" },
 
+  // ASD Systems — Produkty
+  { key: "asd.bhp.title", value: "Środki Bezpieczeństwa i Higieny Pracy", label: "Tytuł sekcji BHP", group: "ASD Systems — Oferta" },
+  { key: "asd.bhp.description", value: "Automaty wydające do zarządzania rękawicami ochronnymi, goggles, nausznikami, maskami i innymi środkami BHP. Pełna kontrola pobrań per pracownik, raportowanie do systemu ZSZT.", label: "Opis BHP", group: "ASD Systems — Oferta" },
+
+  { key: "asd.mro.title", value: "Części Zamienne i Materiały MRO", label: "Tytuł sekcji MRO", group: "ASD Systems — Oferta" },
+  { key: "asd.mro.description", value: "Systemy automatyczne do wydawania części zamiennych, materiałów konserwacyjnych i usługowych. Zarządzanie stanem magazynu, śledzenie zużycia, integracja z systemami ERP.", label: "Opis MRO", group: "ASD Systems — Oferta" },
+
+  { key: "asd.tools.title", value: "Narzędzia i Sprzęt", label: "Tytuł sekcji narzędzia", group: "ASD Systems — Oferta" },
+  { key: "asd.tools.description", value: "Automaty do wydawania narzędzi precyzyjnych, sprzętu pomiarowego i testowego. Sprawdzenie dostępności, rezerwacja, śledzenie wypożyczeń, integracja z systemami logistyki.", label: "Opis narzędzi", group: "ASD Systems — Oferta" },
+
+  // ASD Systems — Korzyści
+  { key: "asd.benefits.control", value: "Pełna kontrola dostępu i pobrań — każdy pracownik identyfikowany przez kartę RFID, wszystkie operacje rejestrowane.", label: "Korzyść: Kontrola", group: "ASD Systems — Korzyści" },
+  { key: "asd.benefits.efficiency", value: "Zwiększenie wydajności — brak kolejek, automatyczne wydawanie, redukcja czasu postoju maszyn.", label: "Korzyść: Wydajność", group: "ASD Systems — Korzyści" },
+  { key: "asd.benefits.inventory", value: "Zarządzanie zapasami — monitoring stanu magazynu w czasie rzeczywistym, automatyczne powiadomienia o niedoborach.", label: "Korzyść: Magazyn", group: "ASD Systems — Korzyści" },
+  { key: "asd.benefits.analytics", value: "Analityka i raporty — zużycie per działów, trendy, optymalizacja kosztów, wsparcie decyzji inwestycyjnych.", label: "Korzyść: Analityka", group: "ASD Systems — Korzyści" },
+
+  // ASD Systems — Kluczowe info
+  { key: "asd.machines.types", value: "D810neo,D820 Compact,D920,D920 XL,Medicamat 300,Medicamat 500", label: "Modele automatów", group: "ASD Systems — Maszyny" },
+  { key: "asd.integration", value: "Integracja z systemami: SAP, Oracle, Microsoft Dynamics, systemami SZZT, platformami MES.", label: "Integracje", group: "ASD Systems — Maszyny" },
+  { key: "asd.support", value: "Serwis: instalacja, konfiguracja, szkolenie operatorów, wsparcie techniczne 24/7, części zamienne.", label: "Wsparcie i serwis", group: "ASD Systems — Maszyny" },
+
   // Projektu — kraje
   { key: "project.countries", value: "Polska,Czechy,Słowacja,Niemcy,Austria,Litwa,Kanada", label: "Lista krajów (przecinkami)", group: "Projekt — opcje" },
 
