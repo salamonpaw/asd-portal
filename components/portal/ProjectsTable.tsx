@@ -15,12 +15,16 @@ function daysLeft(d: Date | null) {
   return Math.round((d.getTime() - new Date("2026-06-03").getTime()) / 86400000);
 }
 
-export function ProjectsTable({ projects, showPartnerName }: { projects: (Project & { partnerShort?: string })[]; showPartnerName?: boolean }) {
+export function ProjectsTable({
+  projects,
+  showPartnerName,
+  basePath = "/partner/projects",
+}: {
+  projects: (Project & { partnerShort?: string })[];
+  showPartnerName?: boolean;
+  basePath?: string;
+}) {
   const router = useRouter();
-
-  const getHref = (p: Project) => {
-    return p.partnerId ? `/staff/projects/${p.id}` : `/partner/projects/${p.id}`;
-  };
 
   return (
     <div style={{ overflowX: "auto" }}>
@@ -41,7 +45,7 @@ export function ProjectsTable({ projects, showPartnerName }: { projects: (Projec
             const dl = daysLeft(p.expiresAt);
             const expiringSoon = (p.status === "ACTIVE" || p.status === "NOPROT") && dl !== null && dl <= 30 && dl >= 0;
             return (
-              <tr key={p.id} onClick={() => router.push(`/partner/projects/${p.id}`)}>
+              <tr key={p.id} onClick={() => router.push(`${basePath}/${p.id}`)}>
                 <td><span className="mono" style={{ fontSize: 12.5, color: "var(--ink-3)" }}>{p.id.replace("ASD-PRJ-", "")}</span></td>
                 <td>
                   <div style={{ fontWeight: 600, fontSize: 14 }}>{p.customerName}</div>

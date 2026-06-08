@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { PageHead, Avatar, SectionCard, KV, EmptyState } from "@/components/ui";
+import { Avatar, SectionCard, KV, EmptyState } from "@/components/ui";
 import { ProjectsTable } from "@/components/portal/ProjectsTable";
 
 function levelColor(level: string) {
@@ -16,12 +16,13 @@ function fmtMonth(s: string) {
   return `${months[m-1]} ${y}`;
 }
 
-export default async function StaffPartnerDetailPage({ params }: { params: { id: string } }) {
+export default async function StaffPartnerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
+  const { id } = await params;
   const partner = await db.partner.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: { markets: true, projects: { orderBy: { createdAt: "desc" } } },
   });
 
@@ -44,7 +45,7 @@ export default async function StaffPartnerDetailPage({ params }: { params: { id:
         <SectionCard title={`Projekty (${partner.projects.length})`} pad={false}>
           <div style={{ padding: "6px 10px" }}>
             {partner.projects.length
-              ? <ProjectsTable projects={partner.projects} />
+              ? <ProjectsTable projects={partner.projects} basePath="/staff/projects" />
               : <EmptyState />}
           </div>
         </SectionCard>

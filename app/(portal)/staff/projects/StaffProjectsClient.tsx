@@ -62,7 +62,7 @@ export function StaffProjectsClient({ projects }: { projects: ProjectWithPartner
       </div>
       <div className="card"><div style={{ padding: "6px 10px" }}>
         {list.length
-          ? <ProjectsTable projects={list} showPartnerName />
+          ? <ProjectsTable projects={list} showPartnerName basePath="/staff/projects" />
           : <EmptyState title="Brak projektów" sub="Zmień filtr." />}
       </div></div>
     </div>

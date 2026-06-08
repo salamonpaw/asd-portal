@@ -4,14 +4,14 @@ import { db } from "@/lib/db";
 import { redirect, notFound } from "next/navigation";
 import { ProjectDetailClient } from "@/components/portal/ProjectDetailClient";
 
-export default async function StaffProjectDetailPage({ params }: { params: { id: string } }) {
+export default async function StaffProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const repId = (session.user as any).repId as string;
+  const { id } = await params;
 
   const project = await db.project.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       partner: { include: { markets: true } },
       rep: true,
