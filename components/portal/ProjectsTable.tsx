@@ -3,17 +3,8 @@
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
+import { fmtDate, daysUntil } from "@/lib/dates";
 import type { Project } from "@prisma/client";
-
-function fmtDate(d: Date | null) {
-  if (!d) return "—";
-  return d.toLocaleDateString("pl-PL", { day: "numeric", month: "short", year: "numeric" });
-}
-
-function daysLeft(d: Date | null) {
-  if (!d) return null;
-  return Math.round((d.getTime() - new Date("2026-06-03").getTime()) / 86400000);
-}
 
 export function ProjectsTable({
   projects,
@@ -42,7 +33,7 @@ export function ProjectsTable({
         </thead>
         <tbody>
           {projects.map((p) => {
-            const dl = daysLeft(p.expiresAt);
+            const dl = daysUntil(p.expiresAt);
             const expiringSoon = (p.status === "ACTIVE" || p.status === "NOPROT") && dl !== null && dl <= 30 && dl >= 0;
             return (
               <tr key={p.id} onClick={() => router.push(`${basePath}/${p.id}`)}>

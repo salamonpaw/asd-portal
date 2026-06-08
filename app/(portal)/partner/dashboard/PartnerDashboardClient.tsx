@@ -5,16 +5,16 @@ import { useRouter } from "next/navigation";
 import { PageHead, StatCard, SectionCard, EmptyState, Avatar, KV } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
 import { ProjectsTable } from "@/components/portal/ProjectsTable";
+import { daysUntil } from "@/lib/dates";
 import type { Partner, Project, Rep, Market } from "@prisma/client";
 
 type ProjectWithHistory = Project & { history: { date: Date; who: string; text: string }[] };
 
 function enrich(p: Project) {
-  const today = new Date("2026-06-03");
-  const daysLeft = p.expiresAt ? Math.round((p.expiresAt.getTime() - today.getTime()) / 86400000) : null;
+  const dl = daysUntil(p.expiresAt);
   const isActive = p.status === "ACTIVE" || p.status === "NOPROT";
-  const expiringSoon = isActive && daysLeft !== null && daysLeft <= 30 && daysLeft >= 0;
-  return { ...p, daysLeft, isActive, expiringSoon };
+  const expiringSoon = isActive && dl !== null && dl <= 30 && dl >= 0;
+  return { ...p, daysLeft: dl, isActive, expiringSoon };
 }
 
 export function PartnerDashboardClient({

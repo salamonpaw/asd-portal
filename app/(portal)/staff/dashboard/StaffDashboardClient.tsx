@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { PageHead, StatCard, SectionCard, EmptyState, Avatar } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
 import { Badge } from "@/components/ui";
+import { fmtDate, daysUntil } from "@/lib/dates";
 import type { Partner, Project, Rep } from "@prisma/client";
 
 type ProjectWithPartner = Project & { partner: Partner };
@@ -13,26 +14,19 @@ function levelColor(level: string) {
   return ({ STANDARD: "#8A8F99", BRONZE: "#A9712F", SILVER: "#7C8893", GOLD: "#C99A2E", STRATEGIC: "var(--brand)" } as any)[level] ?? "var(--brand)";
 }
 
-function fmtDate(d: Date | null) {
-  if (!d) return "—";
-  return d.toLocaleDateString("pl-PL", { day: "numeric", month: "short", year: "numeric" });
-}
-
 export function StaffDashboardClient({ rep, projects, partners }: {
   rep: Rep;
   projects: ProjectWithPartner[];
   partners: Partner[];
 }) {
   const router = useRouter();
-  const today = new Date("2026-06-03");
 
   const queue = projects.filter((p) => ["VERIFY", "NEW", "DUP"].includes(p.status));
   const active = projects.filter((p) => p.status === "ACTIVE" || p.status === "NOPROT");
   const dups = projects.filter((p) => p.status === "DUP");
   const expiring = active.filter((p) => {
-    if (!p.expiresAt) return false;
-    const d = Math.round((p.expiresAt.getTime() - today.getTime()) / 86400000);
-    return d <= 30 && d >= 0;
+    const d = daysUntil(p.expiresAt);
+    return d !== null && d <= 30 && d >= 0;
   });
 
   return (

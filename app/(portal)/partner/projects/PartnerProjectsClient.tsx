@@ -6,14 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { PageHead, FilterTabs, EmptyState } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
 import { ProjectsTable } from "@/components/portal/ProjectsTable";
+import { daysUntil } from "@/lib/dates";
 import type { Project } from "@prisma/client";
-
-const today = new Date("2026-06-03");
-
-function daysLeft(d: Date | null) {
-  if (!d) return null;
-  return Math.round((d.getTime() - today.getTime()) / 86400000);
-}
 
 export function PartnerProjectsClient({ projects }: { projects: Project[] }) {
   const searchParams = useSearchParams();
@@ -21,7 +15,7 @@ export function PartnerProjectsClient({ projects }: { projects: Project[] }) {
   const [q, setQ] = useState("");
 
   const enriched = projects.map((p) => {
-    const dl = daysLeft(p.expiresAt);
+    const dl = daysUntil(p.expiresAt);
     const isActive = p.status === "ACTIVE" || p.status === "NOPROT";
     const expiringSoon = isActive && dl !== null && dl <= 30 && dl >= 0;
     return { ...p, isActive, expiringSoon };

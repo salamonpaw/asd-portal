@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Badge, KV, SectionCard, Modal, Field, Avatar, Timeline } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
+import { fmtDate, daysUntil } from "@/lib/dates";
 import type { Comment, Market, Partner, Project, ProjectHistory, Rep, User } from "@prisma/client";
 
 type FullProject = Project & {
@@ -13,18 +14,6 @@ type FullProject = Project & {
   history: ProjectHistory[];
   comments: (Comment & { user: User })[];
 };
-
-function fmtDate(d: Date | null) {
-  if (!d) return "—";
-  return d.toLocaleDateString("pl-PL", { day: "numeric", month: "short", year: "numeric" });
-}
-
-const today = new Date("2026-06-03");
-
-function daysLeft(d: Date | null) {
-  if (!d) return null;
-  return Math.round((d.getTime() - today.getTime()) / 86400000);
-}
 
 const PROCUREMENT_LABELS: Record<string, string> = { BIEZACA: "Bieżąca sprzedaż", ZAPYTANIE: "Zapytanie ofertowe", PRZETARG: "Przetarg" };
 
@@ -40,7 +29,7 @@ export function ProjectDetailClient({ project: initial, conflict, isStaff, backH
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const dl = daysLeft(project.expiresAt);
+  const dl = daysUntil(project.expiresAt);
   const isActive = project.status === "ACTIVE" || project.status === "NOPROT";
   const expiringSoon = isActive && dl !== null && dl <= 30 && dl >= 0;
   const isPending = ["VERIFY", "NEW", "DUP", "NEEDINFO"].includes(project.status);
