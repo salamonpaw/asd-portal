@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { Logo, Avatar } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
@@ -19,14 +19,23 @@ const NAV_STAFF = [
   { key: "projects",    href: "/staff/projects",     label: "Projekty",         icon: "layers" },
   { key: "partners",    href: "/staff/partners",     label: "Moi Partnerzy",    icon: "users" },
   { key: "duplicates",  href: "/staff/duplicates",   label: "Duplikaty",        icon: "copy" },
+  { key: "profile",     href: "/staff/profile",      label: "Mój profil",       icon: "user" },
+];
+
+const NAV_ADMIN = [
+  { key: "dashboard",   href: "/staff/dashboard",   label: "Pulpit",           icon: "gauge" },
+  { key: "projects",    href: "/staff/projects",     label: "Projekty",         icon: "layers" },
+  { key: "partners",    href: "/staff/partners",     label: "Partnerzy",        icon: "users" },
+  { key: "duplicates",  href: "/staff/duplicates",   label: "Duplikaty",        icon: "copy" },
+  { key: "content",     href: "/admin/content",      label: "Treść portalu",    icon: "edit" },
 ];
 
 export function PortalShell({ session, children }: { session: Session; children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const role = (session.user as any)?.role as string;
-  const isStaff = role === "STAFF" || role === "ADMIN";
-  const nav = isStaff ? NAV_STAFF : NAV_PARTNER;
+  const isAdmin = role === "ADMIN";
+  const isStaff = role === "STAFF" || isAdmin;
+  const nav = isAdmin ? NAV_ADMIN : isStaff ? NAV_STAFF : NAV_PARTNER;
 
   const user = session.user!;
   const initials = user.name?.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase() ?? "?";

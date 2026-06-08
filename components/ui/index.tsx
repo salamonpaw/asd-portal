@@ -4,20 +4,47 @@ import { Icon } from "./Icon";
 
 // ─── Logo ────────────────────────────────────────────────────────────────────
 
-export function Logo({ size = 30, light = false }: { size?: number; light?: boolean }) {
+function LogoFallback({ size, light }: { size: number; light: boolean }) {
   const ink = light ? "#fff" : "var(--brand)";
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
       <svg width={size} height={size} viewBox="0 0 40 40" fill="none" style={{ flex: "none" }}>
-        <rect x="2" y="2" width="36" height="36" rx="9" fill={light ? "rgba(255,255,255,.14)" : "var(--brand)"} />
-        <path d="M11 27 L20 11 L29 27" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-        <circle cx="20" cy="24.5" r="2.4" fill="var(--accent)" />
+        <rect x="2" y="2" width="36" height="36" rx="9" fill={light ? "rgba(255,255,255,.25)" : "var(--brand)"} />
+        <text x="20" y="26" textAnchor="middle" fill="#fff" fontSize="13" fontWeight="700" fontFamily="system-ui">ASD</text>
       </svg>
-      <div style={{ lineHeight: 1 }}>
-        <div style={{ fontFamily: "var(--font-display), 'Space Grotesk', sans-serif", fontWeight: 600, fontSize: size * 0.52, color: ink, letterSpacing: "-.02em" }}>
-          ASD <span style={{ fontWeight: 400, opacity: 0.85 }}>Systems</span>
-        </div>
-      </div>
+      <span style={{ fontFamily: "var(--font-display), 'Space Grotesk', sans-serif", fontWeight: 600, fontSize: size * 0.52, color: ink, letterSpacing: "-.02em", lineHeight: 1 }}>
+        ASD <span style={{ fontWeight: 400, opacity: 0.85 }}>Systems</span>
+      </span>
+    </div>
+  );
+}
+
+export function Logo({ size = 30, light = false }: { size?: number; light?: boolean }) {
+  const height = Math.round(size * 0.7);
+
+  return (
+    <div style={{ display: "flex", alignItems: "center" }}>
+      <img
+        src="/logo.png"
+        alt="ASD Systems"
+        height={height}
+        style={{
+          height,
+          width: "auto",
+          flex: "none",
+          filter: light ? "brightness(0) invert(1)" : "none",
+        }}
+        onError={(e) => {
+          // hide broken img, show fallback sibling
+          (e.target as HTMLImageElement).style.display = "none";
+          const next = (e.target as HTMLImageElement).nextElementSibling as HTMLElement | null;
+          if (next) next.style.display = "flex";
+        }}
+      />
+      {/* shown only when logo.png is missing */}
+      <span style={{ display: "none" }}>
+        <LogoFallback size={size} light={light} />
+      </span>
     </div>
   );
 }

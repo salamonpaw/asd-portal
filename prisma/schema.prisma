@@ -63,11 +63,15 @@ model User {
 // ─── Reps (Handlowcy ASD) ────────────────────────────────────────────────────
 
 model Rep {
-  id       String @id @default(cuid())
-  name     String
-  initials String
-  email    String @unique
-  region   String
+  id          String  @id @default(cuid())
+  name        String
+  initials    String
+  email       String  @unique
+  region      String
+  phone       String?
+  calendarUrl String?
+  photoUrl    String?
+  bio         String?
 
   users    User[]
   partners Partner[]
@@ -109,30 +113,30 @@ model Market {
 // ─── Projects ────────────────────────────────────────────────────────────────
 
 model Project {
-  id            String        @id
-  partnerId     String
-  repId         String
+  id              String        @id
+  partnerId       String
+  repId           String
   customerName    String
   customerTaxId   String
   customerCountry String
   location        String?
   branch          String?
-  machines      String
-  procurement   Procurement
-  stage         String
-  description   String
-  decisionDate  String?
-  interested    Boolean
-  wantsSupport  Boolean
-  support       String[]
-  notes         String?
-  status        ProjectStatus @default(VERIFY)
-  protected     Boolean       @default(false)
-  conflictsWith String?
-  createdAt     DateTime      @default(now())
-  acceptedAt    DateTime?
-  expiresAt     DateTime?
-  updatedAt     DateTime      @updatedAt
+  machines        String
+  procurement     Procurement
+  stage           String
+  description     String
+  decisionDate    String?
+  interested      Boolean
+  wantsSupport    Boolean
+  support         String[]
+  notes           String?
+  status          ProjectStatus @default(VERIFY)
+  protected       Boolean       @default(false)
+  conflictsWith   String?
+  createdAt       DateTime      @default(now())
+  acceptedAt      DateTime?
+  expiresAt       DateTime?
+  updatedAt       DateTime      @updatedAt
 
   partner  Partner          @relation(fields: [partnerId], references: [id])
   rep      Rep              @relation(fields: [repId], references: [id])
@@ -162,4 +166,15 @@ model Comment {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id])
+}
+
+// ─── Content Management ───────────────────────────────────────────────────────
+
+model ContentItem {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  label     String
+  group     String
+  updatedAt DateTime @updatedAt
 }
