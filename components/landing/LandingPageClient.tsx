@@ -12,7 +12,10 @@ export function LandingPageClient({ items }: { items: ContentItem[] }) {
     return acc;
   }, {} as Record<string, string>);
 
-  const toArray = (str: string) => str.split(",").map((s) => s.trim()).filter(Boolean);
+  const toArray = (str: string | undefined) => {
+    if (!str) return [];
+    return str.split(",").map((s) => s.trim()).filter(Boolean);
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--paper)" }}>

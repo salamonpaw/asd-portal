@@ -11,7 +11,8 @@ export async function LandingPage() {
       orderBy: { key: "asc" },
     });
   } catch (err) {
-    console.error("Failed to load landing content:", err);
+    console.warn("Failed to load landing content (may be offline during build):", err instanceof Error ? err.message : String(err));
+    // Fallback to empty – client can still render without content
   }
 
   return <LandingPageClient items={items} />;
