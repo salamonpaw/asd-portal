@@ -2,17 +2,20 @@
 
 ## Prerequisites
 
-- VM with Docker installed
-- SSH access (if remote)
+✅ **Your Setup:**
+- SSH access to VM (you have it)
+- Docker installed  
+- PostgreSQL new instance on port 8002 (avoid 8001 collision)
+- App accessible via IP initially, later: `partner.asdsystems.eu`
+- SMTP: Microsoft 365 (IT will provide credentials)
 - ~2GB free disk space
-- Domain name (or will use IP)
 
 ---
 
-## Phase 1: Setup Directories & Clone
+## Phase 1: Setup & Clone
 
 ```bash
-# Connect to VM
+# SSH to VM
 ssh user@your-vm-ip
 
 # Create project directory
@@ -22,8 +25,8 @@ cd /opt/projects/asd-portal
 # Clone repository
 git clone <your-repo-url> .
 
-# Verify structure
-ls -la  # Should see: docker-compose.yml, Dockerfile, prisma/, app/, etc
+# Verify
+ls -la
 ```
 
 ---
@@ -34,176 +37,165 @@ ls -la  # Should see: docker-compose.yml, Dockerfile, prisma/, app/, etc
 
 ```bash
 cat > .env << 'EOF'
-# Database (PostgreSQL)
+# Database (PostgreSQL) - Port 8002 to avoid collision
 DB_USER=asd_portal_user
-DB_PASSWORD=your_secure_password_here_change_this
+DB_PASSWORD=ChangeMeToSecurePassword123!
 DB_NAME=asd_portal_prod
-DB_PORT=5432
+DB_PORT=8002
 
 # Redis
 REDIS_PORT=6379
 
 # Next.js / Auth
-NEXTAUTH_URL=https://portal.asdsystems.eu
-NEXTAUTH_SECRET=$(openssl rand -base64 32)
+# For now: http://YOUR_VM_IP:3000
+# Later: https://partner.asdsystems.eu
+NEXTAUTH_URL=http://YOUR_VM_IP:3000
+NEXTAUTH_SECRET=your-secret-key-change-this
 
-# Email (SMTP)
-SMTP_HOST=smtp.gmail.com
+# Email (SMTP) - Microsoft 365 from IT
+SMTP_HOST=smtp.office365.com
 SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-specific-password
+SMTP_SECURE=true
+SMTP_USER=your-office365-email@asdsystems.pl
+SMTP_PASS=your-office365-app-password
 SMTP_FROM=ASD Partner Portal <portal@asdsystems.eu>
 
 # Business
 ORDER_FORM_URL=https://sales.asdsystems.pl/
-PORTAL_URL=https://portal.asdsystems.eu
+PORTAL_URL=http://YOUR_VM_IP:3000
 
 # Docker
 APP_PORT=3000
 EOF
 
-chmod 600 .env  # Secure permissions
+chmod 600 .env
 ```
 
-### Generate NEXTAUTH_SECRET securely
-
+Generate secure secret:
 ```bash
-# If openssl not in .env, run:
 openssl rand -base64 32
-# Copy output to .env NEXTAUTH_SECRET value
+# Copy output to NEXTAUTH_SECRET in .env
 ```
 
 ---
 
-## Phase 3: Database Setup
+## Phase 3: Update Docker Compose
 
-### Option A: New PostgreSQL Instance (Recommended for isolation)
+Edit `docker-compose.yml` - change PostgreSQL port from 5432 to 8002:
 
 ```bash
-# Update docker-compose.yml ports if needed
-# Default: postgres on 5432 (fine if no other projects use it)
+nano docker-compose.yml
+```
 
-# Start only postgres + redis first
+Find `postgres:` service, change this line:
+```yaml
+ports:
+  - "8002:5432"  # Changed from 5432
+```
+
+Verify:
+```bash
+grep -A 2 "ports:" docker-compose.yml | grep -A 1 postgres
+```
+
+---
+
+## Phase 4: Start Database Services
+
+```bash
+# Start postgres + redis
 docker-compose up -d postgres redis
 
-# Verify health
-docker-compose logs postgres
-docker-compose logs redis
-
-# Wait for startup (30-60 seconds)
+# Wait for startup
 sleep 30
-```
 
-### Option B: Reuse Existing PostgreSQL
+# Check health
+docker-compose ps
+# Status should be: healthy
 
-If you have existing postgres on same server:
-
-```bash
-# Modify .env to point to existing DB:
-DB_PORT=5433  # Or whatever your existing postgres uses
-
-# Update docker-compose.yml - comment out postgres service:
-# postgres:
-#   image: postgres:16-alpine
-#   ... (entire section commented)
-
-# Start only redis + app
-docker-compose up -d redis
+# Verify no errors
+docker-compose logs postgres | tail -10
+docker-compose logs redis | tail -10
 ```
 
 ---
 
-## Phase 4: Initialize Database
+## Phase 5: Initialize Database
 
 ```bash
 # Run migrations
 docker-compose exec portal npx prisma migrate deploy
 
-# Seed with default data
+# Seed default data
 docker-compose exec portal npx prisma db seed
 
-# Verify data
+# Verify
 docker-compose exec postgres psql -U asd_portal_user -d asd_portal_prod -c "SELECT COUNT(*) FROM \"ContentItem\";"
-# Should return: count=100+
+# Should show: count ~100
 ```
 
 ---
 
-## Phase 5: Start Full Stack
+## Phase 6: Start Full Stack
 
 ```bash
 # Start all services
 docker-compose up -d
 
-# Verify all containers running
+# Verify all running
 docker ps
-# Should see: postgres, redis, portal (asd-portal-postgres, asd-portal-redis, asd-portal-app)
+# Should see: postgres, redis, portal
 
 # Check app logs
 docker-compose logs -f portal
-
-# Wait for "Ready on" message (~30s)
+# Wait for: "✓ Ready in XXXms"
+# Press Ctrl+C
 ```
 
 ---
 
-## Phase 6: Nginx Reverse Proxy + SSL
-
-### Install Nginx (if not present)
+## Phase 7: Test via IP
 
 ```bash
-# Ubuntu/Debian
-sudo apt update
-sudo apt install nginx certbot python3-certbot-nginx
+# Test app
+curl http://YOUR_VM_IP:3000/
+# Should return HTML
 
-# Start Nginx
+# Test API
+curl http://YOUR_VM_IP:3000/api/content?group=Landing%20page | jq '.[] | .key' | head -10
+
+# Test login in browser:
+# http://YOUR_VM_IP:3000/
+# p.nowak@vendmax.pl / demo1234
+```
+
+---
+
+## Phase 8: Nginx Reverse Proxy (HTTP)
+
+### Install Nginx
+
+```bash
+sudo apt update
+sudo apt install nginx -y
 sudo systemctl start nginx
 sudo systemctl enable nginx
 ```
 
-### Configure Nginx + Auto SSL
-
-Create config file:
+### Create Config
 
 ```bash
-sudo nano /etc/nginx/sites-available/portal.asdsystems.eu
+sudo nano /etc/nginx/sites-available/asd-portal
 ```
 
-Paste:
+Paste (replace YOUR_VM_IP):
 
 ```nginx
 server {
     listen 80;
-    listen [::]:80;
-    server_name portal.asdsystems.eu;
+    server_name YOUR_VM_IP;
 
-    # Let's Encrypt validation
-    location /.well-known/acme-challenge/ {
-        root /var/www/certbot;
-    }
-
-    # Redirect HTTP → HTTPS
-    location / {
-        return 301 https://$server_name$request_uri;
-    }
-}
-
-server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
-    server_name portal.asdsystems.eu;
-
-    # SSL Certificates (will be created by certbot)
-    ssl_certificate /etc/letsencrypt/live/portal.asdsystems.eu/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/portal.asdsystems.eu/privkey.pem;
-
-    # Security headers
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-    ssl_prefer_server_ciphers on;
-
-    # Proxy to Docker app
+    # Proxy to app
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
@@ -215,196 +207,206 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # Caching for static assets
+    # Static assets caching
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         proxy_pass http://127.0.0.1:3000;
         proxy_cache_valid 200 30d;
         expires 30d;
-        add_header Cache-Control "public, immutable";
     }
 
-    # Cache landing page (Level 3 optimization)
-    location ~* ^/$ {
+    # Landing page caching (Level 3)
+    location = / {
         proxy_pass http://127.0.0.1:3000;
         proxy_cache_valid 200 60s;
-        proxy_cache_key "$scheme$request_method$host$request_uri$cookie_sessionid";
         add_header X-Cache-Status $upstream_cache_status;
     }
 }
 ```
 
-Enable config:
+### Enable & Test
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/portal.asdsystems.eu /etc/nginx/sites-enabled/
+# Create symlink
+sudo ln -s /etc/nginx/sites-available/asd-portal /etc/nginx/sites-enabled/
 
-# Test Nginx config
+# Test
 sudo nginx -t
+# Should show: "ok"
 
 # Reload
 sudo systemctl reload nginx
-```
 
-### Get SSL Certificate
-
-```bash
-sudo certbot certonly --webroot -w /var/www/certbot -d portal.asdsystems.eu
-
-# Follow prompts (email, agree to terms)
-# Certificates saved to /etc/letsencrypt/live/portal.asdsystems.eu/
-
-# Auto-renewal (certbot handles this automatically)
-sudo systemctl enable certbot.timer
+# Test via Nginx
+curl http://YOUR_VM_IP/
+# Should return HTML
 ```
 
 ---
 
-## Phase 7: Verify Deployment
+## Phase 9: HTTPS Later (When IT provides domain)
+
+Once IT configures DNS for `partner.asdsystems.eu`:
 
 ```bash
-# Test HTTPS
-curl https://portal.asdsystems.eu/api/content?group=Landing%20page | jq '.[0]'
+# Install certbot
+sudo apt install certbot python3-certbot-nginx -y
 
-# Check cache working
+# Get certificate
+sudo certbot certonly --nginx -d partner.asdsystems.eu
+
+# Certbot will automatically update Nginx config
+# Just reload:
+sudo systemctl reload nginx
+```
+
+---
+
+## Verification Checklist
+
+```bash
+# All containers running
+docker ps | grep asd-portal
+
+# Database connected
+docker-compose exec postgres psql -U asd_portal_user -d asd_portal_prod -c "\dt"
+
+# Redis working
+docker-compose exec redis redis-cli PING
+# Response: PONG
+
+# App responding
+curl http://YOUR_VM_IP:3000/ | head -10
+
+# API working
+curl http://YOUR_VM_IP:3000/api/content?group=Landing%20page | jq . | head -5
+
+# Nginx proxying
+curl http://YOUR_VM_IP/ | head -10
+
+# Check Redis cache
 docker-compose exec redis redis-cli KEYS landing:*
-
-# Check logs
-docker-compose logs portal | tail -20
-```
-
----
-
-## Phase 8: First Admin User
-
-If you need to create admin account:
-
-```bash
-# Get postgres container shell
-docker-compose exec postgres psql -U asd_portal_user -d asd_portal_prod
-
-# Run seed query to add admin
-INSERT INTO "User" (id, email, password, name, role, "createdAt", "updatedAt")
-VALUES (
-  'admin-' || gen_random_uuid()::text,
-  'p.salamon@asdsystems.pl',
-  '$2a$10$XYZ...',  -- bcrypt hash of password
-  'Paweł Salamon',
-  'ADMIN',
-  NOW(),
-  NOW()
-);
-
-\q  # Exit psql
-```
-
-Or use seed data (default admin password: `TymczasoweHaslo`):
-```bash
-docker-compose exec portal npx prisma db seed
 ```
 
 ---
 
 ## Troubleshooting
 
-### Port 3000 already in use
+### Port 8002 already in use
 ```bash
-# Change in docker-compose.yml:
-# ports:
-#   - "3001:3000"  # External:Internal
-
-# Or kill existing process:
-sudo lsof -i :3000
+sudo lsof -i :8002
+# Kill process if needed:
 sudo kill -9 <PID>
 ```
 
-### Redis connection failed
+### Database won't start
 ```bash
-# Restart redis
-docker-compose restart redis
-
-# Check logs
-docker-compose logs redis
-```
-
-### Database connection error
-```bash
-# Verify postgres is healthy
 docker-compose logs postgres
-
-# Check env vars
-cat .env | grep DB_
-
-# Reset postgres (careful - loses data!)
-docker-compose down
-docker volume rm asd-portal_postgres_data
-docker-compose up -d postgres
+# Check .env DB password matches docker-compose
+cat .env | grep DB_PASSWORD
 ```
 
-### Nginx not proxying
+### App won't start
+```bash
+docker-compose logs portal
+# Common issues:
+# - DB_PORT wrong (should be 8002)
+# - DB_PASSWORD mismatch
+# - NEXTAUTH_SECRET missing or invalid
+```
+
+### Can't access from browser
 ```bash
 # Check Nginx error log
-sudo tail -50 /var/log/nginx/error.log
+sudo tail -20 /var/log/nginx/error.log
 
-# Verify docker app is running
+# Verify app is running
 docker ps | grep portal
 
-# Test local curl
+# Test locally
 curl http://127.0.0.1:3000/
 ```
 
 ---
 
-## Maintenance
+## Logs & Monitoring
 
-### View Logs
 ```bash
-docker-compose logs -f portal          # App logs
-docker-compose logs -f postgres        # Database logs  
-docker-compose logs -f redis           # Cache logs
-sudo journalctl -u nginx -f            # Nginx logs
+# All services
+docker-compose logs -f
+
+# Just app
+docker-compose logs -f portal
+
+# Just database
+docker-compose logs -f postgres
+
+# Nginx
+sudo journalctl -u nginx -f
+
+# Check Redis cache status
+docker-compose exec redis redis-cli INFO stats
 ```
 
-### Backup Database
-```bash
-docker-compose exec postgres pg_dump -U asd_portal_user asd_portal_prod \
-  > backup-$(date +%Y%m%d).sql
-```
+---
 
-### Update Application
+## Maintenance Commands
+
 ```bash
-git pull origin main
+# Restart all services
+docker-compose restart
+
+# Update app (new deployment)
+git pull
 docker-compose build --no-cache
-docker-compose up -d portal
+docker-compose up -d
 docker-compose exec portal npx prisma migrate deploy
-```
 
-### Clear Cache
-```bash
+# Backup database
+docker-compose exec postgres pg_dump -U asd_portal_user asd_portal_prod > backup-$(date +%Y%m%d).sql
+
+# Clear Redis cache
 docker-compose exec redis redis-cli FLUSHALL
+
+# View app size
+docker-compose exec portal du -sh /app/.next
 ```
 
 ---
 
-## Security Checklist
+## Summary of Defaults (from seed)
 
-- [ ] `.env` file permissions: `chmod 600 .env`
-- [ ] Change default passwords (DB, SMTP)
-- [ ] Set strong NEXTAUTH_SECRET
-- [ ] Enable SSL/HTTPS
-- [ ] Firewall: only allow 80, 443, 22 (SSH)
-- [ ] Regular backups of `/opt/projects/asd-portal`
-- [ ] Monitor logs for errors
+Test accounts already in database:
 
----
-
-## Next Steps
-
-1. Test all routes: https://portal.asdsystems.eu/
-2. Login with seeded account: `p.nowak@vendmax.pl` / `demo1234`
-3. Test admin panel: `p.salamon@asdsystems.pl` / `TymczasoweHaslo`
-4. Monitor performance: Check Redis cache with `redis-cli`
-5. Setup automated backups (optional)
+```
+Partner:     p.nowak@vendmax.pl / demo1234
+Sales Rep:   m.kowalczyk@asdsystems.pl / demo1234
+Admin demo:  admin@asdsystems.pl / demo1234
+Admin real:  p.salamon@asdsystems.pl / TymczasoweHaslo
+```
 
 ---
 
-**Questions? Check logs first:** `docker-compose logs -f`
+## Next: SMTP Configuration
+
+Once IT provides Office 365 credentials:
+
+```bash
+# Update .env
+nano .env
+# SMTP_USER=your.name@asdsystems.pl
+# SMTP_PASS=xxxx-xxxx-xxxx-xxxx
+
+# Restart app
+docker-compose restart portal
+
+# Test email sending (via admin panel or manually)
+```
+
+---
+
+## Ready? Let's Go! 🚀
+
+Questions or issues? Check logs first:
+```bash
+docker-compose logs -f portal
+```
