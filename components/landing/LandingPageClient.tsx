@@ -1,17 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useContentItems } from "@/lib/hooks/useContentItems";
 import { Logo } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
+import type { ContentItem } from "@prisma/client";
 
-export function LandingPageClient() {
-  const { items, loading } = useContentItems("Landing page");
-
-  if (loading) {
-    return <div style={{ minHeight: "100vh", background: "var(--paper)", display: "flex", alignItems: "center", justifyContent: "center" }}><div>Ładowanie...</div></div>;
-  }
-
+export function LandingPageClient({ items }: { items: ContentItem[] }) {
   // Build content map
   const c = items.reduce((acc, item) => {
     acc[item.key] = item.value;
