@@ -149,7 +149,7 @@ export function LandingPageClient() {
                 <div style={{ position: "absolute", top: 0, left: 0, width: 40, height: 40, borderRadius: 11, background: "var(--brand)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-display)", fontWeight: 600 }}>
                   {i}
                 </div>
-                <div style={{ paddingLeft: 6, paddingTop: 28 }} className="card" style={{ padding: 20 }}>
+                <div className="card" style={{ padding: 20, paddingLeft: 26, paddingTop: 48 }}>
                   <h4 style={{ fontSize: 16, fontWeight: 600 }}>{c[`landing.process.step${i}_title`]}</h4>
                   <p style={{ color: "var(--ink-2)", marginTop: 10, fontSize: 14.5, lineHeight: 1.5 }}>
                     {c[`landing.process.step${i}_desc`]}
