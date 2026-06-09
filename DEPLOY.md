@@ -270,6 +270,76 @@ Then visit: `https://portal.asdsystems.eu/admin/users`
 
 ---
 
+## Performance & Caching (Level 2: ISR + Redis)
+
+The landing page uses a two-layer caching strategy for optimal performance:
+
+### How It Works
+
+1. **Redis Cache (60s TTL)** – Content cached in memory, ~50ms response
+2. **ISR Revalidation** – Fresh data every 60 seconds
+3. **Admin Invalidation** – Cache clears instantly when content is updated
+4. **Database Fallback** – If Redis down, queries database directly
+
+### Performance Metrics
+
+```
+Cache hit (subsequent requests):    ~50ms
+Cache miss (fresh data):            ~350ms
+Admin update + next request:        ~350ms (instant clear + fresh fetch)
+```
+
+### Configuration
+
+Environment variables (already set in docker-compose.yml):
+```bash
+REDIS_URL=redis://redis:6379  # Default, change if using remote Redis
+```
+
+### Monitoring Cache
+
+```bash
+# Check Redis cache contents
+docker-compose exec redis redis-cli
+
+# View all landing page caches
+> KEYS landing:*
+
+# Check specific content cache
+> GET landing:Landing\ page
+
+# Clear all caches (if needed)
+> FLUSHALL
+```
+
+### For VM Deployment (Level 3: Edge Caching)
+
+When deployed to your VM:
+
+1. **Nginx Caching** – Add cache headers to public responses:
+```nginx
+location ~* ^/$ {
+    proxy_pass http://portal:3000;
+    proxy_cache_valid 200 60s;
+    proxy_cache_key "$scheme$request_method$host$request_uri";
+    add_header X-Cache-Status $upstream_cache_status;
+}
+```
+
+2. **Optional: Remove Redis** – If behind Nginx, Redis becomes optional:
+   - ISR still works (NextJS handles revalidation)
+   - Cache misses hit Nginx layer instead
+   - Reduces infrastructure complexity
+
+3. **Recommended Stack** – If you want max performance:
+   - Nginx cache (HTTP layer)
+   - Redis cache (application layer)
+   - Database (source of truth)
+
+No code changes needed – everything is configured to work with both strategies.
+
+---
+
 ## Support
 
 For issues or questions, check logs and contact the development team.
