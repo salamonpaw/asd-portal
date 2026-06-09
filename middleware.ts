@@ -19,7 +19,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // Protect portal routes
-  const isPublic = pathname === "/login" || pathname.startsWith("/api/auth");
+  const isPublic = pathname === "/login" || pathname.startsWith("/api/auth") || pathname.startsWith("/api/content");
   if (!token && !isPublic) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
