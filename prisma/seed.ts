@@ -322,6 +322,20 @@ async function main() {
     create: { email: "p.salamon@asdsystems.pl", password: adminHash, name: "Paweł Salamon", role: Role.ADMIN },
   });
 
+  // Service Technician - test account
+  await db.user.upsert({
+    where: { email: "serwisant@test.pl" },
+    update: {},
+    create: { email: "serwisant@test.pl", password: hash, name: "Jan Serwisant", role: Role.SERVICE_TECHNICIAN, partnerId: vendmax.id },
+  });
+
+  // Warehouse Specialist - test account
+  await db.user.upsert({
+    where: { email: "magazynier@test.pl" },
+    update: {},
+    create: { email: "magazynier@test.pl", password: hash, name: "Anna Magazynier", role: Role.WAREHOUSE_SPECIALIST },
+  });
+
   // Projects — zaktualizowane opisy BHP/MRO
   const projects = [
     {
@@ -621,10 +635,13 @@ async function main() {
   console.log(`✅ Imported ${seedData.length} products`);
 
   console.log("\n✅ Seed complete");
-  console.log("   Partner:       p.nowak@vendmax.pl / demo1234");
-  console.log("   Handlowiec:    m.kowalczyk@asdsystems.pl / demo1234");
-  console.log("   Admin (demo):  admin@asdsystems.pl / demo1234");
-  console.log("   Admin (Pawel): p.salamon@asdsystems.pl / TymczasoweHaslo");
+  console.log("\n📝 Test Accounts:");
+  console.log("   Partner:          p.nowak@vendmax.pl / demo1234");
+  console.log("   Handlowiec:       m.kowalczyk@asdsystems.pl / demo1234");
+  console.log("   Admin (demo):     admin@asdsystems.pl / demo1234");
+  console.log("   Admin (Pawel):    p.salamon@asdsystems.pl / TymczasoweHaslo");
+  console.log("   Serwisant:        serwisant@test.pl / demo1234");
+  console.log("   Magazynier:       magazynier@test.pl / demo1234");
 }
 
 main()
