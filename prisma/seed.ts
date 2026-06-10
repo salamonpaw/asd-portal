@@ -574,7 +574,53 @@ async function main() {
     });
   }
 
-  console.log("✅ Seed complete");
+  // Import products from seed-data.json
+  console.log("\n📦 Importing products...");
+
+  const seedDataPath = require.resolve("./seed-data.json");
+  const seedData = require(seedDataPath) as Array<{
+    sku: string;
+    name: string;
+    description: string;
+    machineType: string;
+    images: string[];
+    imageCount: number;
+    docxFile: string | null;
+  }>;
+
+  // Create/find MachineType
+  const machineType = await db.machineType.upsert({
+    where: { name: "100775 Terminator" },
+    update: {},
+    create: {
+      name: "100775 Terminator",
+      label: "Automat Terminator 100775",
+    },
+  });
+
+  // Import products
+  for (const productData of seedData) {
+    await db.product.upsert({
+      where: { sku: productData.sku },
+      update: {},
+      create: {
+        sku: productData.sku,
+        name: productData.name,
+        description: productData.description || null,
+        machineTypeId: machineType.id,
+        location: null,
+        image: productData.images?.[0] || null,
+        serialNumber: null,
+        supplier: null,
+        inStock: null,
+        basePrice: null,
+      },
+    });
+  }
+
+  console.log(`✅ Imported ${seedData.length} products`);
+
+  console.log("\n✅ Seed complete");
   console.log("   Partner:       p.nowak@vendmax.pl / demo1234");
   console.log("   Handlowiec:    m.kowalczyk@asdsystems.pl / demo1234");
   console.log("   Admin (demo):  admin@asdsystems.pl / demo1234");
