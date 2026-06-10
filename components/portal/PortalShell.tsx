@@ -29,7 +29,10 @@ const NAV_ADMIN = [
   { key: "projects",    href: "/staff/projects",     label: "Projekty",         icon: "layers" },
   { key: "partners",    href: "/staff/partners",     label: "Partnerzy",        icon: "users" },
   { key: "duplicates",  href: "/staff/duplicates",   label: "Duplikaty",        icon: "copy" },
-  { key: "sep", href: "", label: "", icon: "" }, // separator
+  { key: "sep1", href: "", label: "", icon: "" }, // separator
+  { key: "machines",    href: "/admin/machine-types", label: "Typy automatów",  icon: "settings" },
+  { key: "products",    href: "/admin/products",      label: "Produkty",         icon: "package" },
+  { key: "sep2", href: "", label: "", icon: "" }, // separator
   { key: "ausers",     href: "/admin/users",         label: "Użytkownicy",      icon: "user" },
   { key: "amanagepartners", href: "/admin/partners", label: "Zarządzaj Partnerami", icon: "briefcase" },
   { key: "content",    href: "/admin/content",       label: "Treść portalu",    icon: "edit" },
