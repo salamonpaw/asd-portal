@@ -16,6 +16,10 @@ const NAV_PARTNER = [
   { key: "profile",    href: "/partner/profile",     label: "Mój profil",       icon: "user" },
 ];
 
+const NAV_WAREHOUSE = [
+  { key: "warehouse",   href: "/warehouse",         label: "Magazyn",          icon: "package" },
+];
+
 const NAV_STAFF = [
   { key: "dashboard",   href: "/staff/dashboard",   label: "Pulpit",           icon: "gauge" },
   { key: "projects",    href: "/staff/projects",     label: "Projekty",         icon: "layers" },
@@ -43,7 +47,8 @@ export function PortalShell({ session, children }: { session: Session; children:
   const role = (session.user as any)?.role as string;
   const isAdmin = role === "ADMIN";
   const isStaff = role === "STAFF" || isAdmin;
-  const nav = isAdmin ? NAV_ADMIN : isStaff ? NAV_STAFF : NAV_PARTNER;
+  const isWarehouse = role === "WAREHOUSE_SPECIALIST";
+  const nav = isWarehouse ? NAV_WAREHOUSE : isAdmin ? NAV_ADMIN : isStaff ? NAV_STAFF : NAV_PARTNER;
 
   const user = session.user!;
   const initials = user.name?.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase() ?? "?";
@@ -57,7 +62,7 @@ export function PortalShell({ session, children }: { session: Session; children:
         </div>
         <nav style={{ padding: "8px 14px", display: "flex", flexDirection: "column", gap: 3, flex: 1 }}>
           <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "rgba(255,255,255,.4)", fontWeight: 600, padding: "10px 14px 6px" }}>
-            {isAdmin ? "Panel Admina" : isStaff ? "Panel Handlowca" : "Panel Partnera"}
+            {isWarehouse ? "Panel Magazynu" : isAdmin ? "Panel Admina" : isStaff ? "Panel Handlowca" : "Panel Partnera"}
           </div>
           {nav.map((n) => {
             if (n.key === "sep") {
@@ -91,7 +96,7 @@ export function PortalShell({ session, children }: { session: Session; children:
               <Avatar initials={initials} size={34} color={isStaff ? "var(--accent)" : "var(--brand)"} />
               <div style={{ lineHeight: 1.2 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 600 }}>{user.name}</div>
-                <div style={{ fontSize: 11.5, color: "var(--ink-3)" }}>{isStaff ? "ASD Systems" : "Partner"}</div>
+                <div style={{ fontSize: 11.5, color: "var(--ink-3)" }}>{isWarehouse ? "Magazyn" : isStaff ? "ASD Systems" : "Partner"}</div>
               </div>
             </div>
           </div>
