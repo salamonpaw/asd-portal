@@ -13,6 +13,12 @@ export async function middleware(req: NextRequest) {
       if (role === "ADMIN") {
         return NextResponse.redirect(new URL("/admin/partners", req.url));
       }
+      if (role === "WAREHOUSE_SPECIALIST") {
+        return NextResponse.redirect(new URL("/warehouse", req.url));
+      }
+      if (role === "SERVICE_TECHNICIAN") {
+        return NextResponse.redirect(new URL("/partner/service", req.url));
+      }
       return NextResponse.redirect(new URL(
         role === "STAFF" ? "/staff/dashboard" : "/partner/dashboard",
         req.url
@@ -28,10 +34,18 @@ export async function middleware(req: NextRequest) {
   }
 
   // Cross-role protection
-  if (token && pathname.startsWith("/partner") && (token as any).role === "STAFF") {
+  const role = (token?.role as string) || "";
+
+  if (role === "WAREHOUSE_SPECIALIST" && !pathname.startsWith("/warehouse")) {
+    return NextResponse.redirect(new URL("/warehouse", req.url));
+  }
+  if (role === "SERVICE_TECHNICIAN" && !pathname.startsWith("/partner/service")) {
+    return NextResponse.redirect(new URL("/partner/service", req.url));
+  }
+  if (token && pathname.startsWith("/partner") && role === "STAFF") {
     return NextResponse.redirect(new URL("/staff/dashboard", req.url));
   }
-  if (token && pathname.startsWith("/staff") && (token as any).role === "PARTNER") {
+  if (token && pathname.startsWith("/staff") && role === "PARTNER") {
     return NextResponse.redirect(new URL("/partner/dashboard", req.url));
   }
 
