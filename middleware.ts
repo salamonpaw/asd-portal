@@ -10,8 +10,11 @@ export async function middleware(req: NextRequest) {
   if (pathname === "/") {
     if (token) {
       const role = (token as any).role as string;
+      if (role === "ADMIN") {
+        return NextResponse.redirect(new URL("/admin/partners", req.url));
+      }
       return NextResponse.redirect(new URL(
-        role === "STAFF" || role === "ADMIN" ? "/staff/dashboard" : "/partner/dashboard",
+        role === "STAFF" ? "/staff/dashboard" : "/partner/dashboard",
         req.url
       ));
     }
