@@ -10,7 +10,10 @@ datasource db {
 
 enum Role {
   PARTNER
+  PARTNER_ADMIN
+  SERVICE_TECHNICIAN
   STAFF
+  WAREHOUSE_SPECIALIST
   ADMIN
 }
 
@@ -42,6 +45,23 @@ enum Procurement {
   PRZETARG
 }
 
+enum MachineType {
+  BĘBNOWY
+  SZAFKOWY
+  TERMINAL
+  WRZUTNIA
+  L40
+}
+
+enum ServiceOrderStatus {
+  NOWE
+  PRZYJĘTE
+  CZĘŚCIOWO_ZREALIZOWANE
+  ZREALIZOWANE
+  ODRZUCONE
+  ZAWIESZONE
+}
+
 // ─── Users ───────────────────────────────────────────────────────────────────
 
 model User {
@@ -55,9 +75,11 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  partner  Partner?  @relation(fields: [partnerId], references: [id])
-  rep      Rep?      @relation(fields: [repId], references: [id])
-  comments Comment[]
+  partner                    Partner?        @relation(fields: [partnerId], references: [id])
+  rep                        Rep?            @relation(fields: [repId], references: [id])
+  comments                   Comment[]
+  serviceTechniciansOrders   ServiceOrder[]  @relation("ServiceTechnician")
+  warehouseSpecialistOrders  ServiceOrder[]  @relation("WarehouseSpecialist")
 }
 
 // ─── Reps (Handlowcy ASD) ────────────────────────────────────────────────────
@@ -99,10 +121,11 @@ model Partner {
   repId            String
   createdAt        DateTime     @default(now())
 
-  rep      Rep       @relation(fields: [repId], references: [id])
-  users    User[]
-  projects Project[]
-  markets  Market[]
+  rep            Rep            @relation(fields: [repId], references: [id])
+  users          User[]
+  projects       Project[]
+  markets        Market[]
+  serviceOrders  ServiceOrder[]
 }
 
 model Market {
@@ -206,6 +229,82 @@ model WaitingItem {
   updatedAt      DateTime @updatedAt
 
   @@index([orderId])
+}
+
+// ─── Service Orders ───────────────────────────────────────────────────────────
+
+model ServiceOrder {
+  id                     String                @id @default(cuid())
+  code                   String                @unique
+  partnerId              String
+  partner                Partner               @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  technicianId           String
+  technician             User                  @relation("ServiceTechnician", fields: [technicianId], references: [id])
+  items                  ServiceOrderItem[]
+  status                 ServiceOrderStatus    @default(NOWE)
+  deliveryAddress        String
+  neededDate             DateTime?
+  notes                  String?
+  warehouseSpecialistId  String?
+  warehouseSpecialist    User?                 @relation("WarehouseSpecialist", fields: [warehouseSpecialistId], references: [id])
+  rejectionReason        String?
+  trackingNumber         String?
+  history                ServiceOrderHistory[]
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+
+  @@index([partnerId])
+  @@index([code])
+}
+
+model ServiceOrderItem {
+  id                 String       @id @default(cuid())
+  serviceOrderId     String
+  serviceOrder       ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  productId          String
+  product            Product      @relation(fields: [productId], references: [id])
+  quantity           Int
+  fulfilledQuantity  Int?
+  price              Decimal?
+  createdAt          DateTime     @default(now())
+
+  @@index([serviceOrderId])
+  @@index([productId])
+}
+
+model Product {
+  id               String            @id @default(cuid())
+  sku              String            @unique
+  name             String
+  description      String?
+  machineType      MachineType
+  parentProductId  String?
+  parentProduct    Product?          @relation("ProductHierarchy", fields: [parentProductId], references: [id])
+  childProducts    Product[]         @relation("ProductHierarchy")
+  location         String?
+  image            String?
+  serialNumber     String?
+  supplier         String?
+  inStock          Int?
+  basePrice        Decimal?
+  serviceOrderItems ServiceOrderItem[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([sku])
+  @@index([machineType])
+}
+
+model ServiceOrderHistory {
+  id             String       @id @default(cuid())
+  serviceOrderId String
+  serviceOrder   ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  changedBy      String
+  action         String
+  notes          String?
+  createdAt      DateTime     @default(now())
+
+  @@index([serviceOrderId])
 }
 
 // ─── Content Management ───────────────────────────────────────────────────────
