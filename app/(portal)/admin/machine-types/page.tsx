@@ -6,12 +6,12 @@ import { MachineTypesClient } from "./MachineTypesClient";
 
 export default async function MachineTypesPage() {
   const session = await getServerSession(authOptions);
-  if (!session || (session.user as any).role !== "ADMIN") {
+  if (!session || session.user.role !== "ADMIN") {
     redirect("/login");
   }
 
   const result = await getMachineTypes();
-  const machineTypes = result.success ? result.data : [];
+  const machineTypes = (result.success && result.data) ? result.data : [];
 
   return (
     <div style={{ padding: "32px" }}>

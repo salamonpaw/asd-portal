@@ -7,7 +7,7 @@ export async function PATCH(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const repId = (session.user as any).repId as string;
+  const repId = session.user.repId;
   if (!repId) return NextResponse.json({ error: "Not a rep account" }, { status: 403 });
 
   try {

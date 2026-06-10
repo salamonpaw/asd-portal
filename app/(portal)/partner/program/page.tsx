@@ -29,7 +29,7 @@ export default async function PartnerProgramPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const partnerId = (session.user as any).partnerId as string;
+  const partnerId = session.user.partnerId;
   const partner = partnerId ? await db.partner.findUnique({ where: { id: partnerId } }) : null;
   const currentLevel = partner?.level ?? "BRONZE";
 

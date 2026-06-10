@@ -28,7 +28,7 @@ export default async function WarehousePage() {
       <h1>Magazyn — Zarządzanie zamówieniami serwisowymi</h1>
       <p style={{ color: "var(--ink-3)", marginTop: 8 }}>Przeglądaj, zatwierdź i realizuj zamówienia na części</p>
 
-      <WarehouseOrdersClient initialOrders={orders} />
+      <WarehouseOrdersClient initialOrders={orders as any} />
     </div>
   );
 }

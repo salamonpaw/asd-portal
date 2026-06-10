@@ -13,7 +13,9 @@ export default async function StaffPartnersPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const repId = (session.user as any).repId as string;
+  const repId = session.user.repId;
+  if (!repId) redirect("/login");
+
   const partners = await db.partner.findMany({
     where: { repId },
     include: { projects: true },

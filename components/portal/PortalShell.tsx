@@ -44,7 +44,7 @@ const NAV_ADMIN = [
 
 export function PortalShell({ session, children }: { session: Session; children: React.ReactNode }) {
   const pathname = usePathname();
-  const role = (session.user as any)?.role as string;
+  const role = session.user?.role as string;
   const isAdmin = role === "ADMIN";
   const isStaff = role === "STAFF" || isAdmin;
   const isWarehouse = role === "WAREHOUSE_SPECIALIST";

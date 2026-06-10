@@ -19,7 +19,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     ? "Uzupełniono dane i wysłano ponownie"
     : "Zaktualizowano dane projektu";
 
-  const who = (session.user as any).role === "STAFF"
+  const who = session.user.role === "STAFF"
     ? `Handlowiec · ${session.user!.name}`
     : `Partner · ${project.partner.short}`;
 

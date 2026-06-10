@@ -1,9 +1,10 @@
 import { db } from "@/lib/db";
 import { ProjectStatus } from "@prisma/client";
+import type { Project } from "@prisma/client";
 import { sendProjectAccepted, sendProjectRejected, sendNeedInfo } from "@/lib/email";
 import { fmtDate } from "@/lib/dates";
-
-const PORTAL_URL = process.env.PORTAL_URL ?? "http://localhost:3000";
+import { PORTAL_URL } from "@/lib/config";
+import { ActionResult } from "@/lib/types/actions";
 
 function addMonths(n: number): Date {
   const d = new Date();
@@ -20,7 +21,7 @@ const INCLUDE_FULL = {
 
 // ─── Accept ──────────────────────────────────────────────────────────────────
 
-export async function acceptProject(id: string, repName: string, months: number, discount: number, tender: boolean) {
+export async function acceptProject(id: string, repName: string, months: number, discount: number, tender: boolean): Promise<ActionResult<Project & { partner: any; rep: any; history: any[]; comments: any[] }>> {
   const isTender = tender;
   const expiresAt = addMonths(months);
   const now = new Date();
@@ -60,12 +61,12 @@ export async function acceptProject(id: string, repName: string, months: number,
     }).catch(console.error);
   }
 
-  return project;
+  return { success: true, data: project };
 }
 
 // ─── Reject ──────────────────────────────────────────────────────────────────
 
-export async function rejectProject(id: string, repName: string, reason: string) {
+export async function rejectProject(id: string, repName: string, reason: string): Promise<ActionResult<Project & { partner: any; rep: any; history: any[]; comments: any[] }>> {
   const project = await db.project.update({
     where: { id },
     data: {
@@ -87,12 +88,12 @@ export async function rejectProject(id: string, repName: string, reason: string)
     }).catch(console.error);
   }
 
-  return project;
+  return { success: true, data: project };
 }
 
 // ─── Request info ─────────────────────────────────────────────────────────────
 
-export async function requestInfoProject(id: string, repName: string, repId: string, message: string) {
+export async function requestInfoProject(id: string, repName: string, repId: string, message: string): Promise<ActionResult<Project & { partner: any; rep: any; history: any[]; comments: any[] }>> {
   const userId = await db.user.findFirst({ where: { repId } });
   const project = await db.project.update({
     where: { id },
@@ -116,13 +117,13 @@ export async function requestInfoProject(id: string, repName: string, repId: str
     }).catch(console.error);
   }
 
-  return project;
+  return { success: true, data: project };
 }
 
 // ─── Close ────────────────────────────────────────────────────────────────────
 
-export async function closeProject(id: string, repName: string, kind: "won" | "lost") {
-  return db.project.update({
+export async function closeProject(id: string, repName: string, kind: "won" | "lost"): Promise<ActionResult<Project & { partner: any; rep: any; history: any[]; comments: any[] }>> {
+  return { success: true, data: await db.project.update({
     where: { id },
     data: {
       status: kind === "won" ? ProjectStatus.WON : ProjectStatus.LOST,
@@ -130,17 +131,17 @@ export async function closeProject(id: string, repName: string, kind: "won" | "l
       history: { create: { who: `Handlowiec · ${repName}`, text: kind === "won" ? "Zamknięto sukcesem" : "Zamknięto – utracony" } },
     },
     include: INCLUDE_FULL,
-  });
+  }) };
 }
 
 // ─── Extend ───────────────────────────────────────────────────────────────────
 
-export async function extendProject(id: string, partnerShort: string) {
+export async function extendProject(id: string, partnerShort: string): Promise<ActionResult<Project & { partner: any; rep: any; history: any[]; comments: any[] }>> {
   const project = await db.project.findUnique({ where: { id } });
   if (!project) throw new Error("Not found");
   const isTender = project.procurement === "PRZETARG";
   const expiresAt = addMonths(3);
-  return db.project.update({
+  return { success: true, data: await db.project.update({
     where: { id },
     data: {
       status: isTender ? ProjectStatus.NOPROT : ProjectStatus.ACTIVE,
@@ -150,13 +151,13 @@ export async function extendProject(id: string, partnerShort: string) {
       history: { create: { who: `Partner · ${partnerShort}`, text: `Zgłoszono kontynuację – ochrona do ${fmtDate(expiresAt)}` } },
     },
     include: INCLUDE_FULL,
-  });
+  }) };
 }
 
 // ─── Deactivate ───────────────────────────────────────────────────────────────
 
-export async function deactivateProject(id: string, partnerShort: string) {
-  return db.project.update({
+export async function deactivateProject(id: string, partnerShort: string): Promise<ActionResult<Project & { partner: any; rep: any; history: any[]; comments: any[] }>> {
+  return { success: true, data: await db.project.update({
     where: { id },
     data: {
       status: ProjectStatus.DEACT,
@@ -164,15 +165,15 @@ export async function deactivateProject(id: string, partnerShort: string) {
       history: { create: { who: `Partner · ${partnerShort}`, text: "Dezaktywowano projekt" } },
     },
     include: INCLUDE_FULL,
-  });
+  }) };
 }
 
 // ─── Comment ──────────────────────────────────────────────────────────────────
 
-export async function addCommentToProject(id: string, userId: string, text: string) {
-  return db.project.update({
+export async function addCommentToProject(id: string, userId: string, text: string): Promise<ActionResult<Project & { partner: any; rep: any; history: any[]; comments: any[] }>> {
+  return { success: true, data: await db.project.update({
     where: { id },
     data: { comments: { create: { userId, text, internal: true } } },
     include: INCLUDE_FULL,
-  });
+  }) };
 }

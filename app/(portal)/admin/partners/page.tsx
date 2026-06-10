@@ -12,7 +12,7 @@ const LEVEL_COLOR: Record<string, string> = {
 
 export default async function AdminPartnersPage() {
   const session = await getServerSession(authOptions);
-  if (!session || (session.user as any).role !== "ADMIN") redirect("/login");
+  if (!session || session.user.role !== "ADMIN") redirect("/login");
 
   const partners = await db.partner.findMany({
     include: { rep: true, markets: true, _count: { select: { projects: true, users: true } } },

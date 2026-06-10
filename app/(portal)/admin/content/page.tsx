@@ -6,7 +6,7 @@ import { ContentManagerClient } from "./ContentManagerClient";
 
 export default async function AdminContentPage() {
   const session = await getServerSession(authOptions);
-  if (!session || (session.user as any).role !== "ADMIN") redirect("/login");
+  if (!session || session.user.role !== "ADMIN") redirect("/login");
 
   const items = await db.contentItem.findMany({ orderBy: [{ group: "asc" }, { label: "asc" }] });
 

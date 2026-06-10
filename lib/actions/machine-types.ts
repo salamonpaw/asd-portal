@@ -2,8 +2,10 @@
 
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { ActionResult } from "@/lib/types/actions";
+import type { MachineType } from "@prisma/client";
 
-export async function createMachineType(name: string, label: string) {
+export async function createMachineType(name: string, label: string): Promise<ActionResult<MachineType>> {
   try {
     const machineType = await db.machineType.create({
       data: { name, label },
@@ -15,7 +17,7 @@ export async function createMachineType(name: string, label: string) {
   }
 }
 
-export async function updateMachineType(id: string, name: string, label: string) {
+export async function updateMachineType(id: string, name: string, label: string): Promise<ActionResult<MachineType>> {
   try {
     const machineType = await db.machineType.update({
       where: { id },
@@ -28,7 +30,7 @@ export async function updateMachineType(id: string, name: string, label: string)
   }
 }
 
-export async function deleteMachineType(id: string) {
+export async function deleteMachineType(id: string): Promise<ActionResult<void>> {
   try {
     await db.machineType.delete({
       where: { id },
@@ -40,7 +42,7 @@ export async function deleteMachineType(id: string) {
   }
 }
 
-export async function getMachineTypes() {
+export async function getMachineTypes(): Promise<ActionResult<MachineType[]>> {
   try {
     const machineTypes = await db.machineType.findMany({
       orderBy: { name: "asc" },

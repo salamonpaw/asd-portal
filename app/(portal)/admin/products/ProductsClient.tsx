@@ -65,7 +65,7 @@ export function ProductsClient({ initialProducts, machineTypes, userRole }: Prop
     setLoading(false);
 
     if (result.success) {
-      setProducts([...products, result.data]);
+      setProducts([...products, result.data as any]);
       setFormData({
         sku: "",
         name: "",
@@ -96,7 +96,7 @@ export function ProductsClient({ initialProducts, machineTypes, userRole }: Prop
     setLoading(false);
 
     if (result.success) {
-      setProducts(products.map((p) => (p.id === id ? result.data : p)));
+      setProducts(products.map((p) => (p.id === id ? (result.data as any) : p)));
       setEditingId(null);
       setFormData({
         sku: "",

@@ -24,7 +24,7 @@ export default async function ProductsPage() {
       <h1>Katalog produktów</h1>
       <p style={{ color: "var(--ink-3)", marginTop: 8 }}>Zarządzanie produktami i częściami zamiennych</p>
 
-      <ProductsClient initialProducts={products} machineTypes={machineTypes} userRole={userRole} />
+      <ProductsClient initialProducts={products as any} machineTypes={machineTypes} userRole={userRole} />
     </div>
   );
 }

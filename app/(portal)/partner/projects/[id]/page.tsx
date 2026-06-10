@@ -8,7 +8,9 @@ export default async function PartnerProjectDetailPage({ params }: { params: Pro
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const partnerId = (session.user as any).partnerId as string;
+  const partnerId = session.user.partnerId;
+  if (!partnerId) redirect("/partner/projects");
+
   const { id } = await params;
 
   const project = await db.project.findUnique({

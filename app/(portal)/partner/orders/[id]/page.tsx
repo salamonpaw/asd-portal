@@ -23,16 +23,17 @@ const waitingItemStatusBadge: Record<string, { bg: string; color: string }> = {
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
-  if (!session || !["PARTNER"].includes((session.user as any)?.role))
+  if (!session || !["PARTNER"].includes(session.user?.role))
     return redirect("/");
 
   const { id } = await params;
-  const order = await getOrder(id);
+  const result = await getOrder(id);
 
-  if (!order) return redirect("/partner/orders");
+  if (!result.success || !result.data) return redirect("/partner/orders");
+  const order = result.data;
 
-  const partnerId = (session.user as any).partnerId;
-  if (order.project.partnerId !== partnerId) return redirect("/partner/orders");
+  const partnerId = session.user.partnerId;
+  if (!partnerId || order.project.partnerId !== partnerId) return redirect("/partner/orders");
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto" }}>

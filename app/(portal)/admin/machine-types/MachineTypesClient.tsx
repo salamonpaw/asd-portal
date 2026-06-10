@@ -34,12 +34,12 @@ export function MachineTypesClient({ initialMachineTypes }: Props) {
     setLoading(false);
 
     if (result.success) {
-      setMachineTypes([...machineTypes, result.data]);
+      setMachineTypes([...machineTypes, result.data as MachineType]);
       setFormData({ name: "", label: "" });
       setIsAdding(false);
       setError("");
     } else {
-      setError(result.error);
+      setError(result.error || "");
     }
   };
 
@@ -54,12 +54,12 @@ export function MachineTypesClient({ initialMachineTypes }: Props) {
     setLoading(false);
 
     if (result.success) {
-      setMachineTypes(machineTypes.map((mt) => (mt.id === id ? result.data : mt)));
+      setMachineTypes(machineTypes.map((mt) => (mt.id === id ? (result.data as MachineType) : mt)));
       setEditingId(null);
       setFormData({ name: "", label: "" });
       setError("");
     } else {
-      setError(result.error);
+      setError(result.error || "");
     }
   };
 
@@ -74,7 +74,7 @@ export function MachineTypesClient({ initialMachineTypes }: Props) {
       setMachineTypes(machineTypes.filter((mt) => mt.id !== id));
       setError("");
     } else {
-      setError(result.error);
+      setError(result.error || "");
     }
   };
 

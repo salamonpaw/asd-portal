@@ -36,10 +36,10 @@ export async function middleware(req: NextRequest) {
   // Cross-role protection
   const role = (token?.role as string) || "";
 
-  if (role === "WAREHOUSE_SPECIALIST" && !pathname.startsWith("/warehouse")) {
+  if (role === "WAREHOUSE_SPECIALIST" && !pathname.startsWith("/warehouse") && !pathname.startsWith("/api/auth")) {
     return NextResponse.redirect(new URL("/warehouse", req.url));
   }
-  if (role === "SERVICE_TECHNICIAN" && !pathname.startsWith("/partner/service")) {
+  if (role === "SERVICE_TECHNICIAN" && !pathname.startsWith("/partner/service") && !pathname.startsWith("/api/auth")) {
     return NextResponse.redirect(new URL("/partner/service", req.url));
   }
   if (token && pathname.startsWith("/partner") && role === "STAFF") {

@@ -2,6 +2,9 @@
 
 import { db } from "@/lib/db";
 import { sendOrderCreated } from "@/lib/email";
+import { PORTAL_URL } from "@/lib/config";
+import type { Order, WaitingItem } from "@prisma/client";
+import { ActionResult } from "@/lib/types/actions";
 
 function generateOrderCode(): string {
   const year = new Date().getFullYear();
@@ -11,7 +14,7 @@ function generateOrderCode(): string {
   return `ORD-${year}-${random}`;
 }
 
-export async function createOrder(projectId: string) {
+export async function createOrder(projectId: string): Promise<ActionResult<Order & { project: any; supervisorRep: any; supervisorBok: any; waitingFor: any[] }>> {
   const project = await db.project.findUnique({
     where: { id: projectId },
     include: { partner: true, rep: true },
@@ -44,17 +47,17 @@ export async function createOrder(projectId: string) {
       orderCode: order.code,
       projectId: project.id,
       customerName: project.customerName,
-      portalUrl: process.env.NEXTAUTH_URL || "http://localhost:3000",
+      portalUrl: PORTAL_URL,
     });
   } catch (err) {
     console.error("Failed to send order created email:", err);
   }
 
-  return order;
+  return { success: true, data: order };
 }
 
-export async function getOrdersByProject(projectId: string) {
-  return db.order.findMany({
+export async function getOrdersByProject(projectId: string): Promise<ActionResult<(Order & { supervisorRep: any; supervisorBok: any; waitingFor: any[] })[]>> {
+  return { success: true, data: await db.order.findMany({
     where: { projectId },
     include: {
       supervisorRep: true,
@@ -62,11 +65,11 @@ export async function getOrdersByProject(projectId: string) {
       waitingFor: { orderBy: { createdAt: "asc" } },
     },
     orderBy: { createdAt: "desc" },
-  });
+  }) };
 }
 
-export async function getOrdersByPartner(partnerId: string) {
-  return db.order.findMany({
+export async function getOrdersByPartner(partnerId: string): Promise<ActionResult<(Order & { project: any; supervisorRep: any; supervisorBok: any; waitingFor: any[] })[]>> {
+  return { success: true, data: await db.order.findMany({
     where: { project: { partnerId } },
     include: {
       project: true,
@@ -75,11 +78,11 @@ export async function getOrdersByPartner(partnerId: string) {
       waitingFor: { orderBy: { createdAt: "asc" } },
     },
     orderBy: { createdAt: "desc" },
-  });
+  }) };
 }
 
-export async function getOrder(orderId: string) {
-  return db.order.findUnique({
+export async function getOrder(orderId: string): Promise<ActionResult<Order & { project: any; supervisorRep: any; supervisorBok: any; waitingFor: any[] } | null>> {
+  return { success: true, data: await db.order.findUnique({
     where: { id: orderId },
     include: {
       project: { include: { partner: true, rep: true } },
@@ -87,7 +90,7 @@ export async function getOrder(orderId: string) {
       supervisorBok: true,
       waitingFor: { orderBy: { createdAt: "asc" } },
     },
-  });
+  }) };
 }
 
 export async function updateOrderStatus(
@@ -95,8 +98,8 @@ export async function updateOrderStatus(
   status: string,
   deliveryDate?: Date,
   estimatedDays?: number
-) {
-  return db.order.update({
+): Promise<ActionResult<Order & { project: any; supervisorRep: any; supervisorBok: any; waitingFor: any[] }>> {
+  return { success: true, data: await db.order.update({
     where: { id: orderId },
     data: {
       status,
@@ -109,17 +112,17 @@ export async function updateOrderStatus(
       supervisorBok: true,
       waitingFor: true,
     },
-  });
+  }) };
 }
 
 export async function addWaitingItem(
   orderId: string,
   type: string,
   note?: string
-) {
-  return db.waitingItem.create({
+): Promise<ActionResult<WaitingItem>> {
+  return { success: true, data: await db.waitingItem.create({
     data: { orderId, type, note },
-  });
+  }) };
 }
 
 export async function updateWaitingItem(
@@ -127,17 +130,18 @@ export async function updateWaitingItem(
   status: string,
   trackingNumber?: string,
   note?: string
-) {
-  return db.waitingItem.update({
+): Promise<ActionResult<WaitingItem>> {
+  return { success: true, data: await db.waitingItem.update({
     where: { id: itemId },
     data: {
       status,
       trackingNumber: trackingNumber || undefined,
       note: note || undefined,
     },
-  });
+  }) };
 }
 
-export async function deleteWaitingItem(itemId: string) {
-  return db.waitingItem.delete({ where: { id: itemId } });
+export async function deleteWaitingItem(itemId: string): Promise<ActionResult<void>> {
+  await db.waitingItem.delete({ where: { id: itemId } });
+  return { success: true };
 }

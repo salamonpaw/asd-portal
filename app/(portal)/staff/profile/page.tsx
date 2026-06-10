@@ -8,7 +8,7 @@ export default async function RepProfilePage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const repId = (session.user as any).repId as string;
+  const repId = session.user.repId;
   if (!repId) redirect("/staff/dashboard");
 
   const rep = await db.rep.findUnique({ where: { id: repId } });

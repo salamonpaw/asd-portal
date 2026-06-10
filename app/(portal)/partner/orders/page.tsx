@@ -17,11 +17,16 @@ const statusBadges: Record<string, { bg: string; color: string; label: string }>
 
 export default async function OrdersPage() {
   const session = await getServerSession(authOptions);
-  if (!session || !["PARTNER"].includes((session.user as any)?.role))
+  if (!session || !["PARTNER"].includes(session.user?.role))
     return redirect("/");
 
-  const partnerId = (session.user as any).partnerId;
-  const orders = await getOrdersByPartner(partnerId);
+  const partnerId = session.user.partnerId;
+  if (!partnerId) return redirect("/");
+
+  const result = await getOrdersByPartner(partnerId);
+
+  if (!result.success || !result.data) return redirect("/");
+  const orders = result.data;
 
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto" }}>

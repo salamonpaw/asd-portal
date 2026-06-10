@@ -8,7 +8,7 @@ export default async function StaffProjectsPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const repId = (session.user as any).repId as string;
+  const repId = session.user.repId;
   if (!repId) redirect("/login");
 
   const projects = await db.project.findMany({

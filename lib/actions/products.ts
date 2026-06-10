@@ -2,6 +2,8 @@
 
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import type { Product } from "@prisma/client";
+import { ActionResult } from "@/lib/types/actions";
 
 export interface ProductInput {
   sku: string;
@@ -17,7 +19,7 @@ export interface ProductInput {
   parentProductId?: string;
 }
 
-export async function createProduct(data: ProductInput) {
+export async function createProduct(data: ProductInput): Promise<ActionResult<Product & { machineType: any; parentProduct: any }>> {
   try {
     const product = await db.product.create({
       data: {
@@ -33,7 +35,7 @@ export async function createProduct(data: ProductInput) {
   }
 }
 
-export async function updateProduct(id: string, data: ProductInput) {
+export async function updateProduct(id: string, data: ProductInput): Promise<ActionResult<Product & { machineType: any; parentProduct: any }>> {
   try {
     const product = await db.product.update({
       where: { id },
@@ -50,7 +52,7 @@ export async function updateProduct(id: string, data: ProductInput) {
   }
 }
 
-export async function deleteProduct(id: string) {
+export async function deleteProduct(id: string): Promise<ActionResult<void>> {
   try {
     await db.product.delete({
       where: { id },
@@ -62,7 +64,7 @@ export async function deleteProduct(id: string) {
   }
 }
 
-export async function getProducts(machineTypeId?: string) {
+export async function getProducts(machineTypeId?: string): Promise<ActionResult<(Product & { machineType: any; childProducts: any })[]>> {
   try {
     const products = await db.product.findMany({
       where: machineTypeId ? { machineTypeId } : undefined,
@@ -75,7 +77,7 @@ export async function getProducts(machineTypeId?: string) {
   }
 }
 
-export async function getProductById(id: string) {
+export async function getProductById(id: string): Promise<ActionResult<Product & { machineType: any; parentProduct: any; childProducts: any } | null>> {
   try {
     const product = await db.product.findUnique({
       where: { id },

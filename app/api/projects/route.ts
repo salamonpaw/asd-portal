@@ -10,11 +10,15 @@ function nextId(max: number) {
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session || (session.user as any).role !== "PARTNER") {
+  if (!session || session.user.role !== "PARTNER") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const partnerId = (session.user as any).partnerId as string;
+  const partnerId = session.user.partnerId;
+  if (!partnerId) {
+    return NextResponse.json({ error: "No partnerId in session" }, { status: 401 });
+  }
+
   const body = await req.json();
 
   const partner = await db.partner.findUnique({ where: { id: partnerId }, include: { rep: true } });

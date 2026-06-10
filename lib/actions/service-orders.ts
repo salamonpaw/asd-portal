@@ -5,6 +5,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { ServiceOrderStatus } from "@prisma/client";
+import type { ServiceOrder } from "@prisma/client";
+import { ActionResult } from "@/lib/types/actions";
 
 export async function createServiceOrder(
   _partnerId: string,
@@ -13,7 +15,7 @@ export async function createServiceOrder(
   deliveryAddress: string,
   neededDate?: string,
   notes?: string
-) {
+): Promise<ActionResult<ServiceOrder & { items: any[] }>> {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -21,7 +23,7 @@ export async function createServiceOrder(
     }
 
     const user = await db.user.findUnique({
-      where: { email: (session.user as any).email },
+      where: { email: session.user.email },
     });
 
     if (!user || !user.partnerId) {
@@ -67,7 +69,7 @@ export async function createServiceOrder(
         },
         history: {
           create: [{
-            changedBy: "", // TODO: get from session
+            changedBy: session.user.email,
             action: "CREATED",
             notes: "Zamówienie utworzone przez serwisanta",
           }],
@@ -92,14 +94,14 @@ export async function updateServiceOrder(
     rejectionReason?: string;
     itemPrices?: Record<string, number>;
   }
-) {
+): Promise<ActionResult<ServiceOrder & { items: any[] }>> {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
       return { success: false, error: "Nie zalogowany" };
     }
 
-    const changedBy = (session.user as any).email;
+    const changedBy = session.user.email;
     if (!changedBy) {
       return { success: false, error: "Brak danych użytkownika" };
     }
@@ -144,7 +146,7 @@ export async function updateServiceOrder(
   }
 }
 
-export async function getServiceOrders(filter?: { partnerId?: string; status?: ServiceOrderStatus }) {
+export async function getServiceOrders(filter?: { partnerId?: string; status?: ServiceOrderStatus }): Promise<ActionResult<ServiceOrder[]>> {
   try {
     const orders = await db.serviceOrder.findMany({
       where: filter,

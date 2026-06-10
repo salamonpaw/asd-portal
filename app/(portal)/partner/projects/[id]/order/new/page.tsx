@@ -8,10 +8,12 @@ import { CreateOrderClient } from "@/components/portal/CreateOrderClient";
 
 export default async function CreateOrderPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
-  if (!session || !["PARTNER"].includes((session.user as any)?.role))
+  if (!session || !["PARTNER"].includes(session.user?.role))
     return redirect("/");
 
-  const partnerId = (session.user as any).partnerId;
+  const partnerId = session.user.partnerId;
+  if (!partnerId) return redirect("/");
+
   const { id } = await params;
 
   const project = await db.project.findUnique({

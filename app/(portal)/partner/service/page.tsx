@@ -38,7 +38,7 @@ export default async function ServicePage() {
       <ServiceOrderClient
         products={products}
         machineTypes={machineTypes}
-        initialOrders={orders}
+        initialOrders={orders as any}
         userEmail={session.user?.email || ""}
       />
     </div>

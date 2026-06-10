@@ -9,7 +9,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const { id } = await params;
   const { text } = await req.json();
-  const userId = (session.user as any).id as string;
+  const userId = session.user.id as string;
 
   const updated = await addCommentToProject(id, userId, text);
   return NextResponse.json(updated);

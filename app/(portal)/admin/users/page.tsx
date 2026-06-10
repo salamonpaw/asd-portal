@@ -11,7 +11,7 @@ const ROLE_COLOR: Record<string, string> = { PARTNER: "var(--brand)", STAFF: "va
 
 export default async function AdminUsersPage() {
   const session = await getServerSession(authOptions);
-  if (!session || (session.user as any).role !== "ADMIN") redirect("/login");
+  if (!session || session.user.role !== "ADMIN") redirect("/login");
 
   const users = await db.user.findMany({
     include: { partner: true, rep: true },
