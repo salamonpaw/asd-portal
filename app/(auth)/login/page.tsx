@@ -21,16 +21,14 @@ export default function LoginPage() {
     const res = await signIn("credentials", {
       email,
       password,
-      redirect: false,
+      redirect: true,
+      callbackUrl: "/",
     });
 
     setLoading(false);
 
     if (res?.error) {
       setError("Nieprawidłowy e-mail lub hasło.");
-    } else {
-      router.push("/");
-      router.refresh();
     }
   }
 
