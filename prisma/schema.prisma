@@ -45,13 +45,6 @@ enum Procurement {
   PRZETARG
 }
 
-enum MachineType {
-  BĘBNOWY
-  SZAFKOWY
-  TERMINAL
-  WRZUTNIA
-  L40
-}
 
 enum ServiceOrderStatus {
   NOWE
@@ -231,6 +224,17 @@ model WaitingItem {
   @@index([orderId])
 }
 
+// ─── Machine Types ────────────────────────────────────────────────────────────
+
+model MachineType {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  label     String
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
 // ─── Service Orders ───────────────────────────────────────────────────────────
 
 model ServiceOrder {
@@ -273,14 +277,15 @@ model ServiceOrderItem {
 }
 
 model Product {
-  id               String            @id @default(cuid())
-  sku              String            @unique
+  id               String      @id @default(cuid())
+  sku              String      @unique
   name             String
   description      String?
-  machineType      MachineType
+  machineTypeId    String
+  machineType      MachineType @relation(fields: [machineTypeId], references: [id], onDelete: Cascade)
   parentProductId  String?
-  parentProduct    Product?          @relation("ProductHierarchy", fields: [parentProductId], references: [id])
-  childProducts    Product[]         @relation("ProductHierarchy")
+  parentProduct    Product?    @relation("ProductHierarchy", fields: [parentProductId], references: [id])
+  childProducts    Product[]   @relation("ProductHierarchy")
   location         String?
   image            String?
   serialNumber     String?
@@ -288,11 +293,11 @@ model Product {
   inStock          Int?
   basePrice        Decimal?
   serviceOrderItems ServiceOrderItem[]
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 
   @@index([sku])
-  @@index([machineType])
+  @@index([machineTypeId])
 }
 
 model ServiceOrderHistory {
