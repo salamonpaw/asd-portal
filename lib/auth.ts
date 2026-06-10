@@ -4,7 +4,8 @@ import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 
 export const authOptions: NextAuthOptions = {
-  session: { strategy: "jwt" },
+  secret: process.env.NEXTAUTH_SECRET,
+  session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   pages: { signIn: "/login" },
   providers: [
     CredentialsProvider({
@@ -18,7 +19,6 @@ export const authOptions: NextAuthOptions = {
 
         const user = await db.user.findUnique({
           where: { email: credentials.email },
-          include: { partner: true, rep: true },
         });
 
         if (!user) return null;
@@ -31,8 +31,6 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           role: user.role,
-          partnerId: user.partnerId ?? undefined,
-          repId: user.repId ?? undefined,
         };
       },
     }),
@@ -41,17 +39,12 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.role = (user as any).role;
-        token.partnerId = (user as any).partnerId;
-        token.repId = (user as any).repId;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.sub;
         (session.user as any).role = token.role;
-        (session.user as any).partnerId = token.partnerId;
-        (session.user as any).repId = token.repId;
       }
       return session;
     },

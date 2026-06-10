@@ -16,16 +16,20 @@ export async function createServiceOrder(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session) {
+    if (!session?.user?.email) {
       return { success: false, error: "Nie zalogowany" };
     }
 
-    const partnerId = (session.user as any).partnerId;
-    const technicianId = (session.user as any).id;
+    const user = await db.user.findUnique({
+      where: { email: (session.user as any).email },
+    });
 
-    if (!partnerId || !technicianId) {
+    if (!user || !user.partnerId) {
       return { success: false, error: "Brak wymaganych danych użytkownika" };
     }
+
+    const partnerId = user.partnerId;
+    const technicianId = user.id;
 
     if (!items.length) {
       return { success: false, error: "Dodaj co najmniej jedną część" };
