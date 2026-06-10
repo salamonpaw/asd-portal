@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
+import { createServiceOrder } from "@/lib/actions/service-orders";
 
 type Product = {
   id: string;
@@ -91,13 +92,23 @@ export function ServiceOrderClient({ products, machineTypes, initialOrders, user
     setLoading(true);
     setError("");
 
-    // TODO: Call server action createServiceOrder
-    console.log("Creating order...", { ...formData, items: cart });
+    const result = await createServiceOrder(
+      "", // partnerId - TODO: get from session
+      "", // technicianId - TODO: get from session
+      cart,
+      formData.deliveryAddress,
+      formData.neededDate || undefined,
+      formData.notes || undefined
+    );
 
     setLoading(false);
-    setCart([]);
-    setFormData({ deliveryAddress: "", neededDate: "", notes: "" });
-    setIsCreating(false);
+
+    if (result.success) {
+      // Refresh orders list
+      window.location.reload();
+    } else {
+      setError(result.error);
+    }
   };
 
   return (

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
+import { updateServiceOrder } from "@/lib/actions/service-orders";
 
 type ServiceOrder = {
   id: string;
@@ -57,10 +58,14 @@ export function WarehouseOrdersClient({ initialOrders }: Props) {
   const handleApprove = async (orderId: string) => {
     setLoading(true);
     setError("");
-    // TODO: Call server action updateServiceOrder(orderId, { status: "PRZYJĘTE" })
-    console.log("Approving order:", orderId);
+    const result = await updateServiceOrder(orderId, { status: "PRZYJĘTE" });
     setLoading(false);
-    setEditingId(null);
+
+    if (result.success) {
+      window.location.reload();
+    } else {
+      setError(result.error);
+    }
   };
 
   const handleReject = async (orderId: string) => {
@@ -69,19 +74,29 @@ export function WarehouseOrdersClient({ initialOrders }: Props) {
       return;
     }
     setLoading(true);
-    // TODO: Call server action updateServiceOrder(orderId, { status: "ODRZUCONE", rejectionReason })
-    console.log("Rejecting order:", orderId, formData.rejectionReason);
+    const result = await updateServiceOrder(orderId, {
+      status: "ODRZUCONE",
+      rejectionReason: formData.rejectionReason,
+    });
     setLoading(false);
-    setEditingId(null);
-    setFormData({ trackingNumber: "", rejectionReason: "", prices: {} });
+
+    if (result.success) {
+      window.location.reload();
+    } else {
+      setError(result.error);
+    }
   };
 
   const handleSuspend = async (orderId: string) => {
     setLoading(true);
-    // TODO: Call server action updateServiceOrder(orderId, { status: "ZAWIESZONE" })
-    console.log("Suspending order:", orderId);
+    const result = await updateServiceOrder(orderId, { status: "ZAWIESZONE" });
     setLoading(false);
-    setEditingId(null);
+
+    if (result.success) {
+      window.location.reload();
+    } else {
+      setError(result.error);
+    }
   };
 
   return (
