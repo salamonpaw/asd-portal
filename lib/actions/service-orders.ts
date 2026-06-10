@@ -1,18 +1,32 @@
 "use server";
 
 import { db } from "@/lib/db";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { ServiceOrderStatus } from "@prisma/client";
 
 export async function createServiceOrder(
-  partnerId: string,
-  technicianId: string,
+  _partnerId: string,
+  _technicianId: string,
   items: Array<{ productId: string; quantity: number }>,
   deliveryAddress: string,
   neededDate?: string,
   notes?: string
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return { success: false, error: "Nie zalogowany" };
+    }
+
+    const partnerId = (session.user as any).partnerId;
+    const technicianId = (session.user as any).id;
+
+    if (!partnerId || !technicianId) {
+      return { success: false, error: "Brak wymaganych danych użytkownika" };
+    }
+
     if (!items.length) {
       return { success: false, error: "Dodaj co najmniej jedną część" };
     }
@@ -76,6 +90,16 @@ export async function updateServiceOrder(
   }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return { success: false, error: "Nie zalogowany" };
+    }
+
+    const changedBy = (session.user as any).email;
+    if (!changedBy) {
+      return { success: false, error: "Brak danych użytkownika" };
+    }
+
     const updateData: any = {};
 
     if (data.status) updateData.status = data.status;
@@ -102,7 +126,7 @@ export async function updateServiceOrder(
     await db.serviceOrderHistory.create({
       data: {
         serviceOrderId: orderId,
-        changedBy: "", // TODO: get from session
+        changedBy,
         action: data.status ? data.status : "UPDATED",
         notes: `Status: ${data.status}${data.rejectionReason ? `, Powód: ${data.rejectionReason}` : ""}`,
       },

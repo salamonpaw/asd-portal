@@ -93,8 +93,8 @@ export function ServiceOrderClient({ products, machineTypes, initialOrders, user
     setError("");
 
     const result = await createServiceOrder(
-      "", // partnerId - TODO: get from session
-      "", // technicianId - TODO: get from session
+      "",
+      "",
       cart,
       formData.deliveryAddress,
       formData.neededDate || undefined,

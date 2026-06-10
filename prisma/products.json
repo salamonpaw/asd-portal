@@ -1,0 +1,522 @@
+[
+  {
+    "sku": "000079",
+    "name": "B Blokada górna drzwi prawe",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_101326.jpg"
+    ],
+    "imageCount": 1,
+    "docxFile": null
+  },
+  {
+    "sku": "00042",
+    "name": "Zawias dolny drzwi",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_104100.jpg",
+      "20260527_104110.jpg",
+      "thumb-12779.png"
+    ],
+    "imageCount": 3,
+    "docxFile": "opis 00042 Zawias dolny.docx"
+  },
+  {
+    "sku": "00056",
+    "name": "palec pozycji zerowej enkodera",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_104500.jpg",
+      "20260527_104509.jpg"
+    ],
+    "imageCount": 2,
+    "docxFile": "00056 Palec pozycji zerowej enkodera.docx"
+  },
+  {
+    "sku": "000612",
+    "name": "Kątownik zamykający drzwi",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_102652.jpg",
+      "20260527_102658.jpg",
+      "thumb-12795.png"
+    ],
+    "imageCount": 3,
+    "docxFile": null
+  },
+  {
+    "sku": "000614",
+    "name": "Mocowanie wiązki  nowe drzwi prawe",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_101750.jpg",
+      "20260527_101755.jpg",
+      "thumb-12796.png"
+    ],
+    "imageCount": 3,
+    "docxFile": "000614  mocowanie wiązki dół orawe drzwi.docx"
+  },
+  {
+    "sku": "00078",
+    "name": "B - blokada dolna drzwi prawe",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_101414.jpg",
+      "thumb-12767.png"
+    ],
+    "imageCount": 2,
+    "docxFile": "00078 Blokada dolna drzwi.docx"
+  },
+  {
+    "sku": "100163",
+    "name": "VMPM - 2B",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_102329.jpg",
+      "20260527_102335.jpg",
+      "20260527_102346.jpg",
+      "20260609_135154.jpg",
+      "thumb-12723.png"
+    ],
+    "imageCount": 5,
+    "docxFile": "Opis.docx"
+  },
+  {
+    "sku": "100218",
+    "name": "mikroprzełącznik",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_102731.jpg",
+      "20260527_102734.jpg",
+      "20260527_102736.jpg",
+      "20260608_143212.jpg"
+    ],
+    "imageCount": 4,
+    "docxFile": "opis Mikroprzełącznik 100218.docx"
+  },
+  {
+    "sku": "100273",
+    "name": "palec ha,ulca",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_104728.jpg",
+      "20260527_104735.jpg",
+      "thumb-12869.png"
+    ],
+    "imageCount": 3,
+    "docxFile": "Palec Hamulca 100273.docx"
+  },
+  {
+    "sku": "100275",
+    "name": "Tulej do drzwi",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_103734.jpg",
+      "20260527_103737.jpg",
+      "20260527_103741.jpg"
+    ],
+    "imageCount": 3,
+    "docxFile": "100275 Tulejka do drzwi.docx"
+  },
+  {
+    "sku": "100302",
+    "name": "VMMG",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_101708.jpg",
+      "20260527_101711.jpg",
+      "thumb-12721.png"
+    ],
+    "imageCount": 3,
+    "docxFile": "100302 VMGW.docx"
+  },
+  {
+    "sku": "100430",
+    "name": "Wiązka czytnika RFID CTU-DMR",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_103242.jpg",
+      "20260527_103251.jpg",
+      "thumb-12850.png"
+    ],
+    "imageCount": 3,
+    "docxFile": "100430 wiązka czytnika.docx"
+  },
+  {
+    "sku": "100523",
+    "name": "akumulator haze",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_102043.jpg",
+      "20260527_102054.jpg",
+      "thumb-12864.png"
+    ],
+    "imageCount": 3,
+    "docxFile": "100523 akumulator.docx"
+  },
+  {
+    "sku": "100540",
+    "name": "wiązka łącząca płytki osprzętu klap WH18",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_104018.jpg",
+      "20260527_104021.jpg",
+      "thumb-12848.png"
+    ],
+    "imageCount": 3,
+    "docxFile": "100540 wiązka łacąca płyrtki.docx"
+  },
+  {
+    "sku": "100541",
+    "name": "D81- wiązka łącząca płytkę osprzętu klap z mikroprzełącznikami",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_104156.jpg",
+      "20260527_104200.jpg",
+      "wiązka.png"
+    ],
+    "imageCount": 3,
+    "docxFile": "100541 Wiązka.docx"
+  },
+  {
+    "sku": "100546",
+    "name": "wiązka łącząca panel użytkownika WH30",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_103852.jpg",
+      "20260527_103856.jpg",
+      "thumb-12804.png"
+    ],
+    "imageCount": 3,
+    "docxFile": "100546 - wh 30.docx"
+  },
+  {
+    "sku": "100550",
+    "name": "wiązka uziemienia",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_103522.jpg",
+      "20260527_103529.jpg",
+      "thumb-12943.png"
+    ],
+    "imageCount": 3,
+    "docxFile": "100550 wiązka uziemienia.docx"
+  },
+  {
+    "sku": "100629",
+    "name": "stopka wkręcana",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_102115.jpg",
+      "20260527_102118.jpg",
+      "thumb-12820.png"
+    ],
+    "imageCount": 3,
+    "docxFile": "100629 Stopka wkręcana.docx"
+  },
+  {
+    "sku": "100641",
+    "name": "wiązka magistrali Vent łącząca moduł VMGM",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_103934.jpg",
+      "20260527_103939.jpg"
+    ],
+    "imageCount": 2,
+    "docxFile": null
+  },
+  {
+    "sku": "100672",
+    "name": "Przycisk bezpieczeństwa",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_104810.jpg",
+      "20260527_104817.jpg",
+      "cherry-switch_frontview.jpg"
+    ],
+    "imageCount": 3,
+    "docxFile": "opis.docx"
+  },
+  {
+    "sku": "10069",
+    "name": "VMDC",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_105117.jpg",
+      "20260527_105217.jpg",
+      "20260527_105222.jpg",
+      "thumb-12720.png",
+      "vmdc_cover_screws.jpg"
+    ],
+    "imageCount": 5,
+    "docxFile": "Opis VMDC.docx"
+  },
+  {
+    "sku": "100705",
+    "name": "Łącznik RJ45",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_104831.jpg",
+      "20260527_104845.jpg",
+      "20260527_104848.jpg",
+      "thumb-12785.png"
+    ],
+    "imageCount": 4,
+    "docxFile": "Łącznik RJ45 - 100705.docx"
+  },
+  {
+    "sku": "100765",
+    "name": "elektromagnes",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_103559.jpg",
+      "20260527_103604.jpg"
+    ],
+    "imageCount": 2,
+    "docxFile": "Elektromagnes -  100765.docx"
+  },
+  {
+    "sku": "100787",
+    "name": "Kabel UTP 2,",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_101127.jpg",
+      "thumb-13121.png"
+    ],
+    "imageCount": 2,
+    "docxFile": "100787 Kabel Eternetowyt.docx"
+  },
+  {
+    "sku": "100794",
+    "name": "C240 Płyta VMMC - 1B",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_101606.jpg",
+      "20260527_101628.jpg",
+      "thumb-12932.png"
+    ],
+    "imageCount": 3,
+    "docxFile": "100794 - VMMC.docx"
+  },
+  {
+    "sku": "100833",
+    "name": "Zamke standardiwy",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_104615.jpg",
+      "20260527_104616.jpg",
+      "thumb-12696.png"
+    ],
+    "imageCount": 3,
+    "docxFile": "100833- zamek standardowy.docx"
+  },
+  {
+    "sku": "100915",
+    "name": "Wiązka magistrali vent łączący moduł VMGM",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_102821.jpg",
+      "20260527_102855.jpg",
+      "20260527_102900.jpg"
+    ],
+    "imageCount": 3,
+    "docxFile": "100915 - Wiązka magistrali.docx"
+  },
+  {
+    "sku": "100947",
+    "name": "VMGS 0 1b",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_103819.jpg",
+      "20260527_103831.jpg"
+    ],
+    "imageCount": 2,
+    "docxFile": "100947 Płytka vmgs.docx"
+  },
+  {
+    "sku": "100956",
+    "name": "Naklejki na Klapy",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [],
+    "imageCount": 0,
+    "docxFile": "100956 - naklejki na klapy.docx"
+  },
+  {
+    "sku": "100964",
+    "name": "Kabel UTP 3m",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_101159.jpg",
+      "thumb-13121.png"
+    ],
+    "imageCount": 2,
+    "docxFile": null
+  },
+  {
+    "sku": "101232",
+    "name": "Kabel micro USB do modemu 4G",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_104357.jpg",
+      "20260527_104400.jpg",
+      "thumb-13215.png"
+    ],
+    "imageCount": 3,
+    "docxFile": "101232 kael micro usb.docx"
+  },
+  {
+    "sku": "101235",
+    "name": "Blacha osłaniająca sterownik Nowa 10",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "thumb-13377.jpeg"
+    ],
+    "imageCount": 1,
+    "docxFile": "101235 blacha osłaniająca.docx"
+  },
+  {
+    "sku": "101336",
+    "name": "C240 Siłownik klapy",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_102459.jpg",
+      "20260527_102503.jpg",
+      "thumb-13194.png"
+    ],
+    "imageCount": 3,
+    "docxFile": "101336 siłownik klapy.docx"
+  },
+  {
+    "sku": "101794",
+    "name": "VMLC",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_101838.jpg",
+      "20260527_101847.jpg"
+    ],
+    "imageCount": 2,
+    "docxFile": "101794 - VMLC.docx"
+  },
+  {
+    "sku": "90005",
+    "name": "czytnik mifare",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_104937.jpg",
+      "thumb-12783.png"
+    ],
+    "imageCount": 2,
+    "docxFile": "900108 czytnik Mifare.docx"
+  },
+  {
+    "sku": "900061",
+    "name": "karat unique",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_101917.jpg",
+      "20260527_101923.jpg"
+    ],
+    "imageCount": 2,
+    "docxFile": "900061 - karta zbliżeniowa Unique.docx"
+  },
+  {
+    "sku": "900096",
+    "name": "Brelok RFID u ique",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_102002.jpg",
+      "20260527_102016.jpg"
+    ],
+    "imageCount": 2,
+    "docxFile": "900096 - Brelok Unique.docx"
+  },
+  {
+    "sku": "900144",
+    "name": "zesrawa bezpieczników",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260608_142545.jpg",
+      "20260608_142546.jpg",
+      "20260608_142547.jpg"
+    ],
+    "imageCount": 3,
+    "docxFile": "900144 zestaw bezpieczników.docx"
+  },
+  {
+    "sku": "900174",
+    "name": "zestaw wyświetlacza 10",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_102141.jpg",
+      "20260527_102202.jpg",
+      "20260527_102235.jpg"
+    ],
+    "imageCount": 3,
+    "docxFile": "900174 - Zestaw wyśłwietlacza 10.docx"
+  },
+  {
+    "sku": "900245",
+    "name": "LVDS",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_103200.jpg",
+      "20260527_103209.jpg"
+    ],
+    "imageCount": 2,
+    "docxFile": "900245  Wiązka LCDS.docx"
+  },
+  {
+    "sku": "900260",
+    "name": "Zestaw modułu VMVL",
+    "description": "",
+    "machineType": "100775 Terminator",
+    "images": [
+      "20260527_101458.jpg",
+      "20260527_101512.jpg",
+      "vmpm_case_frontview.jpg",
+      "vmvl_stand_mounted_rotated.jpg"
+    ],
+    "imageCount": 4,
+    "docxFile": "Opis.docx"
+  }
+]
