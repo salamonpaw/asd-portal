@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { PageHead, SectionCard, KV } from "@/components/ui";
 import { ChangePasswordCard } from "@/components/portal/ChangePasswordCard";
+import { UserProfileEditCard } from "@/components/portal/UserProfileEditCard";
 import { Icon } from "@/components/ui/Icon";
 
 const LEVEL_COLOR: Record<string, string> = {
@@ -22,6 +23,12 @@ export default async function PartnerProfilePage() {
 
   const partnerId = session.user.partnerId;
   if (!partnerId) redirect("/login");
+
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { name: true, email: true },
+  });
+  if (!user) redirect("/login");
 
   const partner = await db.partner.findUnique({
     where: { id: partnerId },
@@ -71,7 +78,8 @@ export default async function PartnerProfilePage() {
         </div>
       </div>
 
-      <div style={{ marginTop: 18 }}>
+      <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
+        <UserProfileEditCard initialName={user.name} initialEmail={user.email} />
         <ChangePasswordCard />
       </div>
     </div>

@@ -4,9 +4,10 @@ import { useState, useRef } from "react";
 import { PageHead, SectionCard, Field, Avatar } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
 import { ChangePasswordCard } from "@/components/portal/ChangePasswordCard";
+import { UserProfileEditCard } from "@/components/portal/UserProfileEditCard";
 import type { Rep } from "@prisma/client";
 
-export function RepProfileClient({ rep: initial }: { rep: Rep }) {
+export function RepProfileClient({ rep: initial, userName, userEmail }: { rep: Rep; userName: string; userEmail: string }) {
   const [rep, setRep] = useState(initial);
   const [editing, setEditing] = useState(false);
   const [f, setF] = useState({
@@ -243,7 +244,9 @@ export function RepProfileClient({ rep: initial }: { rep: Rep }) {
           </div>
         )}
       </div>
-      <div style={{ marginTop: 20 }}>
+
+      <div style={{ marginTop: 20, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
+        <UserProfileEditCard initialName={userName} initialEmail={userEmail} />
         <ChangePasswordCard />
       </div>
     </div>

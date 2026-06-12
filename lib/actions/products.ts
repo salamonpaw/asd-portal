@@ -1,11 +1,11 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { revalidatePath } from "next/cache";
-import type { Product } from "@prisma/client";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { ActionResult } from "@/lib/types/actions";
 
-export interface ProductInput {
+export type ProductInput = {
   sku: string;
   name: string;
   description?: string;
@@ -16,74 +16,130 @@ export interface ProductInput {
   supplier?: string;
   inStock?: number;
   basePrice?: number;
-  parentProductId?: string;
-}
+};
 
-export async function createProduct(data: ProductInput): Promise<ActionResult<Product & { machineType: any; parentProduct: any }>> {
+export async function createProduct(input: ProductInput) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user || session.user.role !== "ADMIN") {
+      return { success: false, error: "Brak uprawnień" };
+    }
+
     const product = await db.product.create({
       data: {
-        ...data,
-        basePrice: data.basePrice ? parseFloat(data.basePrice.toString()) : null,
+        sku: input.sku,
+        name: input.name,
+        description: input.description,
+        machineTypeId: input.machineTypeId,
+        location: input.location,
+        image: input.image,
+        serialNumber: input.serialNumber,
+        supplier: input.supplier,
+        inStock: input.inStock,
+        basePrice: input.basePrice ? parseFloat(String(input.basePrice)) : null,
       },
-      include: { machineType: true, parentProduct: true },
     });
-    revalidatePath("/admin/products");
+
     return { success: true, data: product };
   } catch (error) {
     return { success: false, error: (error as Error).message };
   }
 }
 
-export async function updateProduct(id: string, data: ProductInput): Promise<ActionResult<Product & { machineType: any; parentProduct: any }>> {
+export async function updateProduct(productId: string, input: Partial<ProductInput>) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user || session.user.role !== "ADMIN") {
+      return { success: false, error: "Brak uprawnień" };
+    }
+
     const product = await db.product.update({
-      where: { id },
+      where: { id: productId },
       data: {
-        ...data,
-        basePrice: data.basePrice ? parseFloat(data.basePrice.toString()) : null,
+        ...(input.name && { name: input.name }),
+        ...(input.description !== undefined && { description: input.description }),
+        ...(input.machineTypeId && { machineTypeId: input.machineTypeId }),
+        ...(input.location !== undefined && { location: input.location }),
+        ...(input.image !== undefined && { image: input.image }),
+        ...(input.serialNumber !== undefined && { serialNumber: input.serialNumber }),
+        ...(input.supplier !== undefined && { supplier: input.supplier }),
+        ...(input.inStock !== undefined && { inStock: input.inStock }),
+        ...(input.basePrice !== undefined && { basePrice: input.basePrice ? parseFloat(String(input.basePrice)) : null }),
       },
-      include: { machineType: true, parentProduct: true },
     });
-    revalidatePath("/admin/products");
+
     return { success: true, data: product };
   } catch (error) {
     return { success: false, error: (error as Error).message };
   }
 }
 
-export async function deleteProduct(id: string): Promise<ActionResult<void>> {
+export async function deleteProduct(productId: string) {
   try {
-    await db.product.delete({
-      where: { id },
-    });
-    revalidatePath("/admin/products");
+    const session = await getServerSession(authOptions);
+    if (!session?.user || session.user.role !== "ADMIN") {
+      return { success: false, error: "Brak uprawnień" };
+    }
+
+    await db.product.delete({ where: { id: productId } });
+
     return { success: true };
   } catch (error) {
     return { success: false, error: (error as Error).message };
   }
 }
 
-export async function getProducts(machineTypeId?: string): Promise<ActionResult<(Product & { machineType: any; childProducts: any })[]>> {
+export async function getProducts(): Promise<{ success: boolean; error: string; data: any[] }> {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return { success: false, error: "Nie zalogowany", data: [] };
+    }
+
     const products = await db.product.findMany({
-      where: machineTypeId ? { machineTypeId } : undefined,
-      include: { machineType: true, childProducts: true },
+      include: { machineType: true },
       orderBy: { name: "asc" },
     });
-    return { success: true, data: products };
+
+    return { success: true, error: "", data: products };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: (error as Error).message, data: [] };
   }
 }
 
-export async function getProductById(id: string): Promise<ActionResult<Product & { machineType: any; parentProduct: any; childProducts: any } | null>> {
+export async function updateProductPrice(
+  productId: string,
+  price: number
+): Promise<ActionResult<{ id: string; name: string; basePrice: number }>> {
   try {
-    const product = await db.product.findUnique({
-      where: { id },
-      include: { machineType: true, parentProduct: true, childProducts: true },
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return { success: false, error: "Nie zalogowany" };
+    }
+
+    // Only WAREHOUSE_SPECIALIST can update prices
+    if (session.user.role !== "WAREHOUSE_SPECIALIST") {
+      return { success: false, error: "Brak uprawnień" };
+    }
+
+    if (price < 0) {
+      return { success: false, error: "Cena nie może być ujemna" };
+    }
+
+    const product = await db.product.update({
+      where: { id: productId },
+      data: { basePrice: price },
+      select: { id: true, name: true, basePrice: true },
     });
-    return { success: true, data: product };
+
+    return {
+      success: true,
+      data: {
+        id: product.id,
+        name: product.name,
+        basePrice: product.basePrice ? parseFloat(product.basePrice.toString()) : 0,
+      }
+    };
   } catch (error) {
     return { success: false, error: (error as Error).message };
   }

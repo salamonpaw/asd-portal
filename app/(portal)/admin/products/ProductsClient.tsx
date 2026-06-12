@@ -81,7 +81,7 @@ export function ProductsClient({ initialProducts, machineTypes, userRole }: Prop
       setIsAdding(false);
       setError("");
     } else {
-      setError(result.error);
+      setError(result.error || "Błąd");
     }
   };
 
@@ -112,7 +112,7 @@ export function ProductsClient({ initialProducts, machineTypes, userRole }: Prop
       });
       setError("");
     } else {
-      setError(result.error);
+      setError(result.error || "Błąd");
     }
   };
 
@@ -127,7 +127,7 @@ export function ProductsClient({ initialProducts, machineTypes, userRole }: Prop
       setProducts(products.filter((p) => p.id !== id));
       setError("");
     } else {
-      setError(result.error);
+      setError(result.error || "Błąd");
     }
   };
 
