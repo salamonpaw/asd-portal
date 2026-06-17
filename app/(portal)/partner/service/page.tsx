@@ -16,6 +16,16 @@ export default async function ServicePage() {
   // Get products + machine types for form
   const products = await db.product.findMany({
     include: { machineType: true },
+    select: {
+      id: true,
+      sku: true,
+      name: true,
+      machineTypeId: true,
+      machineType: true,
+      location: true,
+      image: true,
+      basePrice: true,
+    },
     orderBy: { name: "asc" },
   });
 

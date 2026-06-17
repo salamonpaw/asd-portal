@@ -12,6 +12,7 @@ type Product = {
   machineType: { id: string; name: string; label: string };
   location: string | null;
   image: string | null;
+  basePrice: number | null;
 };
 
 type MachineType = {
@@ -174,6 +175,11 @@ export function ServiceOrderClient({ products, machineTypes, initialOrders, user
                     <div>
                       <strong style={{ fontSize: 13 }}>{product.sku}</strong>
                       <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2 }}>{product.name}</div>
+                      {product.basePrice && (
+                        <div style={{ fontSize: 11, color: "var(--brand)", marginTop: 4, fontWeight: 600 }}>
+                          {(product.basePrice as any).toFixed ? (product.basePrice as any).toFixed(2) : product.basePrice} zł
+                        </div>
+                      )}
                     </div>
                     <button
                       className="btn btn-sm btn-brand"
@@ -333,7 +339,12 @@ export function ServiceOrderClient({ products, machineTypes, initialOrders, user
                     }}
                   >
                     <div style={{ fontWeight: 500, marginBottom: 4 }}>{product.sku}</div>
-                    <div style={{ color: "var(--ink-3)", fontSize: 11, marginBottom: 6 }}>{product.name.substring(0, 30)}</div>
+                    <div style={{ color: "var(--ink-3)", fontSize: 11, marginBottom: 4 }}>{product.name.substring(0, 30)}</div>
+                    {product.basePrice && (
+                      <div style={{ color: "var(--brand)", fontSize: 11, fontWeight: 600, marginBottom: 6 }}>
+                        {(product.basePrice as any).toFixed ? (product.basePrice as any).toFixed(2) : product.basePrice} zł × {item.quantity}
+                      </div>
+                    )}
                     <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                       <button
                         className="btn btn-xs"
