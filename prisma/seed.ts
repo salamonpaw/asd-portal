@@ -627,7 +627,8 @@ async function main() {
         serialNumber: null,
         supplier: null,
         inStock: null,
-        basePrice: null,
+        costPrice: null,
+        sellingPrice: null,
       },
     });
   }
