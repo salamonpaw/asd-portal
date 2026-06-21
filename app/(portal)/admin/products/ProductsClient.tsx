@@ -47,7 +47,8 @@ export function ProductsClient({ initialProducts, machineTypes, userRole }: Prop
     serialNumber: "",
     supplier: "",
     inStock: undefined,
-    basePrice: undefined,
+    costPrice: undefined,
+    sellingPrice: undefined,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
