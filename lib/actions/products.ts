@@ -15,7 +15,8 @@ export type ProductInput = {
   serialNumber?: string;
   supplier?: string;
   inStock?: number;
-  basePrice?: number;
+  costPrice?: number;
+  sellingPrice?: number;
 };
 
 export async function createProduct(input: ProductInput) {
@@ -36,7 +37,8 @@ export async function createProduct(input: ProductInput) {
         serialNumber: input.serialNumber,
         supplier: input.supplier,
         inStock: input.inStock,
-        basePrice: input.basePrice ? parseFloat(String(input.basePrice)) : null,
+        costPrice: input.costPrice ? parseFloat(String(input.costPrice)) : null,
+        sellingPrice: input.sellingPrice ? parseFloat(String(input.sellingPrice)) : null,
       },
     });
 
@@ -64,7 +66,8 @@ export async function updateProduct(productId: string, input: Partial<ProductInp
         ...(input.serialNumber !== undefined && { serialNumber: input.serialNumber }),
         ...(input.supplier !== undefined && { supplier: input.supplier }),
         ...(input.inStock !== undefined && { inStock: input.inStock }),
-        ...(input.basePrice !== undefined && { basePrice: input.basePrice ? parseFloat(String(input.basePrice)) : null }),
+        ...(input.costPrice !== undefined && { costPrice: input.costPrice ? parseFloat(String(input.costPrice)) : null }),
+        ...(input.sellingPrice !== undefined && { sellingPrice: input.sellingPrice ? parseFloat(String(input.sellingPrice)) : null }),
       },
     });
 
