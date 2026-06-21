@@ -15,7 +15,6 @@ export default async function ServicePage() {
 
   // Get products + machine types for form
   const products = await db.product.findMany({
-    include: { machineType: true },
     select: {
       id: true,
       sku: true,
@@ -24,7 +23,7 @@ export default async function ServicePage() {
       machineType: true,
       location: true,
       image: true,
-      basePrice: true,
+      sellingPrice: true,
     },
     orderBy: { name: "asc" },
   });
@@ -46,7 +45,10 @@ export default async function ServicePage() {
       <p style={{ color: "var(--ink-3)", marginTop: 8 }}>Twórz i zarządzaj zamówieniami na części zamienne</p>
 
       <ServiceOrderClient
-        products={products}
+        products={products.map(p => ({
+          ...p,
+          sellingPrice: p.sellingPrice ? parseFloat(p.sellingPrice.toString()) : null,
+        }))}
         machineTypes={machineTypes}
         initialOrders={orders as any}
         userEmail={session.user?.email || ""}
