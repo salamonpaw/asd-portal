@@ -123,7 +123,7 @@ export async function updateServiceOrder(
       for (const [itemId, price] of Object.entries(data.itemPrices)) {
         await db.serviceOrderItem.update({
           where: { id: itemId },
-          data: { price },
+          data: { unitPrice: price },
         });
       }
     }
