@@ -269,7 +269,10 @@ model ServiceOrderItem {
   product            Product      @relation(fields: [productId], references: [id])
   quantity           Int
   fulfilledQuantity  Int?
-  price              Decimal?
+  unitPrice          Decimal?     // Cena jednostkowa w momencie zamówienia
+  discountType       String?      // "PERCENT" lub "AMOUNT"
+  discountValue      Decimal?     // Wartość rabatu (% lub kwota)
+  finalPrice         Decimal?     // Cena jednostkowa po rabacie
   createdAt          DateTime     @default(now())
 
   @@index([serviceOrderId])
@@ -291,7 +294,8 @@ model Product {
   serialNumber     String?
   supplier         String?
   inStock          Int?
-  basePrice        Decimal?
+  costPrice        Decimal?      // Cena zakupu
+  sellingPrice     Decimal?      // Cena sprzedaży dla klienta
   serviceOrderItems ServiceOrderItem[]
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
