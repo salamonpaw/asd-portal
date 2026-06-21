@@ -1,46 +1,56 @@
 "use client";
 
 import { useState } from "react";
-import { updateProductPrice } from "@/lib/actions/products";
+import { updateProductPricing } from "@/lib/actions/products";
 import { SectionCard } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
 
 interface Product {
   id: string;
   name: string;
-  basePrice: number | null;
+  costPrice: number | null;
+  sellingPrice: number | null;
   inStock: number | null;
+}
+
+interface PriceState {
+  costPrice: number | null;
+  sellingPrice: number | null;
 }
 
 export function ProductsClient({ products }: { products: Product[] }) {
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [prices, setPrices] = useState<Record<string, number | null>>(
-    Object.fromEntries(products.map((p) => [p.id, p.basePrice]))
+  const [prices, setPrices] = useState<Record<string, PriceState>>(
+    Object.fromEntries(products.map((p) => [p.id, { costPrice: p.costPrice, sellingPrice: p.sellingPrice }]))
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   async function handleSavePrice(productId: string) {
-    const newPrice = prices[productId];
-    if (newPrice === null || newPrice === undefined) {
-      setError("Cena jest wymagana");
+    const priceData = prices[productId];
+    if (!priceData || priceData.costPrice === null || priceData.sellingPrice === null) {
+      setError("Obie ceny są wymagane");
       return;
     }
-    if (newPrice < 0) {
-      setError("Cena nie może być ujemna");
+    if (priceData.costPrice < 0 || priceData.sellingPrice < 0) {
+      setError("Ceny nie mogą być ujemne");
+      return;
+    }
+    if (priceData.sellingPrice < priceData.costPrice) {
+      setError("Cena sprzedaży musi być wyższa niż cena zakupu");
       return;
     }
 
     setLoading(true);
     setError(null);
 
-    const result = await updateProductPrice(productId, newPrice);
+    const result = await updateProductPricing(productId, priceData.costPrice, priceData.sellingPrice);
     setLoading(false);
 
     if (result.success) {
       setEditingId(null);
-      setSuccess(`Cena produktu zmieniona na ${newPrice.toFixed(2)} zł`);
+      setSuccess(`Ceny produktu zaktualizowane`);
       setTimeout(() => setSuccess(null), 3000);
     } else {
       setError(result.error || "Błąd");
@@ -70,7 +80,8 @@ export function ProductsClient({ products }: { products: Product[] }) {
             <thead>
               <tr style={{ borderBottom: "1px solid var(--line)" }}>
                 <th style={{ textAlign: "left", padding: "12px 8px", fontSize: 12, fontWeight: 600, textTransform: "uppercase", color: "var(--ink-3)" }}>Nazwa</th>
-                <th style={{ textAlign: "right", padding: "12px 8px", fontSize: 12, fontWeight: 600, textTransform: "uppercase", color: "var(--ink-3)" }}>Cena</th>
+                <th style={{ textAlign: "right", padding: "12px 8px", fontSize: 12, fontWeight: 600, textTransform: "uppercase", color: "var(--ink-3)" }}>Cena zakupu</th>
+                <th style={{ textAlign: "right", padding: "12px 8px", fontSize: 12, fontWeight: 600, textTransform: "uppercase", color: "var(--ink-3)" }}>Cena sprzedaży</th>
                 <th style={{ textAlign: "right", padding: "12px 8px", fontSize: 12, fontWeight: 600, textTransform: "uppercase", color: "var(--ink-3)" }}>Stan</th>
                 <th style={{ textAlign: "center", padding: "12px 8px", fontSize: 12, fontWeight: 600, textTransform: "uppercase", color: "var(--ink-3)" }}>Akcje</th>
               </tr>
@@ -85,12 +96,13 @@ export function ProductsClient({ products }: { products: Product[] }) {
                         type="number"
                         min="0"
                         step="0.01"
-                        value={prices[product.id] ?? ""}
+                        value={prices[product.id]?.costPrice ?? ""}
                         onChange={(e) =>
-                          setPrices({ ...prices, [product.id]: parseFloat(e.target.value) || null })
+                          setPrices({ ...prices, [product.id]: { ...prices[product.id], costPrice: parseFloat(e.target.value) || null } })
                         }
+                        placeholder="Cena zakupu"
                         style={{
-                          width: "80px",
+                          width: "100px",
                           padding: "6px 8px",
                           border: "1px solid var(--brand)",
                           borderRadius: 4,
@@ -99,7 +111,31 @@ export function ProductsClient({ products }: { products: Product[] }) {
                         }}
                       />
                     ) : (
-                      `${(prices[product.id] ?? 0).toFixed(2)} zł`
+                      `${(prices[product.id]?.costPrice ?? 0).toFixed(2)} zł`
+                    )}
+                  </td>
+                  <td style={{ textAlign: "right", padding: "12px 8px", fontSize: 14 }}>
+                    {editingId === product.id ? (
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={prices[product.id]?.sellingPrice ?? ""}
+                        onChange={(e) =>
+                          setPrices({ ...prices, [product.id]: { ...prices[product.id], sellingPrice: parseFloat(e.target.value) || null } })
+                        }
+                        placeholder="Cena sprzedaży"
+                        style={{
+                          width: "100px",
+                          padding: "6px 8px",
+                          border: "1px solid var(--brand)",
+                          borderRadius: 4,
+                          fontSize: 14,
+                          fontFamily: "monospace",
+                        }}
+                      />
+                    ) : (
+                      `${(prices[product.id]?.sellingPrice ?? 0).toFixed(2)} zł`
                     )}
                   </td>
                   <td style={{ textAlign: "right", padding: "12px 8px", fontSize: 14 }}>{product.inStock ?? 0}</td>
@@ -125,7 +161,7 @@ export function ProductsClient({ products }: { products: Product[] }) {
                         <button
                           onClick={() => {
                             setEditingId(null);
-                            setPrices({ ...prices, [product.id]: product.basePrice });
+                            setPrices({ ...prices, [product.id]: { costPrice: product.costPrice, sellingPrice: product.sellingPrice } });
                           }}
                           style={{
                             padding: "4px 8px",

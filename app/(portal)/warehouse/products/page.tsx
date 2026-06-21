@@ -13,7 +13,8 @@ export default async function WarehouseProductsPage() {
     select: {
       id: true,
       name: true,
-      basePrice: true,
+      costPrice: true,
+      sellingPrice: true,
       inStock: true,
     },
     orderBy: { name: "asc" },
@@ -25,7 +26,8 @@ export default async function WarehouseProductsPage() {
       <ProductsClient products={products.map(p => ({
         id: p.id,
         name: p.name,
-        basePrice: p.basePrice ? parseFloat(p.basePrice.toString()) : null,
+        costPrice: p.costPrice ? parseFloat(p.costPrice.toString()) : null,
+        sellingPrice: p.sellingPrice ? parseFloat(p.sellingPrice.toString()) : null,
         inStock: p.inStock,
       }))} />
     </div>

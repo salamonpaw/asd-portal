@@ -107,6 +107,49 @@ export async function getProducts(): Promise<{ success: boolean; error: string; 
   }
 }
 
+export async function updateProductPricing(
+  productId: string,
+  costPrice: number,
+  sellingPrice: number
+): Promise<ActionResult<{ id: string; name: string; costPrice: number; sellingPrice: number }>> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return { success: false, error: "Nie zalogowany" };
+    }
+
+    if (session.user.role !== "WAREHOUSE_SPECIALIST") {
+      return { success: false, error: "Brak uprawnień" };
+    }
+
+    if (costPrice < 0 || sellingPrice < 0) {
+      return { success: false, error: "Ceny nie mogą być ujemne" };
+    }
+
+    if (sellingPrice < costPrice) {
+      return { success: false, error: "Cena sprzedaży musi być wyższa niż cena zakupu" };
+    }
+
+    const product = await db.product.update({
+      where: { id: productId },
+      data: { costPrice, sellingPrice },
+      select: { id: true, name: true, costPrice: true, sellingPrice: true },
+    });
+
+    return {
+      success: true,
+      data: {
+        id: product.id,
+        name: product.name,
+        costPrice: parseFloat(product.costPrice?.toString() || "0"),
+        sellingPrice: parseFloat(product.sellingPrice?.toString() || "0"),
+      }
+    };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+
 export async function updateProductPrice(
   productId: string,
   price: number
