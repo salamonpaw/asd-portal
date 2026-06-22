@@ -49,7 +49,7 @@ const NAV_ADMIN = [
   { key: "content",    href: "/admin/content",       label: "Treść portalu",    icon: "edit" },
 ];
 
-export function PortalShell({ session, children }: { session: Session; children: React.ReactNode }) {
+export function PortalShell({ session, children, version }: { session: Session; children: React.ReactNode; version: string }) {
   const pathname = usePathname();
   const role = session.user?.role as string;
   const isAdmin = role === "ADMIN";
@@ -86,7 +86,26 @@ export function PortalShell({ session, children }: { session: Session; children:
             );
           })}
         </nav>
-        <div style={{ padding: 14, borderTop: "1px solid rgba(255,255,255,.1)" }}>
+        <div style={{ padding: 14, borderTop: "1px solid rgba(255,255,255,.1)", display: "flex", flexDirection: "column", gap: 8 }}>
+          <Link
+            href="/changelog"
+            className="navitem"
+            style={{
+              width: "100%",
+              fontSize: 12,
+              padding: "8px 12px",
+              textDecoration: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <Icon name="info" size={16} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <span style={{ fontSize: 11 }}>Wersja</span>
+              <strong style={{ fontSize: 12 }}>{version}</strong>
+            </div>
+          </Link>
           <button className="navitem" style={{ width: "100%", border: "none", background: "none" }} onClick={() => signOut({ callbackUrl: "/login" })}>
             <Icon name="logout" size={18} />Wyloguj
           </button>
