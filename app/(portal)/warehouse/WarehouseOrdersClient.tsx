@@ -35,6 +35,7 @@ export function WarehouseOrdersClient({ initialOrders }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const [formData, setFormData] = useState({
     trackingNumber: "",
     rejectionReason: "",
@@ -63,7 +64,14 @@ export function WarehouseOrdersClient({ initialOrders }: Props) {
     ZAWIESZONE: "var(--warning)",
   };
 
-  const filteredOrders = orders.filter((o) => !filterStatus || o.status === filterStatus);
+  const filteredOrders = orders.filter((o) => {
+    const matchesStatus = !filterStatus || o.status === filterStatus;
+    const matchesSearch =
+      !searchTerm ||
+      o.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      o.partner.name.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
 
   const handleApprove = async (orderId: string, order: ServiceOrder) => {
     setLoading(true);
@@ -127,6 +135,23 @@ export function WarehouseOrdersClient({ initialOrders }: Props) {
 
   return (
     <div style={{ marginTop: 32 }}>
+      {/* Search */}
+      <div style={{ marginBottom: 20 }}>
+        <input
+          type="text"
+          placeholder="Szukaj zamówienia po numerze lub partnerie..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "10px 12px",
+            border: "1px solid var(--ink-2)",
+            borderRadius: "var(--r-sm)",
+            fontSize: 13,
+          }}
+        />
+      </div>
+
       {/* Filters */}
       <div style={{ marginBottom: 24 }}>
         <label style={{ fontSize: 12, color: "var(--ink-3)" }}>Filtruj po statusie</label>
