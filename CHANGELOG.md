@@ -5,6 +5,22 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.8] - 2026-06-22
+
+### Dodane
+- **Error handling i error pages**
+  - Error boundary component dla client-side errors
+  - Custom error page dla 404 (nie znaleziono)
+  - Custom error page dla 500 (błąd serwera)
+  - Helpful error messages z action buttons
+  - Consistent error styling across app
+
+### Zmienione
+- Lepsze komunikaty błędów
+- Error pages z linkami do głównych sekcji
+
+---
+
 ## [0.2.7] - 2026-06-22
 
 ### Dodane
