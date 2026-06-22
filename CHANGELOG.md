@@ -23,10 +23,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Service technicians see finalPrice with discount breakdown
   - Green highlighting for priced items, warning colors for discounts
 
+- **Product Catalog**: Detailed product information view
+  - Product detail page with full information display
+  - SKU, name, machine type, serial number, location
+  - Product description (rich text support)
+  - Price comparison (cost vs selling price)
+  - Stock level display
+  - Product image gallery (JSON array support)
+  - Accessible from product list with direct links
+
+- **Versioning & Changelog**: Version tracking and release notes
+  - VERSION file tracking current release (0.2.0)
+  - CHANGELOG.md with detailed release notes
+  - Public `/changelog` page for all authenticated users
+  - Version display in sidebar with changelog link
+
 ### Changed
 - Enhanced order detail UI with color-coded badges (Wycenione = green)
 - Improved warehouse order management interface with inline pricing
 - Better visual hierarchy for pricing information in order summaries
+- Product schema extended with images field for gallery support
 
 ### Fixed
 - Prisma query include/select conflicts resolved
