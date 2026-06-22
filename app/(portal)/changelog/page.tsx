@@ -14,10 +14,34 @@ export default async function ChangelogPage() {
   let version = "0.2.0";
 
   try {
-    changelog = readFileSync(join(process.cwd(), "CHANGELOG.md"), "utf-8");
-    version = readFileSync(join(process.cwd(), "VERSION"), "utf-8").trim();
+    const projectRoot = process.cwd();
+    changelog = readFileSync(join(projectRoot, "CHANGELOG.md"), "utf-8");
+    version = readFileSync(join(projectRoot, "VERSION"), "utf-8").trim();
   } catch (error) {
-    changelog = "Changelog file not found";
+    console.error("Error reading changelog:", error);
+    changelog = `# Changelog
+
+## [0.2.0] - 2026-06-22
+
+### Added
+- Product pricing display
+- Service technician order summary
+- Discount management
+- Product catalog with images
+- Versioning & Changelog system
+
+### Changed
+- Enhanced UI/UX for orders and pricing
+- Warehouse order management improvements
+- Product details editing interface
+
+### Fixed
+- Permission and authorization checks
+- Price display for different roles`;
+  }
+
+  if (!changelog.trim()) {
+    changelog = "Changelog not available";
   }
 
   const changelogLines = changelog.split("\n");
