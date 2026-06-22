@@ -6,7 +6,8 @@ import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { ProductImagesForm } from "./ProductImagesForm";
 
-export default async function ProductDetailPage({ params }: { params: { id: string } }) {
+export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   const userRole = (session?.user as any)?.role;
 
@@ -15,7 +16,7 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
   }
 
   const product = await db.product.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: { machineType: true },
   });
 
