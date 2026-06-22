@@ -41,6 +41,8 @@ export default async function ServicePage() {
           id: true,
           quantity: true,
           unitPrice: true,
+          discountType: true,
+          discountValue: true,
           fulfilledQuantity: true,
           product: true,
         },

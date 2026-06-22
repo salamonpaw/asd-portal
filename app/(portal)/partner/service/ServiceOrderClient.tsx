@@ -28,7 +28,15 @@ type ServiceOrder = {
   deliveryAddress: string;
   neededDate: string | null;
   notes: string | null;
-  items: Array<{ id: string; product: Product; quantity: number; unitPrice: number | null; fulfilledQuantity: number | null }>;
+  items: Array<{
+    id: string;
+    product: Product;
+    quantity: number;
+    unitPrice: number | null;
+    discountType: string | null;
+    discountValue: number | null;
+    fulfilledQuantity: number | null;
+  }>;
   warehouseSpecialist: { name: string } | null;
   createdAt: Date;
 };
@@ -62,10 +70,26 @@ export function ServiceOrderClient({ products, machineTypes, initialOrders, user
     return true;
   });
 
+  const calculateFinalPrice = (unitPrice: number, discountType: string | null, discountValue: number | null, quantity: number) => {
+    let finalPrice = unitPrice * quantity;
+    if (discountType === "PERCENT" && discountValue && discountValue > 0) {
+      finalPrice = finalPrice * (1 - discountValue / 100);
+    } else if (discountType === "AMOUNT" && discountValue && discountValue > 0) {
+      finalPrice = finalPrice - discountValue;
+    }
+    return Math.max(0, finalPrice);
+  };
+
   const calculateOrderTotal = (order: ServiceOrder) => {
     return order.items.reduce((sum, item) => {
       if (item.unitPrice) {
-        return sum + (item.unitPrice as any) * item.quantity;
+        const finalPrice = calculateFinalPrice(
+          item.unitPrice as any,
+          item.discountType,
+          item.discountValue as any,
+          item.quantity
+        );
+        return sum + finalPrice;
       }
       return sum;
     }, 0);
@@ -351,17 +375,38 @@ export function ServiceOrderClient({ products, machineTypes, initialOrders, user
                     {isPriced && (
                       <div style={{ marginTop: 12, fontSize: 11, borderTop: "1px solid var(--success)33", paddingTop: 12 }}>
                         <div style={{ fontWeight: 600, marginBottom: 8 }}>Szczegóły cen:</div>
-                        <div style={{ display: "grid", gap: 4 }}>
-                          {order.items.map((item) => (
-                            <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                              <div style={{ color: "var(--ink-3)" }}>
-                                {item.product.sku} × {item.quantity}
+                        <div style={{ display: "grid", gap: 6 }}>
+                          {order.items.map((item) => {
+                            const finalPrice = calculateFinalPrice(
+                              item.unitPrice as any,
+                              item.discountType,
+                              item.discountValue as any,
+                              item.quantity
+                            );
+                            const hasDiscount = item.discountType && item.discountValue && item.discountValue > 0;
+                            return (
+                              <div key={item.id} style={{ display: "grid", gap: 2 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                  <div style={{ color: "var(--ink-3)" }}>
+                                    {item.product.sku} × {item.quantity}
+                                  </div>
+                                  <div style={{ fontWeight: 500 }}>
+                                    {((item.unitPrice as any) * item.quantity).toFixed(2)} zł
+                                  </div>
+                                </div>
+                                {hasDiscount && (
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: "var(--warning)", fontSize: 10 }}>
+                                    <div>
+                                      Rabat: {item.discountType === "PERCENT" ? `${item.discountValue}%` : `${item.discountValue} zł`}
+                                    </div>
+                                    <div style={{ fontWeight: 600, color: "var(--success)" }}>
+                                      {finalPrice.toFixed(2)} zł
+                                    </div>
+                                  </div>
+                                )}
                               </div>
-                              <div style={{ fontWeight: 500 }}>
-                                {((item.unitPrice as any) * item.quantity).toFixed(2)} zł
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     )}

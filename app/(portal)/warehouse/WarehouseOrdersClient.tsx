@@ -38,10 +38,20 @@ export function WarehouseOrdersClient({ initialOrders }: Props) {
   const [formData, setFormData] = useState({
     trackingNumber: "",
     rejectionReason: "",
-    prices: {} as Record<string, string>,
+    itemPricing: {} as Record<string, { unitPrice: string; discountType: string; discountValue: string }>,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const calculateFinalPrice = (unitPrice: number, discountType: string, discountValue: number, quantity: number) => {
+    let finalPrice = unitPrice * quantity;
+    if (discountType === "PERCENT" && discountValue > 0) {
+      finalPrice = finalPrice * (1 - discountValue / 100);
+    } else if (discountType === "AMOUNT" && discountValue > 0) {
+      finalPrice = finalPrice - discountValue;
+    }
+    return Math.max(0, finalPrice);
+  };
 
   const statuses = ["NOWE", "PRZYJĘTE", "CZĘŚCIOWO_ZREALIZOWANE", "ZREALIZOWANE", "ODRZUCONE", "ZAWIESZONE"];
   const statusColors: Record<string, string> = {
@@ -55,10 +65,26 @@ export function WarehouseOrdersClient({ initialOrders }: Props) {
 
   const filteredOrders = orders.filter((o) => !filterStatus || o.status === filterStatus);
 
-  const handleApprove = async (orderId: string) => {
+  const handleApprove = async (orderId: string, order: ServiceOrder) => {
     setLoading(true);
     setError("");
-    const result = await updateServiceOrder(orderId, { status: "PRZYJĘTE" });
+
+    const itemPrices: Record<string, { unitPrice: number; discountType?: string; discountValue?: number }> = {};
+    for (const item of order.items) {
+      const pricing = formData.itemPricing[item.id];
+      if (pricing && pricing.unitPrice) {
+        itemPrices[item.id] = {
+          unitPrice: parseFloat(pricing.unitPrice),
+          discountType: pricing.discountType || undefined,
+          discountValue: pricing.discountValue ? parseFloat(pricing.discountValue) : undefined,
+        };
+      }
+    }
+
+    const result = await updateServiceOrder(orderId, {
+      status: "PRZYJĘTE",
+      itemPrices,
+    });
     setLoading(false);
 
     if (result.success) {
@@ -199,49 +225,108 @@ export function WarehouseOrdersClient({ initialOrders }: Props) {
                   <div style={{ marginBottom: 16, fontSize: 12 }}>
                     <div style={{ fontWeight: 600, marginBottom: 8 }}>Części ({order.items.length})</div>
                     <div style={{ display: "grid", gap: 8 }}>
-                      {order.items.map((item) => (
-                        <div
-                          key={item.id}
-                          style={{
-                            padding: 8,
-                            background: "var(--surface-2)",
-                            borderRadius: "var(--r-sm)",
-                            display: "grid",
-                            gridTemplateColumns: "auto 1fr auto auto auto auto",
-                            gap: 12,
-                            alignItems: "center",
-                          }}
-                        >
-                          <div style={{ fontWeight: 500 }}>{item.product.sku}</div>
-                          <div>{item.product.name.substring(0, 40)}</div>
-                          <div style={{ textAlign: "center", fontWeight: 500 }}>×{item.quantity}</div>
-                          <div style={{ fontSize: 11, color: "var(--ink-3)" }}>
-                            Zak: {item.product.costPrice ? parseFloat(item.product.costPrice.toString()).toFixed(2) : "—"} zł
-                          </div>
-                          <div style={{ fontSize: 11, color: "var(--ink-3)" }}>
-                            Sprz: {item.product.sellingPrice ? parseFloat(item.product.sellingPrice.toString()).toFixed(2) : "—"} zł
-                          </div>
-                          <input
-                            type="number"
-                            placeholder="Cena"
-                            value={formData.prices[item.id] || ""}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                prices: { ...formData.prices, [item.id]: e.target.value },
-                              })
-                            }
+                      {order.items.map((item) => {
+                        const pricing = formData.itemPricing[item.id] || { unitPrice: "", discountType: "", discountValue: "" };
+                        const unitPrice = pricing.unitPrice ? parseFloat(pricing.unitPrice) : 0;
+                        const finalPrice = unitPrice > 0 ? calculateFinalPrice(unitPrice, pricing.discountType, parseFloat(pricing.discountValue) || 0, item.quantity) : 0;
+                        return (
+                          <div
+                            key={item.id}
                             style={{
-                              width: 70,
-                              padding: "4px 6px",
-                              border: "1px solid var(--ink-2)",
+                              padding: 12,
+                              background: unitPrice > 0 ? "var(--success-soft)" : "var(--surface-2)",
                               borderRadius: "var(--r-sm)",
-                              fontSize: 11,
+                              border: unitPrice > 0 ? "1px solid var(--success)" : "1px solid transparent",
+                              display: "grid",
+                              gridTemplateColumns: editingId === order.id ? "auto 1fr 60px 60px 50px 50px 60px 50px auto" : "auto 1fr auto auto auto auto",
+                              gap: 8,
+                              alignItems: "center",
                             }}
-                            disabled={editingId !== order.id}
-                          />
-                        </div>
-                      ))}
+                          >
+                            <div style={{ fontWeight: 500, minWidth: 50 }}>{item.product.sku}</div>
+                            <div style={{ minWidth: 150 }}>{item.product.name.substring(0, 30)}</div>
+                            <div style={{ textAlign: "center", fontWeight: 500 }}>×{item.quantity}</div>
+                            {editingId === order.id ? (
+                              <>
+                                <input
+                                  type="number"
+                                  placeholder="Cena"
+                                  value={pricing.unitPrice}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      itemPricing: {
+                                        ...formData.itemPricing,
+                                        [item.id]: { ...pricing, unitPrice: e.target.value },
+                                      },
+                                    })
+                                  }
+                                  style={{
+                                    width: 60,
+                                    padding: "4px 6px",
+                                    border: "1px solid var(--ink-2)",
+                                    borderRadius: "var(--r-sm)",
+                                    fontSize: 11,
+                                  }}
+                                />
+                                <select
+                                  value={pricing.discountType}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      itemPricing: {
+                                        ...formData.itemPricing,
+                                        [item.id]: { ...pricing, discountType: e.target.value },
+                                      },
+                                    })
+                                  }
+                                  style={{
+                                    width: 50,
+                                    padding: "4px 6px",
+                                    border: "1px solid var(--ink-2)",
+                                    borderRadius: "var(--r-sm)",
+                                    fontSize: 11,
+                                  }}
+                                >
+                                  <option value="">—</option>
+                                  <option value="PERCENT">%</option>
+                                  <option value="AMOUNT">zł</option>
+                                </select>
+                                <input
+                                  type="number"
+                                  placeholder="Rabat"
+                                  value={pricing.discountValue}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      itemPricing: {
+                                        ...formData.itemPricing,
+                                        [item.id]: { ...pricing, discountValue: e.target.value },
+                                      },
+                                    })
+                                  }
+                                  style={{
+                                    width: 60,
+                                    padding: "4px 6px",
+                                    border: "1px solid var(--ink-2)",
+                                    borderRadius: "var(--r-sm)",
+                                    fontSize: 11,
+                                  }}
+                                />
+                                <div style={{ fontWeight: 600, color: "var(--success)", minWidth: 50 }}>
+                                  {finalPrice.toFixed(2)} zł
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div style={{ fontSize: 11, color: "var(--ink-3)" }}>
+                                  Sprz: {item.product.sellingPrice ? parseFloat(item.product.sellingPrice.toString()).toFixed(2) : "—"} zł
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -279,7 +364,7 @@ export function WarehouseOrdersClient({ initialOrders }: Props) {
                       {error && <div style={{ color: "var(--danger)", fontSize: 12 }}>{error}</div>}
 
                       <div style={{ display: "flex", gap: 8 }}>
-                        <button className="btn btn-sm btn-brand" onClick={() => handleApprove(order.id)} disabled={loading}>
+                        <button className="btn btn-sm btn-brand" onClick={() => handleApprove(order.id, order)} disabled={loading}>
                           Zatwierdź
                         </button>
                         <button className="btn btn-sm" onClick={() => handleSuspend(order.id)} disabled={loading}>
@@ -297,7 +382,7 @@ export function WarehouseOrdersClient({ initialOrders }: Props) {
                           className="btn btn-sm"
                           onClick={() => {
                             setEditingId(null);
-                            setFormData({ trackingNumber: "", rejectionReason: "", prices: {} });
+                            setFormData({ trackingNumber: "", rejectionReason: "", itemPricing: {} });
                           }}
                         >
                           Anuluj

@@ -118,12 +118,17 @@ export async function updateServiceOrder(
       include: { items: { include: { product: true } } },
     });
 
-    // Update item prices if provided
+    // Update item prices and discounts if provided
     if (data.itemPrices) {
-      for (const [itemId, price] of Object.entries(data.itemPrices)) {
+      for (const [itemId, pricing] of Object.entries(data.itemPrices)) {
+        const updateData: any = {};
+        if (pricing.unitPrice !== undefined) updateData.unitPrice = pricing.unitPrice;
+        if (pricing.discountType) updateData.discountType = pricing.discountType;
+        if (pricing.discountValue !== undefined) updateData.discountValue = pricing.discountValue;
+
         await db.serviceOrderItem.update({
           where: { id: itemId },
-          data: { unitPrice: price },
+          data: updateData,
         });
       }
     }
