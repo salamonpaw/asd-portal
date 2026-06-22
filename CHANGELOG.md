@@ -1,9 +1,24 @@
-# Changelog
+# Dziennik Zmian
 
-All notable changes to ASD Partner Portal will be documented in this file.
+Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
+
+## [0.2.3] - 2026-06-22
+
+### Dodane
+- **Responsywny design na urządzenia mobilne**
+  - Przystosowanie dashboardów do małych ekranów
+  - Elastyczne grid'i i tabelki na telefonach
+  - Poprawione menu nawigacyjne
+  - Szybsze ładowanie na wolnych połączeniach
+
+### Zmienione
+- Poszerzone breakpoint'y CSS dla tabletów i telefonów
+- Lepsze rozmieszczenie kart statystyk na urządzeniach mobilnych
+
+---
 
 ## [0.2.2] - 2026-06-22
 

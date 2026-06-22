@@ -53,18 +53,19 @@ export default async function WarehouseDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 32 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 32 }}>
         {stats.map((stat) => (
           <div
             key={stat.label}
             style={{
-              background: "var(--paper)",
+              background: "var(--surface)",
               border: "1px solid var(--ink-2)",
               borderRadius: "var(--r)",
               padding: 20,
               display: "flex",
               alignItems: "flex-start",
               gap: 16,
+              boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
             }}
           >
             <div

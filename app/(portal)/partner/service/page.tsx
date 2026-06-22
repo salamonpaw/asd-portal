@@ -94,18 +94,19 @@ export default async function ServicePage() {
       </div>
 
       {/* Quick Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 32 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 32 }}>
         {stats.map((stat) => (
           <div
             key={stat.label}
             style={{
-              background: "var(--paper)",
+              background: "var(--surface)",
               border: "1px solid var(--ink-2)",
               borderRadius: "var(--r-sm)",
               padding: 16,
               display: "flex",
               alignItems: "flex-start",
               gap: 12,
+              boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
             }}
           >
             <div
