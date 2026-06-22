@@ -34,6 +34,15 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div style={{ padding: "32px", maxWidth: "900px" }}>
+      <div style={{ marginBottom: 24, display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--ink-3)" }}>
+        <Link href="/warehouse/products" style={{ color: "var(--brand)", textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
+          <Icon name="box" size={14} />
+          Produkty
+        </Link>
+        <span>→</span>
+        <span style={{ color: "var(--ink)", fontWeight: 500 }}>{product.name}</span>
+      </div>
+
       <div style={{ marginBottom: 24 }}>
         <Link href="/warehouse/products" style={{ color: "var(--brand)", textDecoration: "none", fontSize: 14 }}>
           ← Wróć do listy produktów
