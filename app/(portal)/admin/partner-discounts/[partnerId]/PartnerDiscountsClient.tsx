@@ -98,7 +98,7 @@ export function PartnerDiscountsClient({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "2fr 1fr 1fr 150px",
+            gridTemplateColumns: "2fr 1fr 1fr 1fr",
             gap: 16,
             padding: 16,
             background: "var(--surface-2)",

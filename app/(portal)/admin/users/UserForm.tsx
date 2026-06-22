@@ -83,9 +83,12 @@ export function UserForm({ user, partners, reps }: {
 
         <Field label="Rola" req>
           <div className="chips">
-            {(["PARTNER", "STAFF", "ADMIN"] as const).map((r) => (
+            {(["WAREHOUSE_SPECIALIST", "SERVICE_TECHNICIAN", "PARTNER", "STAFF", "ADMIN"] as const).map((r) => (
               <button key={r} className={`chip box ${f.role === r ? "sel" : ""}`} onClick={() => set("role", r)}>
-                {r === "PARTNER" ? "Partner" : r === "STAFF" ? "Handlowiec" : "Admin"}
+                {r === "WAREHOUSE_SPECIALIST" ? "Magazynier" :
+                 r === "SERVICE_TECHNICIAN" ? "Serwisant" :
+                 r === "PARTNER" ? "Partner" :
+                 r === "STAFF" ? "Handlowiec" : "Admin"}
               </button>
             ))}
           </div>
