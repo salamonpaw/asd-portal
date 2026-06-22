@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Icon } from "@/components/ui/Icon";
+import { Icon, EmptyState } from "@/components/ui";
 import { createServiceOrder } from "@/lib/actions/service-orders";
 
 type Product = {
@@ -225,8 +225,12 @@ export function ServiceOrderClient({ products, machineTypes, initialOrders, user
                 ))}
               </div>
               {filteredProducts.length === 0 && (
-                <div style={{ textAlign: "center", padding: 16, color: "var(--ink-3)", fontSize: 14 }}>
-                  Brak produktów spełniających kryteria
+                <div style={{ padding: 16 }}>
+                  <EmptyState
+                    title="Brak wyników"
+                    sub="Nie znaleźliśmy produktów spełniających twoje kryteria"
+                    icon="search"
+                  />
                 </div>
               )}
             </div>
@@ -290,9 +294,11 @@ export function ServiceOrderClient({ products, machineTypes, initialOrders, user
           <h3 style={{ marginBottom: 16 }}>Historia zamówień</h3>
           <div style={{ display: "grid", gap: 12 }}>
             {orders.length === 0 ? (
-              <div style={{ padding: 32, textAlign: "center", color: "var(--ink-3)" }}>
-                Brak zamówień. Utwórz pierwsze!
-              </div>
+              <EmptyState
+                title="Brak zamówień"
+                sub="Zacznij od utworzenia nowego zamówienia, aby dodać je do historii"
+                icon="inbox"
+              />
             ) : (
               orders.map((order) => {
                 const isPriced = isOrderPriced(order);

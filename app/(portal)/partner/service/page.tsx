@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { ServiceOrderClient } from "./ServiceOrderClient";
-import { Icon } from "@/components/ui/Icon";
+import { Icon, EmptyState } from "@/components/ui";
 
 export default async function ServicePage() {
   const session = await getServerSession(authOptions);

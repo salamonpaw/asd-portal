@@ -5,6 +5,21 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.5] - 2026-06-22
+
+### Dodane
+- **Empty states — lepsze komunikaty**
+  - Ikony i opisy gdy brak danych na liście
+  - Call-to-action buttons dla pustych stanów
+  - Konsystentny design pustych widoków
+  - Wiadomości dla: zamówień, produktów, zdjęć, pozycji
+
+### Zmienione
+- Ulepszone komunikaty w wynikach wyszukiwania
+- Lepszy UX dla nowych użytkowników
+
+---
+
 ## [0.2.4] - 2026-06-22
 
 ### Dodane

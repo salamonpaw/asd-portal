@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import Link from "next/link";
-import { Icon } from "@/components/ui/Icon";
+import { Icon, EmptyState } from "@/components/ui";
 
 export default async function WarehouseDashboard() {
   const session = await getServerSession(authOptions);
@@ -163,17 +163,11 @@ export default async function WarehouseDashboard() {
             ))}
           </div>
         ) : (
-          <div
-            style={{
-              padding: 32,
-              textAlign: "center",
-              background: "var(--surface-2)",
-              borderRadius: "var(--r)",
-              color: "var(--ink-3)",
-            }}
-          >
-            Brak zamówień
-          </div>
+          <EmptyState
+            title="Brak zamówień"
+            sub="Kiedy pojawią się nowe zamówienia serwisowe, zobaczysz je tutaj"
+            icon="inbox"
+          />
         )}
       </div>
 
@@ -247,17 +241,11 @@ export default async function WarehouseDashboard() {
             ))}
           </div>
         ) : (
-          <div
-            style={{
-              padding: 32,
-              textAlign: "center",
-              background: "var(--surface-2)",
-              borderRadius: "var(--r)",
-              color: "var(--ink-3)",
-            }}
-          >
-            Brak produktów
-          </div>
+          <EmptyState
+            title="Brak produktów w magazynie"
+            sub="Nie masz produktów do wyświetlenia. Dodaj je w panelu administratora"
+            icon="package"
+          />
         )}
       </div>
     </div>
