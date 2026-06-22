@@ -36,9 +36,9 @@ export function AdminProductForm({ product, machineTypes, images: initialImages 
     location: product.location,
     serialNumber: product.serialNumber,
     supplier: product.supplier,
-    inStock: product.inStock,
-    costPrice: product.costPrice,
-    sellingPrice: product.sellingPrice,
+    inStock: product.inStock ?? undefined,
+    costPrice: product.costPrice ?? undefined,
+    sellingPrice: product.sellingPrice ?? undefined,
   });
 
   const [images, setImages] = useState(initialImages);
