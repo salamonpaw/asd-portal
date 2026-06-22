@@ -65,7 +65,49 @@ export function ProductDetailsForm({ product }: ProductDetailsFormProps) {
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <h3>Informacje o produkcie</h3>
-        {!isEditing && (
+        {isEditing ? (
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={handleSave}
+              disabled={loading}
+              style={{
+                padding: "8px 12px",
+                background: "var(--success)",
+                color: "white",
+                border: "none",
+                borderRadius: "var(--r-sm)",
+                cursor: loading ? "not-allowed" : "pointer",
+                fontSize: 12,
+                fontWeight: 500,
+                opacity: loading ? 0.6 : 1,
+              }}
+            >
+              {loading ? "Zapisywanie..." : "Zapisz"}
+            </button>
+            <button
+              onClick={() => {
+                setIsEditing(false);
+                setFormData({
+                  description: formData.description,
+                  serialNumber: formData.serialNumber,
+                  location: formData.location,
+                });
+              }}
+              disabled={loading}
+              style={{
+                padding: "8px 12px",
+                background: "var(--ink-2)",
+                color: "white",
+                border: "none",
+                borderRadius: "var(--r-sm)",
+                cursor: "pointer",
+                fontSize: 12,
+              }}
+            >
+              Anuluj
+            </button>
+          </div>
+        ) : (
           <button
             onClick={() => setIsEditing(true)}
             style={{
@@ -209,50 +251,6 @@ export function ProductDetailsForm({ product }: ProductDetailsFormProps) {
         </div>
       </div>
 
-      {isEditing && (
-        <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
-          <button
-            onClick={handleSave}
-            disabled={loading}
-            style={{
-              flex: 1,
-              padding: "10px 16px",
-              background: "var(--success)",
-              color: "white",
-              border: "none",
-              borderRadius: "var(--r-sm)",
-              cursor: loading ? "not-allowed" : "pointer",
-              fontSize: 13,
-              fontWeight: 600,
-              opacity: loading ? 0.6 : 1,
-            }}
-          >
-            {loading ? "Zapisywanie..." : "Zapisz zmiany"}
-          </button>
-          <button
-            onClick={() => {
-              setIsEditing(false);
-              setFormData({
-                description: product.description,
-                serialNumber: product.serialNumber,
-                location: product.location,
-              });
-            }}
-            disabled={loading}
-            style={{
-              padding: "10px 16px",
-              background: "var(--ink-2)",
-              color: "white",
-              border: "none",
-              borderRadius: "var(--r-sm)",
-              cursor: "pointer",
-              fontSize: 13,
-            }}
-          >
-            Anuluj
-          </button>
-        </div>
-      )}
     </div>
   );
 }
