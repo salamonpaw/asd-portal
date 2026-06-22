@@ -5,6 +5,22 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-06-22
+
+### Dodane
+- **Improved warehouse order pricing UI**
+  - Column headers dla cen, rabatów, razem
+  - Better visual layout dla pricing inputs
+  - Auto-fill rabatu z partner discount level
+  - Cleaner input organization
+
+### Zmienione
+- Warehouse order item pricing — refactored layout
+- Better visual feedback dla pricing fields
+- Partner discount automatically applied when opening order
+
+---
+
 ## [0.3.0] - 2026-06-22
 
 ### Dodane

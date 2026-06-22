@@ -252,6 +252,34 @@ export function WarehouseOrdersClient({ initialOrders }: Props) {
                   {/* Items table */}
                   <div style={{ marginBottom: 16, fontSize: 12 }}>
                     <div style={{ fontWeight: 600, marginBottom: 8 }}>Części ({order.items.length})</div>
+
+                    {editingId === order.id && (
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "auto 1fr 60px 100px 80px 80px 80px 60px auto",
+                          gap: 8,
+                          padding: "8px 12px",
+                          background: "var(--surface-2)",
+                          borderRadius: "var(--r-sm)",
+                          marginBottom: 8,
+                          fontWeight: 600,
+                          fontSize: 11,
+                          color: "var(--ink-3)",
+                        }}
+                      >
+                        <div>SKU</div>
+                        <div>Nazwa</div>
+                        <div style={{ textAlign: "center" }}>Ilość</div>
+                        <div style={{ textAlign: "center" }}>Cena jedn.</div>
+                        <div style={{ textAlign: "center" }}>Typ rabatu</div>
+                        <div style={{ textAlign: "center" }}>Rabat</div>
+                        <div style={{ textAlign: "center" }}>Razem</div>
+                        <div></div>
+                        <div></div>
+                      </div>
+                    )}
+
                     <div style={{ display: "grid", gap: 8 }}>
                       {order.items.map((item) => {
                         const pricing = formData.itemPricing[item.id] || { unitPrice: "", discountType: "", discountValue: "" };
@@ -266,7 +294,7 @@ export function WarehouseOrdersClient({ initialOrders }: Props) {
                               borderRadius: "var(--r-sm)",
                               border: unitPrice > 0 ? "1px solid var(--success)" : "1px solid transparent",
                               display: "grid",
-                              gridTemplateColumns: editingId === order.id ? "auto 1fr 60px 60px 50px 50px 60px 50px auto" : "auto 1fr auto auto auto auto",
+                              gridTemplateColumns: editingId === order.id ? "auto 1fr 60px 100px 80px 80px 80px 60px auto" : "auto 1fr auto auto auto auto",
                               gap: 8,
                               alignItems: "center",
                             }}
