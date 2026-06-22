@@ -59,9 +59,16 @@ export default async function AdminPartnersPage() {
                 <td><span style={{ fontSize: 12, color: "var(--ink-2)" }}>{p.markets.map((m) => m.name).join(", ")}</span></td>
                 <td><span style={{ fontSize: 13 }}>{p._count.projects}</span></td>
                 <td><span style={{ fontSize: 13 }}>{p._count.users}</span></td>
-                <td>
+                <td style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <Link href={`/admin/partners/${p.id}`} className="btn btn-ghost btn-sm">
                     <Icon name="edit" size={14} />Edytuj
+                  </Link>
+                  <Link
+                    href={`/admin/partner-discounts/${p.id}`}
+                    className="btn btn-ghost btn-sm"
+                    style={{ fontSize: 12 }}
+                  >
+                    <Icon name="percent" size={14} />Rabaty
                   </Link>
                 </td>
               </tr>
