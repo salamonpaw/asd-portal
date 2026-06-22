@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { ProductImagesForm } from "./ProductImagesForm";
+import { ProductDetailsForm } from "./ProductDetailsForm";
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -39,7 +40,18 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         </Link>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginBottom: 32 }}>
+      {/* Product Details Form */}
+      <ProductDetailsForm
+        product={{
+          id: product.id,
+          name: product.name,
+          description: product.description || "",
+          serialNumber: product.serialNumber || "",
+          location: product.location || "",
+        }}
+      />
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginBottom: 32, marginTop: 32 }}>
         {/* Images */}
         <div>
           {images.length > 0 ? (
