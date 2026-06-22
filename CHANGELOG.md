@@ -5,6 +5,22 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] - 2026-06-22
+
+### Dodane
+- **Szczegółowa strona zamówienia serwisowego**
+  - /warehouse/orders/[id] — widok szczegółów dla magazyniera
+  - Breadcrumbs nawigacji: Zamówienia → [KOD]
+  - Pełne informacje o zamówieniu (status, partnerze, technikowie)
+  - Lista pozycji z cenami, rabatami, ilościami
+  - Podsumowanie finansowe (suma, rabaty, razem do zapłaty)
+  - Historia zmian statusu zamówienia
+
+### Zmienione
+- Link do szczegółów zamówienia w liście (WarehouseOrdersClient)
+
+---
+
 ## [0.2.3] - 2026-06-22
 
 ### Dodane

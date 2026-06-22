@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { updateServiceOrder } from "@/lib/actions/service-orders";
 
@@ -208,12 +209,14 @@ export function WarehouseOrdersClient({ initialOrders }: Props) {
                 }}
                 onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}
               >
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 15 }}>{order.code}</div>
-                  <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }}>
-                    {order.partner.name} • {new Date(order.createdAt).toLocaleDateString("pl")}
+                <Link href={`/warehouse/orders/${order.id}`} style={{ textDecoration: "none", color: "inherit", flex: 1 }}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 15, color: "var(--brand)" }}>{order.code}</div>
+                    <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }}>
+                      {order.partner.name} • {new Date(order.createdAt).toLocaleDateString("pl")}
+                    </div>
                   </div>
-                </div>
+                </Link>
                 <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                   <span
                     style={{
