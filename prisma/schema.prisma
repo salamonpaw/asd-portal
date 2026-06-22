@@ -291,6 +291,7 @@ model Product {
   childProducts    Product[]   @relation("ProductHierarchy")
   location         String?
   image            String?
+  images           String?       // JSON array of image URLs
   serialNumber     String?
   supplier         String?
   inStock          Int?

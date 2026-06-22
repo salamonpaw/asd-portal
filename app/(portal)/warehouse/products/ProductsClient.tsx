@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { updateProductPricing } from "@/lib/actions/products";
 import { SectionCard } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
@@ -89,7 +90,11 @@ export function ProductsClient({ products }: { products: Product[] }) {
             <tbody>
               {products.map((product) => (
                 <tr key={product.id} style={{ borderBottom: "1px solid var(--line)", background: editingId === product.id ? "rgba(0,0,0,.02)" : "transparent" }}>
-                  <td style={{ padding: "12px 8px", fontSize: 14 }}>{product.name}</td>
+                  <td style={{ padding: "12px 8px", fontSize: 14 }}>
+                    <Link href={`/warehouse/products/${product.id}`} style={{ color: "var(--brand)", textDecoration: "none", fontWeight: 500 }}>
+                      {product.name}
+                    </Link>
+                  </td>
                   <td style={{ textAlign: "right", padding: "12px 8px", fontSize: 14 }}>
                     {editingId === product.id ? (
                       <input
