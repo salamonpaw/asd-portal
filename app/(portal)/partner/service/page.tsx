@@ -111,9 +111,9 @@ export default async function ServicePage() {
           >
             <div
               style={{
-                width: 40,
-                height: 40,
-                background: "var(--brand-soft)",
+                width: 44,
+                height: 44,
+                background: "var(--brand)",
                 borderRadius: "var(--r-sm)",
                 display: "flex",
                 alignItems: "center",
@@ -121,7 +121,7 @@ export default async function ServicePage() {
                 flexShrink: 0,
               }}
             >
-              <Icon name={stat.icon as any} size={20} style={{ color: "var(--brand)" }} />
+              <Icon name={stat.icon as any} size={22} style={{ color: "white" }} />
             </div>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>

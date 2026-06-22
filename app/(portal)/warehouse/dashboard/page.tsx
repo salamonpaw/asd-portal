@@ -70,16 +70,16 @@ export default async function WarehouseDashboard() {
           >
             <div
               style={{
-                width: 48,
-                height: 48,
-                background: "var(--brand-soft)",
+                width: 56,
+                height: 56,
+                background: "var(--brand)",
                 borderRadius: "var(--r-sm)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Icon name={stat.icon as any} size={24} style={{ color: "var(--brand)" }} />
+              <Icon name={stat.icon as any} size={28} style={{ color: "white" }} />
             </div>
             <div>
               <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 4 }}>
