@@ -248,27 +248,32 @@ export function WarehouseOrdersClient({ initialOrders }: Props) {
                             <div style={{ textAlign: "center", fontWeight: 500 }}>×{item.quantity}</div>
                             {editingId === order.id ? (
                               <>
-                                <input
-                                  type="number"
-                                  placeholder="Cena"
-                                  value={pricing.unitPrice}
-                                  onChange={(e) =>
-                                    setFormData({
-                                      ...formData,
-                                      itemPricing: {
-                                        ...formData.itemPricing,
-                                        [item.id]: { ...pricing, unitPrice: e.target.value },
-                                      },
-                                    })
-                                  }
-                                  style={{
-                                    width: 60,
-                                    padding: "4px 6px",
-                                    border: "1px solid var(--ink-2)",
-                                    borderRadius: "var(--r-sm)",
-                                    fontSize: 11,
-                                  }}
-                                />
+                                <div style={{ display: "flex", flexDirection: "column", gap: 2, alignItems: "center" }}>
+                                  <input
+                                    type="number"
+                                    placeholder={item.product.sellingPrice ? parseFloat(item.product.sellingPrice.toString()).toFixed(2) : "0"}
+                                    value={pricing.unitPrice}
+                                    onChange={(e) =>
+                                      setFormData({
+                                        ...formData,
+                                        itemPricing: {
+                                          ...formData.itemPricing,
+                                          [item.id]: { ...pricing, unitPrice: e.target.value },
+                                        },
+                                      })
+                                    }
+                                    style={{
+                                      width: 60,
+                                      padding: "4px 6px",
+                                      border: "1px solid var(--ink-2)",
+                                      borderRadius: "var(--r-sm)",
+                                      fontSize: 11,
+                                    }}
+                                  />
+                                  <div style={{ fontSize: 10, color: "var(--ink-3)" }}>
+                                    {item.product.sellingPrice ? parseFloat(item.product.sellingPrice.toString()).toFixed(2) : "—"} zł
+                                  </div>
+                                </div>
                                 <select
                                   value={pricing.discountType}
                                   onChange={(e) =>
@@ -320,7 +325,7 @@ export function WarehouseOrdersClient({ initialOrders }: Props) {
                             ) : (
                               <>
                                 <div style={{ fontSize: 11, color: "var(--ink-3)" }}>
-                                  Sprz: {item.product.sellingPrice ? parseFloat(item.product.sellingPrice.toString()).toFixed(2) : "—"} zł
+                                  Cena: {item.product.sellingPrice ? parseFloat(item.product.sellingPrice.toString()).toFixed(2) : "—"} zł
                                 </div>
                               </>
                             )}
