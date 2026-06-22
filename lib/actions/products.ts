@@ -55,6 +55,19 @@ export async function updateProduct(productId: string, input: Partial<ProductInp
       return { success: false, error: "Brak uprawnień" };
     }
 
+    // Validate pricing if provided
+    if (input.costPrice !== undefined && input.sellingPrice !== undefined) {
+      const costPrice = input.costPrice ? parseFloat(String(input.costPrice)) : 0;
+      const sellingPrice = input.sellingPrice ? parseFloat(String(input.sellingPrice)) : 0;
+
+      if (costPrice < 0 || sellingPrice < 0) {
+        return { success: false, error: "Ceny nie mogą być ujemne" };
+      }
+      if (costPrice > 0 && sellingPrice > 0 && sellingPrice < costPrice) {
+        return { success: false, error: "Cena sprzedaży musi być wyższa niż cena zakupu" };
+      }
+    }
+
     const product = await db.product.update({
       where: { id: productId },
       data: {
