@@ -201,7 +201,7 @@ export function AdminProductForm({ product, machineTypes, images: initialImages 
               step="0.01"
               min="0"
               value={formData.costPrice || ""}
-              onChange={(e) => setFormData({ ...formData, costPrice: e.target.value ? parseFloat(e.target.value) : null })}
+              onChange={(e) => setFormData({ ...formData, costPrice: e.target.value ? parseFloat(e.target.value) : undefined })}
             />
           </div>
           <div className="field">
@@ -212,7 +212,7 @@ export function AdminProductForm({ product, machineTypes, images: initialImages 
               step="0.01"
               min="0"
               value={formData.sellingPrice || ""}
-              onChange={(e) => setFormData({ ...formData, sellingPrice: e.target.value ? parseFloat(e.target.value) : null })}
+              onChange={(e) => setFormData({ ...formData, sellingPrice: e.target.value ? parseFloat(e.target.value) : undefined })}
             />
           </div>
           <div className="field">
@@ -222,7 +222,7 @@ export function AdminProductForm({ product, machineTypes, images: initialImages 
               type="number"
               min="0"
               value={formData.inStock || ""}
-              onChange={(e) => setFormData({ ...formData, inStock: e.target.value ? parseInt(e.target.value) : null })}
+              onChange={(e) => setFormData({ ...formData, inStock: e.target.value ? parseInt(e.target.value) : undefined })}
             />
           </div>
         </div>
