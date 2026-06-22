@@ -56,7 +56,7 @@ export default async function ServicePage() {
   // Calculate stats
   const totalOrders = orders.length;
   const activeOrders = orders.filter(
-    (o) => o.status === "NOWE" || o.status === "ZAAKCEPTOWANE"
+    (o) => o.status === "NOWE" || o.status === "PRZYJĘTE"
   ).length;
   const pricedOrders = orders.filter((o) =>
     o.items?.some((item: any) => item.unitPrice)
