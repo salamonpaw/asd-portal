@@ -29,7 +29,7 @@ export default async function PartnerDiscountsPage({
     );
   }
 
-  const products = await db.product.findMany({
+  const productsRaw = await db.product.findMany({
     orderBy: { name: "asc" },
     include: {
       partnerDiscounts: {
@@ -37,6 +37,15 @@ export default async function PartnerDiscountsPage({
       },
     },
   });
+
+  // Convert Decimal to number
+  const products = productsRaw.map((p) => ({
+    ...p,
+    partnerDiscounts: p.partnerDiscounts.map((d) => ({
+      ...d,
+      discountPercent: parseFloat(d.discountPercent.toString()),
+    })),
+  }));
 
   const discounts = await db.partnerProductDiscount.findMany({
     where: { partnerId },
