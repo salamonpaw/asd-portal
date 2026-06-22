@@ -37,7 +37,6 @@ export default async function ServicePage() {
     where: { partnerId },
     include: {
       items: {
-        include: { product: true },
         select: {
           id: true,
           quantity: true,
