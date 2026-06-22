@@ -5,6 +5,17 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.6] - 2026-06-22
+
+### Naprawione
+- Ikony w stat card'ach — widoczność i kontrast
+  - Zmieniony background z brand-soft na brand (ciemniejszy)
+  - Ikony teraz białe zamiast brand-colored
+  - Powiększone ikony i container dla lepszej widoczności
+  - Lepszy kontrast na jasnych ekranach
+
+---
+
 ## [0.2.5] - 2026-06-22
 
 ### Dodane
