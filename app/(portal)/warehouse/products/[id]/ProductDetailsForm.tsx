@@ -71,14 +71,14 @@ export function ProductDetailsForm({ product }: ProductDetailsFormProps) {
               onClick={handleSave}
               disabled={loading}
               style={{
-                padding: "8px 12px",
-                background: "var(--success)",
+                padding: "8px 16px",
+                background: "var(--brand)",
                 color: "white",
                 border: "none",
                 borderRadius: "var(--r-sm)",
                 cursor: loading ? "not-allowed" : "pointer",
                 fontSize: 12,
-                fontWeight: 500,
+                fontWeight: 600,
                 opacity: loading ? 0.6 : 1,
               }}
             >
@@ -88,20 +88,21 @@ export function ProductDetailsForm({ product }: ProductDetailsFormProps) {
               onClick={() => {
                 setIsEditing(false);
                 setFormData({
-                  description: formData.description,
-                  serialNumber: formData.serialNumber,
-                  location: formData.location,
+                  description: product.description,
+                  serialNumber: product.serialNumber,
+                  location: product.location,
                 });
               }}
               disabled={loading}
               style={{
-                padding: "8px 12px",
+                padding: "8px 16px",
                 background: "var(--ink-2)",
                 color: "white",
                 border: "none",
                 borderRadius: "var(--r-sm)",
                 cursor: "pointer",
                 fontSize: 12,
+                fontWeight: 500,
               }}
             >
               Anuluj

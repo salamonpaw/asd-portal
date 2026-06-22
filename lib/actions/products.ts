@@ -51,7 +51,13 @@ export async function createProduct(input: ProductInput) {
 export async function updateProduct(productId: string, input: Partial<ProductInput>) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || session.user.role !== "ADMIN") {
+    if (!session?.user) {
+      return { success: false, error: "Nie zalogowany" };
+    }
+
+    const role = session.user.role;
+    // Both ADMIN and WAREHOUSE_SPECIALIST can edit product details
+    if (role !== "ADMIN" && role !== "WAREHOUSE_SPECIALIST") {
       return { success: false, error: "Brak uprawnień" };
     }
 
