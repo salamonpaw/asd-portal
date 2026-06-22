@@ -5,6 +5,21 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.7] - 2026-06-22
+
+### Dodane
+- **Loading states — Skeleton screens**
+  - Skeleton component dla stat cards
+  - Skeleton dla list items (zamówienia, produkty)
+  - Smooth pulse animation
+  - Lepsze UX podczas ładowania danych
+
+### Zmienione
+- Dashboard'y teraz pokazują skeletons podczas ładowania
+- List pages pokazują placeholder'y podczas ładowania
+
+---
+
 ## [0.2.6] - 2026-06-22
 
 ### Naprawione
