@@ -48,13 +48,46 @@ export function AdminProductForm({ product, machineTypes, images: initialImages 
   const [success, setSuccess] = useState("");
 
   const handleSave = async () => {
-    if (!formData.name || !formData.machineTypeId) {
-      setError("Nazwa i typ automatu są wymagane");
+    setError("");
+
+    // Validation
+    if (!formData.name || !formData.name.trim()) {
+      setError("Nazwa produktu jest wymagana");
+      return;
+    }
+
+    if (!formData.machineTypeId) {
+      setError("Typ automatu jest wymagany");
+      return;
+    }
+
+    if (formData.costPrice !== undefined && formData.costPrice < 0) {
+      setError("Cena zakupu nie może być ujemna");
+      return;
+    }
+
+    if (formData.sellingPrice !== undefined && formData.sellingPrice < 0) {
+      setError("Cena sprzedaży nie może być ujemna");
+      return;
+    }
+
+    if (
+      formData.costPrice !== undefined &&
+      formData.sellingPrice !== undefined &&
+      formData.costPrice > 0 &&
+      formData.sellingPrice > 0 &&
+      formData.sellingPrice < formData.costPrice
+    ) {
+      setError("Cena sprzedaży musi być wyższa niż cena zakupu");
+      return;
+    }
+
+    if (formData.inStock !== undefined && formData.inStock < 0) {
+      setError("Stan magazynowy nie może być ujemny");
       return;
     }
 
     setLoading(true);
-    setError("");
     setSuccess("");
 
     try {

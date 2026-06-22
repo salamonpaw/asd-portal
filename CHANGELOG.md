@@ -5,6 +5,24 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.9] - 2026-06-22
+
+### Dodane
+- **Form validation — lepsze komunikaty błędów**
+  - Validation na formach tworzenia/edycji zamówień
+  - Validation cen (cena sprzedaży >= cena zakupu)
+  - Validation ilości (musi być > 0)
+  - Validation adresu dostawy (nie może być puste)
+  - Clear error messages pod każdym polem
+  - Required field indicators (*)
+
+### Zmienione
+- Ulepszone komunikaty błędów na formach
+- Lepszy feedback podczas wypełniania formularzy
+- Field-level validation z natychmiastowym feedbackiem
+
+---
+
 ## [0.2.8] - 2026-06-22
 
 ### Dodane

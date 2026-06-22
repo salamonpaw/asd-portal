@@ -122,9 +122,29 @@ export function ServiceOrderClient({ products, machineTypes, initialOrders, user
   };
 
   const handleCreateOrder = async () => {
-    if (!formData.deliveryAddress || cart.length === 0) {
-      setError("Uzupełnij adres dostawy i wybierz co najmniej jedną część");
+    setError("");
+
+    if (!formData.deliveryAddress || !formData.deliveryAddress.trim()) {
+      setError("Adres dostawy jest wymagany");
       return;
+    }
+
+    if (formData.deliveryAddress.trim().length < 5) {
+      setError("Adres dostawy musi mieć co najmniej 5 znaków");
+      return;
+    }
+
+    if (cart.length === 0) {
+      setError("Wybierz co najmniej jeden produkt do zamówienia");
+      return;
+    }
+
+    // Validate cart items
+    for (const item of cart) {
+      if (!item.quantity || item.quantity <= 0) {
+        setError(`Ilość dla "${item.productName}" musi być większa niż 0`);
+        return;
+      }
     }
 
     setLoading(true);
