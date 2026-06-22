@@ -20,6 +20,8 @@ interface PriceState {
 }
 
 export function ProductsClient({ products }: { products: Product[] }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [stockFilter, setStockFilter] = useState<"all" | "inStock" | "outOfStock">("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [prices, setPrices] = useState<Record<string, PriceState>>(
     Object.fromEntries(products.map((p) => [p.id, { costPrice: p.costPrice, sellingPrice: p.sellingPrice }]))
@@ -27,6 +29,15 @@ export function ProductsClient({ products }: { products: Product[] }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const filteredProducts = products.filter((p) => {
+    const matchesSearch = !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStock =
+      stockFilter === "all" ||
+      (stockFilter === "inStock" && (p.inStock ?? 0) > 0) ||
+      (stockFilter === "outOfStock" && (p.inStock ?? 0) === 0);
+    return matchesSearch && matchesStock;
+  });
 
   async function handleSavePrice(productId: string) {
     const priceData = prices[productId];
@@ -71,6 +82,38 @@ export function ProductsClient({ products }: { products: Product[] }) {
         </div>
       )}
 
+      {/* Search & Filter */}
+      <div style={{ display: "flex", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+        <input
+          type="text"
+          placeholder="Wyszukaj produkt..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            flex: 1,
+            minWidth: 200,
+            padding: "8px 12px",
+            border: "1px solid var(--line)",
+            borderRadius: 6,
+            fontSize: 13,
+          }}
+        />
+        <select
+          value={stockFilter}
+          onChange={(e) => setStockFilter(e.target.value as any)}
+          style={{
+            padding: "8px 12px",
+            border: "1px solid var(--line)",
+            borderRadius: 6,
+            fontSize: 13,
+          }}
+        >
+          <option value="all">Wszystkie</option>
+          <option value="inStock">Na stanie</option>
+          <option value="outOfStock">Brak na stanie</option>
+        </select>
+      </div>
+
       {products.length === 0 ? (
         <SectionCard title="Produkty">
           <div style={{ fontSize: 14, color: "var(--ink-3)" }}>Brak produktów</div>
@@ -88,7 +131,7 @@ export function ProductsClient({ products }: { products: Product[] }) {
               </tr>
             </thead>
             <tbody>
-              {products.map((product) => (
+              {filteredProducts.map((product) => (
                 <tr key={product.id} style={{ borderBottom: "1px solid var(--line)", background: editingId === product.id ? "rgba(0,0,0,.02)" : "transparent" }}>
                   <td style={{ padding: "12px 8px", fontSize: 14 }}>
                     <Link href={`/warehouse/products/${product.id}`} style={{ color: "var(--brand)", textDecoration: "none", fontWeight: 500 }}>
@@ -208,6 +251,12 @@ export function ProductsClient({ products }: { products: Product[] }) {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {products.length > 0 && (
+        <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 8 }}>
+          Wyświetlane: {filteredProducts.length} z {products.length} produktów
         </div>
       )}
     </div>
