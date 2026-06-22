@@ -33,8 +33,8 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // Allow changelog for all authenticated users
-  if (pathname.startsWith("/changelog")) {
+  // Allow changelog and dashboards for all authenticated users
+  if (pathname.startsWith("/changelog") || pathname.startsWith("/dashboard")) {
     return NextResponse.next();
   }
 
@@ -42,10 +42,10 @@ export async function middleware(req: NextRequest) {
   const role = (token?.role as string) || "";
 
   if (role === "WAREHOUSE_SPECIALIST" && !pathname.startsWith("/warehouse") && !pathname.startsWith("/api/auth")) {
-    return NextResponse.redirect(new URL("/warehouse", req.url));
+    return NextResponse.redirect(new URL("/warehouse/dashboard", req.url));
   }
-  if (role === "SERVICE_TECHNICIAN" && !pathname.startsWith("/partner/service") && !pathname.startsWith("/api/auth")) {
-    return NextResponse.redirect(new URL("/partner/service", req.url));
+  if (role === "SERVICE_TECHNICIAN" && !pathname.startsWith("/partner") && !pathname.startsWith("/api/auth")) {
+    return NextResponse.redirect(new URL("/partner/dashboard", req.url));
   }
   if (token && pathname.startsWith("/partner") && role === "STAFF") {
     return NextResponse.redirect(new URL("/staff/dashboard", req.url));
