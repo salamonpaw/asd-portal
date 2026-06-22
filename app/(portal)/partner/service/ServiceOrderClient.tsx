@@ -373,9 +373,12 @@ export function ServiceOrderClient({ products, machineTypes, initialOrders, user
                       )}
                     </div>
                     {isPriced && (
-                      <div style={{ marginTop: 12, fontSize: 11, borderTop: "1px solid var(--success)33", paddingTop: 12 }}>
-                        <div style={{ fontWeight: 600, marginBottom: 8 }}>Szczegóły cen:</div>
-                        <div style={{ display: "grid", gap: 6 }}>
+                      <div style={{ marginTop: 16, padding: 12, background: "rgba(34, 197, 94, 0.05)", border: "1px solid var(--success)33", borderRadius: "var(--r-sm)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                          <span style={{ fontSize: 18 }}>✓</span>
+                          <div style={{ fontWeight: 600, color: "var(--success)" }}>Potwierdzenie wyceny</div>
+                        </div>
+                        <div style={{ display: "grid", gap: 6, marginBottom: 12, paddingBottom: 12, borderBottom: "1px solid var(--success)22" }}>
                           {order.items.map((item) => {
                             const finalPrice = calculateFinalPrice(
                               item.unitPrice as any,
@@ -385,7 +388,7 @@ export function ServiceOrderClient({ products, machineTypes, initialOrders, user
                             );
                             const hasDiscount = item.discountType && item.discountValue && item.discountValue > 0;
                             return (
-                              <div key={item.id} style={{ display: "grid", gap: 2 }}>
+                              <div key={item.id} style={{ display: "grid", gap: 2, fontSize: 11 }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                   <div style={{ color: "var(--ink-3)" }}>
                                     {item.product.sku} × {item.quantity}
@@ -407,6 +410,12 @@ export function ServiceOrderClient({ products, machineTypes, initialOrders, user
                               </div>
                             );
                           })}
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div style={{ fontWeight: 600, fontSize: 12 }}>Razem do zapłaty:</div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--success)" }}>
+                            {total.toFixed(2)} zł
+                          </div>
                         </div>
                       </div>
                     )}
