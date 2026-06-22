@@ -31,6 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Stock level display
   - Product image gallery (JSON array support)
   - Accessible from product list with direct links
+  - Image management interface for warehouse specialists and admins
+  - Add multiple product images via URL
+  - Preview and remove images functionality
 
 - **Versioning & Changelog**: Version tracking and release notes
   - VERSION file tracking current release (0.2.0)
