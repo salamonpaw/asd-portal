@@ -18,7 +18,7 @@ type ServiceOrder = {
     quantity: number;
     price: number | null;
     fulfilledQuantity: number | null;
-    product: { sku: string; name: string };
+    product: { sku: string; name: string; costPrice: number | null; sellingPrice: number | null };
   }>;
   technician: { name: string; email: string };
   partner: { name: string };
@@ -207,7 +207,7 @@ export function WarehouseOrdersClient({ initialOrders }: Props) {
                             background: "var(--surface-2)",
                             borderRadius: "var(--r-sm)",
                             display: "grid",
-                            gridTemplateColumns: "auto 1fr auto auto",
+                            gridTemplateColumns: "auto 1fr auto auto auto auto",
                             gap: 12,
                             alignItems: "center",
                           }}
@@ -215,6 +215,12 @@ export function WarehouseOrdersClient({ initialOrders }: Props) {
                           <div style={{ fontWeight: 500 }}>{item.product.sku}</div>
                           <div>{item.product.name.substring(0, 40)}</div>
                           <div style={{ textAlign: "center", fontWeight: 500 }}>×{item.quantity}</div>
+                          <div style={{ fontSize: 11, color: "var(--ink-3)" }}>
+                            Zak: {item.product.costPrice ? parseFloat(item.product.costPrice.toString()).toFixed(2) : "—"} zł
+                          </div>
+                          <div style={{ fontSize: 11, color: "var(--ink-3)" }}>
+                            Sprz: {item.product.sellingPrice ? parseFloat(item.product.sellingPrice.toString()).toFixed(2) : "—"} zł
+                          </div>
                           <input
                             type="number"
                             placeholder="Cena"

@@ -15,7 +15,19 @@ export default async function WarehousePage() {
   // Get all service orders
   const orders = await db.serviceOrder.findMany({
     include: {
-      items: { include: { product: true } },
+      items: {
+        include: {
+          product: {
+            select: {
+              id: true,
+              sku: true,
+              name: true,
+              costPrice: true,
+              sellingPrice: true,
+            },
+          },
+        },
+      },
       technician: true,
       partner: true,
       warehouseSpecialist: true,
