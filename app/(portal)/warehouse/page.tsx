@@ -41,8 +41,26 @@ export default async function WarehousePage() {
 
   return (
     <div style={{ padding: "32px" }}>
-      <h1>Magazyn — Zarządzanie zamówieniami serwisowymi</h1>
-      <p style={{ color: "var(--ink-3)", marginTop: 8 }}>Przeglądaj, zatwierdź i realizuj zamówienia na części</p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 24 }}>
+        <div>
+          <h1>Magazyn — Zarządzanie zamówieniami serwisowymi</h1>
+          <p style={{ color: "var(--ink-3)", marginTop: 8 }}>Przeglądaj, zatwierdź i realizuj zamówienia na części</p>
+        </div>
+        <a
+          href="/changelog"
+          style={{
+            fontSize: 12,
+            color: "var(--brand)",
+            textDecoration: "none",
+            padding: "8px 12px",
+            background: "var(--brand-soft)",
+            borderRadius: "var(--r-sm)",
+            cursor: "pointer",
+          }}
+        >
+          📋 Changelog & Wersja
+        </a>
+      </div>
 
       <WarehouseOrdersClient initialOrders={orders as any} />
     </div>
