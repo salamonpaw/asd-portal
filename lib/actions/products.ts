@@ -153,3 +153,40 @@ export async function updateProductPricing(
   }
 }
 
+export async function updateProductImages(
+  productId: string,
+  images: string[]
+): Promise<ActionResult<{ id: string; images: string[] }>> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return { success: false, error: "Nie zalogowany" };
+    }
+
+    const role = session.user.role;
+    if (role !== "WAREHOUSE_SPECIALIST" && role !== "ADMIN") {
+      return { success: false, error: "Brak uprawnień" };
+    }
+
+    if (!images || images.length === 0) {
+      return { success: false, error: "Dodaj co najmniej jedno zdjęcie" };
+    }
+
+    const product = await db.product.update({
+      where: { id: productId },
+      data: { images: JSON.stringify(images) },
+      select: { id: true, images: true },
+    });
+
+    return {
+      success: true,
+      data: {
+        id: product.id,
+        images: product.images ? JSON.parse(product.images) : [],
+      }
+    };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+

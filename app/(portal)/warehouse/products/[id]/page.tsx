@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
+import { ProductImagesForm } from "./ProductImagesForm";
 
 export default async function ProductDetailPage({ params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -143,6 +144,11 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
           <div style={{ fontSize: 18, fontWeight: 600 }}>{product.inStock} szt.</div>
         </div>
       )}
+
+      {/* Images Management */}
+      <div style={{ marginTop: 32 }}>
+        <ProductImagesForm productId={product.id} currentImages={images} />
+      </div>
     </div>
   );
 }
