@@ -92,7 +92,7 @@ export async function updateServiceOrder(
     status?: ServiceOrderStatus;
     trackingNumber?: string;
     rejectionReason?: string;
-    itemPrices?: Record<string, number>;
+    itemPrices?: Record<string, { unitPrice: number; discountType?: string; discountValue?: number }>;
   }
 ): Promise<ActionResult<ServiceOrder & { items: any[] }>> {
   try {
