@@ -35,7 +35,19 @@ export default async function ServicePage() {
   // Get user's service orders
   const orders = await db.serviceOrder.findMany({
     where: { partnerId },
-    include: { items: { include: { product: true } }, warehouseSpecialist: true },
+    include: {
+      items: {
+        include: { product: true },
+        select: {
+          id: true,
+          quantity: true,
+          unitPrice: true,
+          fulfilledQuantity: true,
+          product: true,
+        },
+      },
+      warehouseSpecialist: true,
+    },
     orderBy: { createdAt: "desc" },
   });
 

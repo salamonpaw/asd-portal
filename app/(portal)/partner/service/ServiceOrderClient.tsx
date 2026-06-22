@@ -28,7 +28,7 @@ type ServiceOrder = {
   deliveryAddress: string;
   neededDate: string | null;
   notes: string | null;
-  items: Array<{ id: string; product: Product; quantity: number; price: number | null; fulfilledQuantity: number | null }>;
+  items: Array<{ id: string; product: Product; quantity: number; unitPrice: number | null; fulfilledQuantity: number | null }>;
   warehouseSpecialist: { name: string } | null;
   createdAt: Date;
 };
@@ -61,6 +61,19 @@ export function ServiceOrderClient({ products, machineTypes, initialOrders, user
     }
     return true;
   });
+
+  const calculateOrderTotal = (order: ServiceOrder) => {
+    return order.items.reduce((sum, item) => {
+      if (item.unitPrice) {
+        return sum + (item.unitPrice as any) * item.quantity;
+      }
+      return sum;
+    }, 0);
+  };
+
+  const isOrderPriced = (order: ServiceOrder) => {
+    return order.items.every((item) => item.unitPrice !== null && item.unitPrice !== undefined);
+  };
 
   const cartTotal = cart.length;
   const addToCart = (productId: string) => {
@@ -262,51 +275,99 @@ export function ServiceOrderClient({ products, machineTypes, initialOrders, user
                 Brak zamówień. Utwórz pierwsze!
               </div>
             ) : (
-              orders.map((order) => (
-                <div
-                  key={order.id}
-                  style={{
-                    padding: 16,
-                    border: "1px solid var(--ink-2)",
-                    borderRadius: "var(--r-sm)",
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                    <div>
-                      <strong style={{ fontSize: 14 }}>{order.code}</strong>
-                      <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }}>
-                        {new Date(order.createdAt).toLocaleDateString("pl")}
+              orders.map((order) => {
+                const isPriced = isOrderPriced(order);
+                const total = calculateOrderTotal(order);
+                return (
+                  <div
+                    key={order.id}
+                    style={{
+                      padding: 16,
+                      border: isPriced ? "2px solid var(--success)" : "1px solid var(--ink-2)",
+                      borderRadius: "var(--r-sm)",
+                      background: isPriced ? "var(--success-soft)" : "transparent",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+                      <div>
+                        <strong style={{ fontSize: 14 }}>{order.code}</strong>
+                        <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }}>
+                          {new Date(order.createdAt).toLocaleDateString("pl")}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        {isPriced && (
+                          <span
+                            style={{
+                              fontSize: 11,
+                              padding: "4px 8px",
+                              borderRadius: "var(--r-sm)",
+                              background: "var(--success)",
+                              color: "white",
+                              fontWeight: 600,
+                            }}
+                          >
+                            Wycenione
+                          </span>
+                        )}
+                        <span
+                          style={{
+                            fontSize: 11,
+                            padding: "4px 8px",
+                            borderRadius: "var(--r-sm)",
+                            background:
+                              order.status === "NOWE" ? "var(--brand-soft)" : order.status === "ZREALIZOWANE" ? "var(--success-soft)" : "var(--warning-soft)",
+                            color:
+                              order.status === "NOWE" ? "var(--brand)" : order.status === "ZREALIZOWANE" ? "var(--success)" : "var(--warning)",
+                          }}
+                        >
+                          {order.status}
+                        </span>
                       </div>
                     </div>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        padding: "4px 8px",
-                        borderRadius: "var(--r-sm)",
-                        background:
-                          order.status === "NOWE" ? "var(--brand-soft)" : order.status === "ZREALIZOWANE" ? "var(--success-soft)" : "var(--warning-soft)",
-                        color:
-                          order.status === "NOWE" ? "var(--brand)" : order.status === "ZREALIZOWANE" ? "var(--success)" : "var(--warning)",
-                      }}
-                    >
-                      {order.status}
-                    </span>
-                  </div>
-                  <div style={{ marginTop: 12, fontSize: 12 }}>
-                    <div>
-                      <strong>Adres:</strong> {order.deliveryAddress}
+                    <div style={{ marginTop: 12, fontSize: 12 }}>
+                      <div>
+                        <strong>Adres:</strong> {order.deliveryAddress}
+                      </div>
+                      <div style={{ marginTop: 4 }}>
+                        <strong>Pozycji:</strong> {order.items.length}
+                      </div>
+                      {isPriced && (
+                        <div style={{ marginTop: 4, fontWeight: 600, color: "var(--success)" }}>
+                          Razem: {total.toFixed(2)} zł
+                        </div>
+                      )}
+                      {order.warehouseSpecialist && (
+                        <div style={{ marginTop: 4, color: "var(--ink-3)" }}>
+                          <strong>Magazynier:</strong> {order.warehouseSpecialist.name}
+                        </div>
+                      )}
+                      {!isPriced && (
+                        <div style={{ marginTop: 8, fontSize: 11, color: "var(--warning)" }}>
+                          ⏳ Oczekuje na wycenę
+                        </div>
+                      )}
                     </div>
-                    <div style={{ marginTop: 4 }}>
-                      <strong>Pozycji:</strong> {order.items.length}
-                    </div>
-                    {order.warehouseSpecialist && (
-                      <div style={{ marginTop: 4, color: "var(--ink-3)" }}>
-                        <strong>Magazynier:</strong> {order.warehouseSpecialist.name}
+                    {isPriced && (
+                      <div style={{ marginTop: 12, fontSize: 11, borderTop: "1px solid var(--success)33", paddingTop: 12 }}>
+                        <div style={{ fontWeight: 600, marginBottom: 8 }}>Szczegóły cen:</div>
+                        <div style={{ display: "grid", gap: 4 }}>
+                          {order.items.map((item) => (
+                            <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <div style={{ color: "var(--ink-3)" }}>
+                                {item.product.sku} × {item.quantity}
+                              </div>
+                              <div style={{ fontWeight: 500 }}>
+                                {((item.unitPrice as any) * item.quantity).toFixed(2)} zł
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
