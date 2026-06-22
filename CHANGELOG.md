@@ -5,6 +5,35 @@ All notable changes to ASD Partner Portal will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-06-22
+
+### Added
+- **Phase 4.1**: Product pricing display in warehouse orders
+  - Warehouse specialists can view costPrice and sellingPrice for all order items
+  - Edit pricing interface with real-time validation
+  
+- **Phase 4.2**: Order pricing summary for service technicians
+  - "Wycenione" (priced) badge appears when all order items have prices set
+  - Display total order sum and per-item price breakdown
+  - Visual indicators for orders awaiting pricing (⏳ Oczekuje na wycenę)
+  
+- **Phase 4.3**: Discount management and final pricing
+  - Warehouse specialists can apply discounts per item (% or fixed amount)
+  - Auto-calculation of finalPrice based on discount type
+  - Service technicians see finalPrice with discount breakdown
+  - Green highlighting for priced items, warning colors for discounts
+
+### Changed
+- Enhanced order detail UI with color-coded badges (Wycenione = green)
+- Improved warehouse order management interface with inline pricing
+- Better visual hierarchy for pricing information in order summaries
+
+### Fixed
+- Prisma query include/select conflicts resolved
+- Type safety improvements for pricing data structures
+
+---
+
 ## [0.1.0] - 2026-06-10
 
 ### Added
