@@ -33,6 +33,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
+  // Allow changelog for all authenticated users
+  if (pathname.startsWith("/changelog")) {
+    return NextResponse.next();
+  }
+
   // Cross-role protection
   const role = (token?.role as string) || "";
 
