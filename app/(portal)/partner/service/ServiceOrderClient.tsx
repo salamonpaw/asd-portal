@@ -142,7 +142,7 @@ export function ServiceOrderClient({ products, machineTypes, initialOrders, user
     // Validate cart items
     for (const item of cart) {
       if (!item.quantity || item.quantity <= 0) {
-        setError(`Ilość dla "${item.productName}" musi być większa niż 0`);
+        setError("Ilość każdego produktu musi być większa niż 0");
         return;
       }
     }
