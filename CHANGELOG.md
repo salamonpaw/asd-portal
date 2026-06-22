@@ -5,6 +5,27 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-06-22
+
+### Dodane
+- **Zarządzanie rabatami na poziomie partnera**
+  - Model `PartnerProductDiscount` — rabat dla partnera na konkretny produkt
+  - Admin panel do przypisywania rabatów per partner
+  - Auto-apply rabatu z partnera w zamówieniach magazyniera
+  - Tracking ostatniego zamówienia od partnera
+
+- **Verification notifications**
+  - Komunikat: "Brak zamówień przez ostatni rok — zweryfikuj rabat"
+  - Highlight rabatów do weryfikacji
+  - Admin może szybko zmienić rabat
+
+### Zmienione
+- Warehouse order pricing now includes partner discount level
+- Partner discount auto-applied w pricing calculations
+- Enhanced order management z discount verification
+
+---
+
 ## [0.2.9] - 2026-06-22
 
 ### Dodane

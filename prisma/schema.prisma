@@ -119,6 +119,7 @@ model Partner {
   projects       Project[]
   markets        Market[]
   serviceOrders  ServiceOrder[]
+  productDiscounts PartnerProductDiscount[]
 }
 
 model Market {
@@ -298,11 +299,28 @@ model Product {
   costPrice        Decimal?      // Cena zakupu
   sellingPrice     Decimal?      // Cena sprzedaży dla klienta
   serviceOrderItems ServiceOrderItem[]
+  partnerDiscounts PartnerProductDiscount[]
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 
   @@index([sku])
   @@index([machineTypeId])
+}
+
+model PartnerProductDiscount {
+  id             String   @id @default(cuid())
+  partnerId      String
+  partner        Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  discountPercent Decimal  @default(0)  // Procentowy rabat dla tego partnera na ten produkt
+  verifiedAt     DateTime? // Ostatnia weryfikacja rabatu
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([partnerId, productId])
+  @@index([partnerId])
+  @@index([productId])
 }
 
 model ServiceOrderHistory {
