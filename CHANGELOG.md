@@ -46,6 +46,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved warehouse order management interface with inline pricing
 - Better visual hierarchy for pricing information in order summaries
 - Product schema extended with images field for gallery support
+- **Admin product editing**: Full-featured `/admin/products/[id]` page for comprehensive product management
+- **Search & Filters**: 
+  - Search products by name on warehouse products list
+  - Filter products by stock status (in stock, out of stock)
+  - Search orders by number or partner name
+- **Enhanced pricing confirmation**: Professional card design with checkmark indicator for priced orders
+- **Product details editing**: Warehouse specialists can now edit product descriptions, serial numbers, and location information
 
 ### Fixed
 - Prisma query include/select conflicts resolved
