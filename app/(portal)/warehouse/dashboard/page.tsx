@@ -234,7 +234,6 @@ export default async function WarehouseDashboard() {
                 <div
                   style={{
                     fontSize: 12,
-                    color: "var(--ink-3)",
                     background: product.inStock ? "var(--success-soft)" : "var(--danger-soft)",
                     color: product.inStock ? "var(--success)" : "var(--danger)",
                     padding: "4px 8px",
