@@ -269,6 +269,7 @@ model ServiceOrder {
   rejectionReason        String?
   trackingNumber         String?
   history                ServiceOrderHistory[]
+  pendingItems        PendingOrderItem[]
   createdAt              DateTime              @default(now())
   updatedAt              DateTime              @updatedAt
 
@@ -296,6 +297,9 @@ model ServiceOrderItem {
 
   @@index([serviceOrderId])
   @@index([productId])
+
+  pendingItems  PendingOrderItem[]
+
 }
 
 model Product {
@@ -340,6 +344,7 @@ model PartnerProductDiscount {
   @@unique([partnerId, productId])
   @@index([partnerId])
   @@index([productId])
+
 }
 
 model ServiceOrderHistory {
@@ -403,6 +408,7 @@ model Inventory {
   audits InventoryAudit[]
 
   @@index([productId])
+
 }
 
 model InventoryAudit {
@@ -416,4 +422,26 @@ model InventoryAudit {
   createdAt    DateTime  @default(now())
 
   @@index([inventoryId])
+}
+
+// ─── Pending Orders (Partial Order Management) ────────────────────────────────
+
+model PendingOrderItem {
+  id                 String    @id @default(cuid())
+  serviceOrderId     String
+  serviceOrder       ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  serviceOrderItemId String?
+  serviceOrderItem   ServiceOrderItem? @relation(fields: [serviceOrderItemId], references: [id], onDelete: SetNull)
+  
+  subOrderSuffix     String    // "/A", "/B", itd
+  expectedDate       DateTime  // Przewidywana dostępność
+  status             String    @default("PENDING") // PENDING, FULFILLED
+  
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  reminderSentAt     DateTime?
+
+  @@index([serviceOrderId])
+  @@index([expectedDate])
+  @@index([status])
 }
