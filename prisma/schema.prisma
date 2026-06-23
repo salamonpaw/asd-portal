@@ -318,6 +318,7 @@ model Product {
   sellingPrice     Decimal?      // Cena sprzedaży dla klienta
   serviceOrderItems ServiceOrderItem[]
   partnerDiscounts PartnerProductDiscount[]
+  inventory        Inventory?
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 
@@ -387,4 +388,32 @@ model ContentItem {
   label     String
   group     String
   updatedAt DateTime @updatedAt
+}
+
+// ─── Inventory ────────────────────────────────────────────────────────────────
+
+model Inventory {
+  id           String   @id @default(cuid())
+  productId    String   @unique
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  currentStock Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  audits InventoryAudit[]
+
+  @@index([productId])
+}
+
+model InventoryAudit {
+  id           String    @id @default(cuid())
+  inventoryId  String
+  inventory    Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  fromStock    Int
+  toStock      Int
+  changedBy    String
+  notes        String?
+  createdAt    DateTime  @default(now())
+
+  @@index([inventoryId])
 }
