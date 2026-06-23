@@ -15,7 +15,7 @@ type Product = {
   serialNumber: string | null;
   supplier: string | null;
   inStock: number | null;
-  basePrice: number | null;
+  sellingPrice: number | null;
   createdAt: Date;
 };
 
@@ -77,7 +77,7 @@ export function ProductsClient({ initialProducts, machineTypes, userRole }: Prop
         serialNumber: "",
         supplier: "",
         inStock: undefined,
-        basePrice: undefined,
+        sellingPrice: undefined,
       });
       setIsAdding(false);
       setError("");
@@ -109,7 +109,7 @@ export function ProductsClient({ initialProducts, machineTypes, userRole }: Prop
         serialNumber: "",
         supplier: "",
         inStock: undefined,
-        basePrice: undefined,
+        sellingPrice: undefined,
       });
       setError("");
     } else {
@@ -240,8 +240,8 @@ export function ProductsClient({ initialProducts, machineTypes, userRole }: Prop
               <input
                 className="input"
                 type="number"
-                value={formData.basePrice || ""}
-                onChange={(e) => setFormData({ ...formData, basePrice: e.target.value ? parseFloat(e.target.value) : undefined })}
+                value={formData.sellingPrice || ""}
+                onChange={(e) => setFormData({ ...formData, sellingPrice: e.target.value ? parseFloat(e.target.value) : undefined })}
               />
             </div>
           </div>
@@ -273,7 +273,7 @@ export function ProductsClient({ initialProducts, machineTypes, userRole }: Prop
                   serialNumber: "",
                   supplier: "",
                   inStock: undefined,
-                  basePrice: undefined,
+                  sellingPrice: undefined,
                 });
                 setError("");
               }}
@@ -343,8 +343,8 @@ export function ProductsClient({ initialProducts, machineTypes, userRole }: Prop
                       <input
                         className="input"
                         type="number"
-                        value={formData.basePrice || ""}
-                        onChange={(e) => setFormData({ ...formData, basePrice: e.target.value ? parseFloat(e.target.value) : undefined })}
+                        value={formData.sellingPrice || ""}
+                        onChange={(e) => setFormData({ ...formData, sellingPrice: e.target.value ? parseFloat(e.target.value) : undefined })}
                       />
                     </div>
                   </div>
@@ -368,7 +368,7 @@ export function ProductsClient({ initialProducts, machineTypes, userRole }: Prop
                     </div>
                     <div style={{ fontSize: 14, marginTop: 4, fontWeight: 500 }}>{product.name}</div>
                     {product.description && <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 6 }}>{product.description.substring(0, 80)}</div>}
-                    {product.basePrice && <div style={{ fontSize: 12, color: "var(--brand)", marginTop: 4, fontWeight: 500 }}>Cena: {product.basePrice.toFixed(2)} zł</div>}
+                    {product.sellingPrice && <div style={{ fontSize: 12, color: "var(--brand)", marginTop: 4, fontWeight: 500 }}>Cena: {product.sellingPrice.toFixed(2)} zł</div>}
                   </div>
                   {!isReadOnly && (
                     <div style={{ display: "flex", gap: 8 }}>
@@ -386,7 +386,7 @@ export function ProductsClient({ initialProducts, machineTypes, userRole }: Prop
                             serialNumber: product.serialNumber || "",
                             supplier: product.supplier || "",
                             inStock: product.inStock || undefined,
-                            basePrice: product.basePrice ? parseFloat(product.basePrice.toString()) : undefined,
+                            sellingPrice: product.sellingPrice ? parseFloat(product.sellingPrice.toString()) : undefined,
                           });
                         }}
                       >

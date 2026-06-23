@@ -9,7 +9,10 @@ export async function createPartnerUser(
   name: string,
   email: string,
   password: string
-) {
+): Promise<
+  | { success: true; data: { id: string; name: string; email: string; role: string } }
+  | { success: false; error: string }
+> {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     return { success: false, error: "Nie zalogowany" };
