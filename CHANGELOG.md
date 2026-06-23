@@ -5,7 +5,36 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.0] - 2026-06-23
+## [0.6.0] - 2026-06-23
+
+### Dodane
+- **Partial Order Management System**
+  - PendingOrderItem model for tracking split/delayed orders
+  - Sub-order naming convention ("/A", "/B", etc)
+  - Expected availability date tracking (weekly granularity)
+  - Status workflow: PENDING → FULFILLED
+  - Automatic reminder system (5 days before expected date)
+  - Full order history with pending items
+
+- **Server Actions for Partial Orders**
+  - `createPendingOrderItem()` — create pending order for delayed item
+  - `getPendingOrderItems()` — list all pending for order
+  - `updatePendingOrderStatus()` — mark item as fulfilled
+  - `getPendingOrdersNeedingReminder()` — fetch for cron scheduler
+  - `markReminderSent()` — track reminder notifications
+
+### Zmienione
+- ServiceOrder now tracks pending items separately
+- ServiceOrderItem linked to pending orders if partial
+- Improved order fulfillment workflow for stock unavailability
+
+### Uwaga
+- UI component for "Realizuj Później" button planned for refactor phase
+- Cron scheduler for reminders requires deployment configuration
+
+---
+
+ - 2026-06-23
 
 ### Dodane
 - **Inventory Management System**
