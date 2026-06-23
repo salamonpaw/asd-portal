@@ -5,6 +5,72 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-06-23
+
+### Dodane
+- **Inventory Management System**
+  - Inventory model per product (global stock tracking)
+  - InventoryAudit model for complete change history
+  - `/warehouse/inventory` page — warehouse stock management
+  - Edit stock: current state → target state
+  - Full audit trail with timestamps and user tracking
+  - Notes field for WZ numbers and tracking info
+  - Search products by name or SKU
+  - Stock comparison: current inventory vs system stock
+  - Auto-summary display on save with change details
+
+- **Server Actions**
+  - `updateInventoryStock()` — change stock with audit trail
+  - `getInventoryHistory()` — fetch detailed audit history
+  - `getAllInventory()` — list all inventory with history
+
+### Zmienione
+- Warehouse navigation now includes "Stan magazynu" link
+- Inventory tracking integrated into product management
+- Stock history permanently stored for audit purposes
+
+---
+
+## [0.4.0] - 2026-06-23
+
+### Dodane
+- **Multi-Currency Pricing System**
+  - Partner.currency field (PLN, EUR, USD)
+  - Partner.minProfitMargin field (configurable per partner, default 10%)
+  - CurrencyExchangeRate table for tracking historical exchange rates
+  - SystemConfig table for global admin parameters
+
+- **Exchange Rates Management (Admin)**
+  - `/admin/exchange-rates` page
+  - Add/view currency exchange rates (PLN↔EUR, PLN↔USD, EUR↔USD)
+  - Historical tracking of exchange rate changes
+  - Global and partner-specific rates support
+
+- **Warehouse Order Pricing Enhancement**
+  - OrderPricingClient component for editable item pricing
+  - Multi-currency support in order pricing form
+  - Exchange rate input (auto-populated from admin settings)
+  - Discount type selector (% or zł)
+  - Margin validation: block sale if margin < configured minimum
+  - Warning for partners with no orders in 12+ months
+  - Notes field for WZ number and other tracking info
+  - Live final price calculation with margin validation feedback
+
+- **Server Actions for Pricing**
+  - `updateOrderItemPricing()` — update item pricing with validation
+  - `getExchangeRates()` — fetch applicable exchange rates
+  - `addExchangeRate()` — admin action to add new rates
+  - `getSystemConfig()` / `updateSystemConfig()` — admin config management
+  - `checkPartnerOrderStatus()` — detect partners with no recent orders
+
+### Zmienione
+- Warehouse order detail page refactored to use pricing client
+- Pricing validation now checks minimum margin dynamically
+- Exchange rate history preserved for audit trail
+- Order items now store currency and exchange rate at time of pricing
+
+---
+
 ## [0.3.2] - 2026-06-23
 
 ### Dodane
