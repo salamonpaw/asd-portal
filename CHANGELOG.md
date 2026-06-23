@@ -5,6 +5,23 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2026-06-23
+
+### Dodane
+- **Partner User Management — Zarządzanie serwisantami**
+  - Page `/partner/users` — Partner może tworzyć konta serwisantów
+  - Form do dodania nowego serwisanta (imię, email, hasło)
+  - Auto-assign serwisanta do partnera (rola SERVICE_TECHNICIAN)
+  - Lista wszystkich serwisantów przypisanych do partnera
+  - Serwisanci mogą zamawiać części pod partnera
+  - Opcja dodania wielu serwisantów na konto partnera
+
+### Zmienione
+- Added "Serwisanci" menu item w navigacji Partnera
+- Partner navigation now includes user management
+
+---
+
 ## [0.3.1] - 2026-06-22
 
 ### Dodane
