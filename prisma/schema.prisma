@@ -55,6 +55,17 @@ enum ServiceOrderStatus {
   ZAWIESZONE
 }
 
+enum Currency {
+  PLN
+  EUR
+  USD
+}
+
+enum DiscountType {
+  PERCENT
+  AMOUNT
+}
+
 // ─── Users ───────────────────────────────────────────────────────────────────
 
 model User {
@@ -112,14 +123,17 @@ model Partner {
   since            String
   machinesReported Int          @default(0)
   repId            String
+  currency         Currency     @default(PLN)
+  minProfitMargin  Decimal      @default(10)
   createdAt        DateTime     @default(now())
 
-  rep            Rep            @relation(fields: [repId], references: [id])
-  users          User[]
-  projects       Project[]
-  markets        Market[]
-  serviceOrders  ServiceOrder[]
+  rep              Rep                       @relation(fields: [repId], references: [id])
+  users            User[]
+  projects         Project[]
+  markets          Market[]
+  serviceOrders    ServiceOrder[]
   productDiscounts PartnerProductDiscount[]
+  exchangeRates    CurrencyExchangeRate[]
 }
 
 model Market {
@@ -270,10 +284,14 @@ model ServiceOrderItem {
   product            Product      @relation(fields: [productId], references: [id])
   quantity           Int
   fulfilledQuantity  Int?
-  unitPrice          Decimal?     // Cena jednostkowa w momencie zamówienia
-  discountType       String?      // "PERCENT" lub "AMOUNT"
-  discountValue      Decimal?     // Wartość rabatu (% lub kwota)
-  finalPrice         Decimal?     // Cena jednostkowa po rabacie
+  unitPrice          Decimal?
+  currency           Currency     @default(PLN)
+  exchangeRate       Decimal      @default(1)
+  discountType       DiscountType?
+  discountValue      Decimal?
+  finalPrice         Decimal?
+  costPrice          Decimal?
+  notes              String?
   createdAt          DateTime     @default(now())
 
   @@index([serviceOrderId])
@@ -333,6 +351,31 @@ model ServiceOrderHistory {
   createdAt      DateTime     @default(now())
 
   @@index([serviceOrderId])
+}
+
+// ─── Exchange Rates ────────────────────────────────────────────────────────────
+
+model CurrencyExchangeRate {
+  id              String   @id @default(cuid())
+  partnerId       String?
+  partner         Partner? @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  fromCurrency    Currency
+  toCurrency      Currency
+  rate            Decimal
+  effectiveDate   DateTime
+  createdAt       DateTime @default(now())
+
+  @@index([partnerId])
+  @@index([effectiveDate])
+}
+
+// ─── System Config ────────────────────────────────────────────────────────────
+
+model SystemConfig {
+  id                String   @id @default(cuid())
+  minProfitMargin   Decimal  @default(10)
+  reminderDaysBefore Int     @default(5)
+  updatedAt         DateTime @updatedAt
 }
 
 // ─── Content Management ───────────────────────────────────────────────────────
