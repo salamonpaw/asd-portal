@@ -13,6 +13,7 @@ const NAV_PARTNER = [
   { key: "new",        href: "/partner/projects/new",label: "Nowe zgłoszenie", icon: "plus" },
   { key: "projects",   href: "/partner/projects",    label: "Moje projekty",    icon: "layers" },
   { key: "orders",     href: "/partner/orders",      label: "Moje zamówienia",  icon: "shoppingCart" },
+  { key: "users",      href: "/partner/users",       label: "Serwisanci",       icon: "users" },
   { key: "profile",    href: "/partner/profile",     label: "Mój profil",       icon: "user" },
 ];
 
