@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
+import { OrderPricingClient } from "./OrderPricingClient";
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -143,66 +144,40 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         </div>
       </div>
 
-      {/* Items */}
+      {/* Items with Pricing */}
       <div style={{ marginBottom: 32 }}>
-        <h2 style={{ marginBottom: 16, fontSize: 16, fontWeight: 600 }}>Pozycje zamówienia</h2>
+        <h2 style={{ marginBottom: 16, fontSize: 16, fontWeight: 600 }}>Pozycje zamówienia — Wycena</h2>
         {order.items.length > 0 ? (
-          <div style={{ background: "var(--paper)", border: "1px solid var(--ink-2)", borderRadius: "var(--r)", overflow: "hidden" }}>
-            {order.items.map((item, idx) => {
-              const unitPrice = item.unitPrice ? parseFloat(item.unitPrice.toString()) : 0;
-              const discountValue = item.discountValue ? parseFloat(item.discountValue.toString()) : 0;
-              let discount = 0;
-              if (item.discountType === "PERCENT") {
-                discount = (unitPrice * discountValue) / 100;
-              } else if (item.discountType === "AMOUNT") {
-                discount = discountValue;
-              }
-              const finalUnitPrice = unitPrice - discount;
-              const totalPrice = finalUnitPrice * item.quantity;
-
-              return (
-                <div
-                  key={item.id}
-                  style={{
-                    padding: 16,
-                    borderBottom: idx < order.items.length - 1 ? "1px solid var(--ink-2)" : "none",
-                    display: "grid",
-                    gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr",
-                    gap: 16,
-                    fontSize: 13,
-                  }}
-                >
-                  <div>
-                    <div style={{ fontWeight: 600, marginBottom: 4 }}>{item.product.name}</div>
-                    <div style={{ fontSize: 11, color: "var(--ink-3)" }}>SKU: {item.product.sku}</div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>Ilość</div>
-                    <div style={{ fontWeight: 600 }}>{item.quantity} szt.</div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>Cena jedn.</div>
-                    <div style={{ fontWeight: 600 }}>{unitPrice.toFixed(2)} zł</div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>Rabat</div>
-                    {discount > 0 ? (
-                      <div style={{ fontWeight: 600, color: "var(--warn)" }}>
-                        -{discount.toFixed(2)} zł
-                        {item.discountType === "PERCENT" && ` (${discountValue}%)`}
-                      </div>
-                    ) : (
-                      <div style={{ color: "var(--ink-3)" }}>—</div>
-                    )}
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>Razem</div>
-                    <div style={{ fontWeight: 600, color: "var(--brand)" }}>{totalPrice.toFixed(2)} zł</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <OrderPricingClient
+            orderId={order.id}
+            items={order.items.map((item) => ({
+              id: item.id,
+              productId: item.productId,
+              product: {
+                id: item.product.id,
+                sku: item.product.sku,
+                name: item.product.name,
+                costPrice: item.product.costPrice ? parseFloat(item.product.costPrice.toString()) : null,
+                sellingPrice: item.product.sellingPrice ? parseFloat(item.product.sellingPrice.toString()) : null,
+                inStock: item.product.inStock,
+              },
+              quantity: item.quantity,
+              unitPrice: item.unitPrice ? parseFloat(item.unitPrice.toString()) : null,
+              currency: item.currency,
+              exchangeRate: parseFloat(item.exchangeRate.toString()),
+              discountType: item.discountType,
+              discountValue: item.discountValue ? parseFloat(item.discountValue.toString()) : null,
+              finalPrice: item.finalPrice ? parseFloat(item.finalPrice.toString()) : null,
+              costPrice: item.costPrice ? parseFloat(item.costPrice.toString()) : null,
+              notes: item.notes,
+            }))}
+            partner={{
+              id: order.partner.id,
+              name: order.partner.name,
+              currency: order.partner.currency,
+              minProfitMargin: order.partner.minProfitMargin ? parseFloat(order.partner.minProfitMargin.toString()) : 10,
+            }}
+          />
         ) : (
           <div style={{ padding: 32, textAlign: "center", background: "var(--surface-2)", borderRadius: "var(--r)", color: "var(--ink-3)" }}>
             Brak pozycji

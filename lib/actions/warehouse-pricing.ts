@@ -192,3 +192,24 @@ export async function updateSystemConfig(data: {
     return { success: false, error: (error as Error).message };
   }
 }
+
+export async function checkPartnerOrderStatus(partnerId: string) {
+  try {
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+    const lastOrder = await db.serviceOrder.findFirst({
+      where: {
+        partnerId,
+        createdAt: { gte: oneYearAgo },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const needsVerification = !lastOrder;
+
+    return { success: true, data: { needsVerification, lastOrderDate: lastOrder?.createdAt || null } };
+  } catch (error) {
+    return { success: false, error: (error as Error).message, data: null };
+  }
+}
