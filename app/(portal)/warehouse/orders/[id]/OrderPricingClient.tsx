@@ -11,6 +11,7 @@ interface Product {
   costPrice: number | null;
   sellingPrice: number | null;
   inStock: number | null;
+  inventory?: { currentStock: number } | null;
 }
 
 interface OrderItem {
@@ -194,7 +195,7 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
               }}
             >
               {!isEditing ? (
-                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr auto", gap: 16, alignItems: "center" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr auto", gap: 16, alignItems: "center" }}>
                   <div>
                     <div style={{ fontWeight: 600, marginBottom: 4 }}>{item.product.name}</div>
                     <div style={{ fontSize: 11, color: "var(--ink-3)" }}>SKU: {item.product.sku}</div>
@@ -202,6 +203,12 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
                   <div style={{ textAlign: "right" }}>
                     <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>Ilość</div>
                     <div style={{ fontWeight: 600 }}>{item.quantity} szt.</div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>📦 Magazyn</div>
+                    <div style={{ fontWeight: 600, color: (item.product.inventory?.currentStock || 0) >= item.quantity ? "var(--success)" : "var(--warn)" }}>
+                      {item.product.inventory?.currentStock || 0} szt.
+                    </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>Cena jedn.</div>
@@ -238,7 +245,7 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
                 </div>
               ) : (
                 <div>
-                  <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16, marginBottom: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
                     <div>
                       <div style={{ fontWeight: 600, marginBottom: 4 }}>{item.product.name}</div>
                       <div style={{ fontSize: 11, color: "var(--ink-3)" }}>SKU: {item.product.sku}</div>
@@ -246,6 +253,12 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
                     <div style={{ textAlign: "right" }}>
                       <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>Cena sprzedaży</div>
                       <div style={{ fontSize: 14, fontWeight: 600 }}>{sellingPrice.toFixed(2)} zł</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>📦 Na magazynie</div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: (item.product.inventory?.currentStock || 0) >= item.quantity ? "var(--success)" : "var(--warn)" }}>
+                        {item.product.inventory?.currentStock || 0} szt.
+                      </div>
                     </div>
                   </div>
 

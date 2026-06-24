@@ -19,7 +19,13 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     where: { id },
     include: {
       items: {
-        include: { product: true },
+        include: {
+          product: {
+            include: {
+              inventory: { select: { currentStock: true } },
+            },
+          },
+        },
       },
       partner: true,
       technician: true,
