@@ -16,6 +16,11 @@ export default async function WarehouseProductsPage() {
       costPrice: true,
       sellingPrice: true,
       inStock: true,
+      inventory: {
+        select: {
+          currentStock: true,
+        },
+      },
     },
     orderBy: { name: "asc" },
   });
@@ -29,6 +34,7 @@ export default async function WarehouseProductsPage() {
         costPrice: p.costPrice ? parseFloat(p.costPrice.toString()) : null,
         sellingPrice: p.sellingPrice ? parseFloat(p.sellingPrice.toString()) : null,
         inStock: p.inStock,
+        warehouseStock: p.inventory?.currentStock || 0,
       }))} />
     </div>
   );

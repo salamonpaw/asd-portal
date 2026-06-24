@@ -5,6 +5,38 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2026-06-24
+
+### Dodane
+- **Bulk Inventory Management System**
+  - "Uzupełnij magazyn" button → modal z koszykiem produktów
+  - Search & add multiple products na raz do jednej operacji
+  - +/- buttons do szybkiej regulacji ilości
+  - WZ/numer dokumentu dla całej operacji
+  - Preview zmian przed zapisaniem
+  - One-click "Zapisz wszystko" → tworzy audity dla wszystkich
+  - Automatyczne przeładowanie po zapisie
+
+- **Warehouse Stock Column in Products List**
+  - "📦 Magazyn" kolumna w `/warehouse/products`
+  - Porównanie: stan w systemie vs. fizycznie w magazynie
+  - Kolorowe wskaźniki: zielony (OK), pomarańczowy (niezgodność)
+
+- **Product Card Redesign (UX/UI)**
+  - Eliminacja duplikatów pól i powtórzeń
+  - Nowa struktura: Header (SKU, Nazwa, Typ, Dostępne) → Details (2-column)
+  - Lewa kolumna: Zdjęcia
+  - Prawa kolumna: Ceny, Stan magazynu (fizycznie + różnica), Szczegóły
+  - Logiczny flow: View → Edit → Manage Images
+  - Jeden "wróć" link zamiast duplikatów
+
+### Zmienione
+- Warehouse products page: fetchuje Inventory.currentStock
+- Product detail page: reorganizacja sekcji dla lepszej czytelności
+- Inventory list: dodane summary stats (produkty, razem na stanie)
+
+---
+
 ## [0.6.0] - 2026-06-23
 
 ### Dodane

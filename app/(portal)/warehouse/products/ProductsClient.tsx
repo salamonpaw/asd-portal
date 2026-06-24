@@ -12,6 +12,7 @@ interface Product {
   costPrice: number | null;
   sellingPrice: number | null;
   inStock: number | null;
+  warehouseStock: number;
 }
 
 interface PriceState {
@@ -126,7 +127,8 @@ export function ProductsClient({ products }: { products: Product[] }) {
                 <th style={{ textAlign: "left", padding: "12px 8px", fontSize: 12, fontWeight: 600, textTransform: "uppercase", color: "var(--ink-3)" }}>Nazwa</th>
                 <th style={{ textAlign: "right", padding: "12px 8px", fontSize: 12, fontWeight: 600, textTransform: "uppercase", color: "var(--ink-3)" }}>Cena zakupu</th>
                 <th style={{ textAlign: "right", padding: "12px 8px", fontSize: 12, fontWeight: 600, textTransform: "uppercase", color: "var(--ink-3)" }}>Cena sprzedaży</th>
-                <th style={{ textAlign: "right", padding: "12px 8px", fontSize: 12, fontWeight: 600, textTransform: "uppercase", color: "var(--ink-3)" }}>Stan</th>
+                <th style={{ textAlign: "right", padding: "12px 8px", fontSize: 12, fontWeight: 600, textTransform: "uppercase", color: "var(--ink-3)" }}>W systemie</th>
+                <th style={{ textAlign: "right", padding: "12px 8px", fontSize: 12, fontWeight: 600, textTransform: "uppercase", color: "var(--ink-3)" }}>📦 Magazyn</th>
                 <th style={{ textAlign: "center", padding: "12px 8px", fontSize: 12, fontWeight: 600, textTransform: "uppercase", color: "var(--ink-3)" }}>Akcje</th>
               </tr>
             </thead>
@@ -187,6 +189,9 @@ export function ProductsClient({ products }: { products: Product[] }) {
                     )}
                   </td>
                   <td style={{ textAlign: "right", padding: "12px 8px", fontSize: 14 }}>{product.inStock ?? 0}</td>
+                  <td style={{ textAlign: "right", padding: "12px 8px", fontSize: 14, fontWeight: 600, color: product.warehouseStock > 0 ? "var(--success)" : "var(--warn)" }}>
+                    {product.warehouseStock} szt.
+                  </td>
                   <td style={{ textAlign: "center", padding: "12px 8px" }}>
                     {editingId === product.id ? (
                       <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
