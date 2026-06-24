@@ -39,7 +39,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const warehouseStock = product.inventory?.currentStock || 0;
 
   return (
-    <div style={{ padding: "32px", maxWidth: "1000px" }}>
+    <div style={{ padding: "32px", maxWidth: "1200px" }}>
       {/* Navigation */}
       <Link href="/warehouse/products" style={{ color: "var(--brand)", textDecoration: "none", fontSize: 14, marginBottom: 24, display: "flex", alignItems: "center", gap: 6 }}>
         <Icon name="arrow-left" size={16} />
@@ -68,112 +68,142 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             </div>
           </div>
         </div>
+
+        {/* Pricing & Warehouse Stock Row */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 24, marginTop: 24, paddingTop: 24, borderTop: "1px solid var(--ink-2)" }}>
+          <div>
+            <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 4, fontWeight: 600, textTransform: "uppercase" }}>Cena zakupu</div>
+            <div style={{ fontSize: 16, fontWeight: 600 }}>
+              {product.costPrice ? parseFloat(product.costPrice.toString()).toFixed(2) : "—"} zł
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 4, fontWeight: 600, textTransform: "uppercase" }}>Cena sprzedaży</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--brand)" }}>
+              {product.sellingPrice ? parseFloat(product.sellingPrice.toString()).toFixed(2) : "—"} zł
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 4, fontWeight: 600, textTransform: "uppercase" }}>📦 Fizycznie</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: warehouseStock > 0 ? "var(--success)" : "var(--warn)" }}>
+              {warehouseStock} szt.
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 4, fontWeight: 600, textTransform: "uppercase" }}>Różnica</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: warehouseStock !== (product.inStock || 0) ? "var(--warn)" : "var(--success)" }}>
+              {(warehouseStock || 0) - (product.inStock || 0)} szt.
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Main Content: Images + Details */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginBottom: 32 }}>
-        {/* Images Section */}
-        <div>
-          <h3 style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-3)", marginBottom: 12, textTransform: "uppercase" }}>Zdjęcia</h3>
-          {images.length > 0 ? (
-            <div style={{ display: "grid", gap: 12 }}>
-              {images.map((img: string, idx: number) => (
-                <div
-                  key={idx}
-                  style={{
-                    background: "var(--surface-2)",
-                    borderRadius: "var(--r)",
-                    padding: 12,
-                    textAlign: "center",
-                    minHeight: 180,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <img
-                    src={img}
-                    alt={`${product.name} - ${idx + 1}`}
-                    style={{ maxWidth: "100%", maxHeight: 180, borderRadius: "var(--r-sm)" }}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-          ) : (
+      {/* Main Content: Description + Image Gallery */}
+      <div style={{ background: "var(--paper)", border: "1px solid var(--ink-2)", borderRadius: "var(--r)", padding: 24, marginBottom: 32 }}>
+        {/* Description */}
+        <div style={{ marginBottom: product.description ? 32 : 0 }}>
+          <h3 style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-3)", marginBottom: 12, textTransform: "uppercase" }}>Opis produktu</h3>
+          <div style={{ fontSize: 14, lineHeight: 1.6, whiteSpace: "pre-wrap", color: product.description ? "var(--ink-2)" : "var(--ink-3)" }}>
+            {product.description || "Brak opisu produktu"}
+          </div>
+        </div>
+
+        {/* Image Gallery */}
+        {images.length > 0 ? (
+          <div>
+            <h3 style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-3)", marginBottom: 16, textTransform: "uppercase" }}>Zdjęcia</h3>
+
+            {/* Main Image */}
             <div
               style={{
                 background: "var(--surface-2)",
                 borderRadius: "var(--r)",
-                padding: 48,
+                padding: 24,
                 textAlign: "center",
-                color: "var(--ink-3)",
+                minHeight: 300,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 12,
               }}
             >
-              <Icon name="image" size={48} />
-              <p style={{ marginTop: 12, fontSize: 13 }}>Brak zdjęć produktu</p>
+              <img
+                id="main-image"
+                src={images[0]}
+                alt={product.name}
+                style={{ maxWidth: "100%", maxHeight: 300, borderRadius: "var(--r-sm)" }}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                }}
+              />
             </div>
-          )}
-        </div>
 
-        {/* Details Section */}
-        <div style={{ display: "grid", gap: 20 }}>
-          {/* Pricing */}
-          <div style={{ background: "var(--paper)", border: "1px solid var(--ink-2)", borderRadius: "var(--r)", padding: 16 }}>
-            <h4 style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-3)", marginBottom: 12, textTransform: "uppercase" }}>Ceny</h4>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div>
-                <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 4 }}>Zakupu</div>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>
-                  {product.costPrice ? parseFloat(product.costPrice.toString()).toFixed(2) : "—"} zł
-                </div>
+            {/* Thumbnails */}
+            {images.length > 1 && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))", gap: 8 }}>
+                {images.map((img: string, idx: number) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      const mainImg = document.getElementById("main-image") as HTMLImageElement;
+                      if (mainImg) mainImg.src = img;
+                    }}
+                    style={{
+                      background: "var(--surface-2)",
+                      border: "2px solid transparent",
+                      borderRadius: "var(--r-sm)",
+                      padding: 4,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      minHeight: 80,
+                      transition: "border-color 0.2s",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--brand)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.borderColor = "transparent")}
+                  >
+                    <img
+                      src={img}
+                      alt={`Thumbnail ${idx + 1}`}
+                      style={{ maxWidth: "100%", maxHeight: 70 }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  </button>
+                ))}
               </div>
-              <div>
-                <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 4 }}>Sprzedaży</div>
-                <div style={{ fontWeight: 600, fontSize: 14, color: "var(--brand)" }}>
-                  {product.sellingPrice ? parseFloat(product.sellingPrice.toString()).toFixed(2) : "—"} zł
-                </div>
-              </div>
+            )}
+          </div>
+        ) : (
+          <div
+            style={{
+              textAlign: "center",
+              color: "var(--ink-3)",
+              padding: 48,
+            }}
+          >
+            <Icon name="image" size={48} />
+            <p style={{ marginTop: 12, fontSize: 13 }}>Brak zdjęć produktu</p>
+          </div>
+        )}
+      </div>
+
+      {/* Details (Serial, Location) - Read Only Display */}
+      <div style={{ background: "var(--paper)", border: "1px solid var(--ink-2)", borderRadius: "var(--r)", padding: 24, marginBottom: 32 }}>
+        <h3 style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-3)", marginBottom: 16, textTransform: "uppercase" }}>Szczegóły produktu</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+          <div>
+            <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 8 }}>Numer seryjny</div>
+            <div style={{ fontSize: 14, fontFamily: "monospace", color: product.serialNumber ? "var(--ink-2)" : "var(--ink-3)" }}>
+              {product.serialNumber || "—"}
             </div>
           </div>
-
-          {/* Warehouse Stock */}
-          <div style={{ background: "var(--paper)", border: "1px solid var(--ink-2)", borderRadius: "var(--r)", padding: 16 }}>
-            <h4 style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-3)", marginBottom: 12, textTransform: "uppercase" }}>Stan magazynu</h4>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div>
-                <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 4 }}>📦 Fizycznie</div>
-                <div style={{ fontWeight: 600, fontSize: 14, color: warehouseStock > 0 ? "var(--success)" : "var(--warn)" }}>
-                  {warehouseStock} szt.
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 4 }}>Różnica</div>
-                <div style={{ fontWeight: 600, fontSize: 14, color: warehouseStock !== (product.inStock || 0) ? "var(--warn)" : "var(--success)" }}>
-                  {(warehouseStock || 0) - (product.inStock || 0)} szt.
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Serial & Location (Read-Only) */}
-          <div style={{ background: "var(--paper)", border: "1px solid var(--ink-2)", borderRadius: "var(--r)", padding: 16 }}>
-            <h4 style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-3)", marginBottom: 12, textTransform: "uppercase" }}>Szczegóły</h4>
-            <div style={{ display: "grid", gap: 12 }}>
-              <div>
-                <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 4 }}>Numer seryjny</div>
-                <div style={{ fontSize: 13, fontFamily: "monospace", color: product.serialNumber ? "var(--ink-2)" : "var(--ink-3)" }}>
-                  {product.serialNumber || "—"}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 4 }}>Lokalizacja w maszynie</div>
-                <div style={{ fontSize: 13, color: product.location ? "var(--ink-2)" : "var(--ink-3)" }}>
-                  {product.location || "—"}
-                </div>
-              </div>
+          <div>
+            <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 8 }}>Lokalizacja w maszynie</div>
+            <div style={{ fontSize: 14, color: product.location ? "var(--ink-2)" : "var(--ink-3)" }}>
+              {product.location || "—"}
             </div>
           </div>
         </div>
@@ -191,16 +221,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           }}
         />
       </div>
-
-      {/* Description (Full Width) */}
-      {product.description && (
-        <div style={{ background: "var(--paper)", border: "1px solid var(--ink-2)", borderRadius: "var(--r)", padding: 24, marginBottom: 32 }}>
-          <h4 style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-3)", marginBottom: 12, textTransform: "uppercase" }}>Opis produktu</h4>
-          <div style={{ fontSize: 14, lineHeight: 1.6, whiteSpace: "pre-wrap", color: "var(--ink-2)" }}>
-            {product.description}
-          </div>
-        </div>
-      )}
 
       {/* Image Management Form */}
       <ProductImagesForm productId={product.id} currentImages={images} />
