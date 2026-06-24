@@ -5,6 +5,42 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2] - 2026-06-24
+
+### Dodane
+- **Stan Magazynu w Zamówieniach (Warehouse Stock Display)**
+  - 📦 Kolumna w każdym item'u pokazująca dostępny stan
+  - Kolor wskaźnika: zielony (wystarczająco), pomarańczowy (niewystarczająco)
+  - Widoczne zarówno w view jak i edit mode
+  - Fetchowanie Inventory.currentStock z bazy
+
+- **"Realizuj Później" — Partial Order UI**
+  - ⏳ Button przy każdym item'u do zaznaczenia dostawy w późniejszym terminie
+  - Modal do wyboru:
+    - Przewidywana data dostępności (date picker)
+    - Sufiks zamówienia (/A, /B, /C, /D, /E)
+  - Zapisywanie do PendingOrderItem
+  - Server actions dla partial order management:
+    - `createPendingOrderItem()` — tworzenie
+    - `getPendingOrderItems()` — pobieranie
+    - `updatePendingOrderStatus()` — zmiana statusu
+    - `getPendingOrdersNeedingReminder()` — do cron'a
+
+- **Zapamiętywanie Rabatu per Partner**
+  - localStorage: `partner_discount_{partnerId}`
+  - Przy edycji item'u — auto-ładuje ostatni rabat partnera
+  - Domyślnie PERCENT (%)
+  - Zapisywanie po każdym sukcesie
+  - Przechowywanie: typ (PERCENT/AMOUNT), wartość, timestamp
+
+### Zmienione
+- OrderPricingClient: dodane state dla pending orders modal
+- warehouse/orders/[id]/page.tsx: fetchuje Inventory z Products
+- Product interface: opcjonalny inventory field
+- Discount fields: auto-populate z localStorage
+
+---
+
 ## [0.6.1] - 2026-06-24
 
 ### Dodane
