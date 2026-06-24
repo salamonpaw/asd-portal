@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { updateOrderItemPricing, getExchangeRates, checkPartnerOrderStatus } from "@/lib/actions/warehouse-pricing";
+import { createPendingOrderItem, getPendingOrderItems } from "@/lib/actions/partial-orders";
 
 interface Product {
   id: string;
@@ -44,6 +45,11 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
   const [warning12m, setWarning12m] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<Record<string, any>>({});
+
+  // Realizuj Później state
+  const [pendingItemId, setPendingItemId] = useState<string | null>(null);
+  const [pendingDate, setPendingDate] = useState<string>("");
+  const [pendingSuffix, setPendingSuffix] = useState<string>("/A");
 
   const handleEdit = async (item: OrderItem) => {
     setEditingItemId(item.id);
@@ -118,6 +124,36 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
     }
   };
 
+  const handleCreatePending = async (item: OrderItem) => {
+    if (!pendingDate) {
+      setError("Wybierz datę dostępności");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    const result = await createPendingOrderItem(
+      item.id,
+      new Date(pendingDate),
+      pendingSuffix
+    );
+
+    setLoading(false);
+
+    if (result.success) {
+      setSuccess("✓ Dodano do \"Realizuj Później\"");
+      setPendingItemId(null);
+      setPendingDate("");
+      setPendingSuffix("/A");
+      setTimeout(() => setSuccess(""), 3000);
+      window.location.reload();
+    } else {
+      setError(result.error || "Błąd");
+    }
+  };
+
   return (
     <div>
       {warning12m && (
@@ -162,6 +198,116 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
           }}
         >
           ✓ {success}
+        </div>
+      )}
+
+      {/* Modal "Realizuj Później" */}
+      {pendingItemId && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={() => setPendingItemId(null)}
+        >
+          <div
+            style={{
+              background: "var(--paper)",
+              border: "1px solid var(--ink-2)",
+              borderRadius: "var(--r)",
+              padding: 24,
+              maxWidth: 400,
+              width: "90%",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginBottom: 16, fontSize: 16, fontWeight: 600 }}>Realizuj Później</h3>
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 8 }}>
+                Przewidywana dostępność *
+              </label>
+              <input
+                type="date"
+                value={pendingDate}
+                onChange={(e) => setPendingDate(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid var(--ink-2)",
+                  borderRadius: "var(--r-sm)",
+                  fontSize: 13,
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 8 }}>
+                Sufiks zamówienia
+              </label>
+              <select
+                value={pendingSuffix}
+                onChange={(e) => setPendingSuffix(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid var(--ink-2)",
+                  borderRadius: "var(--r-sm)",
+                  fontSize: 13,
+                }}
+              >
+                <option value="/A">/A (Część 1)</option>
+                <option value="/B">/B (Część 2)</option>
+                <option value="/C">/C (Część 3)</option>
+                <option value="/D">/D (Część 4)</option>
+                <option value="/E">/E (Część 5)</option>
+              </select>
+            </div>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => handleCreatePending(items.find((i) => i.id === pendingItemId)!)}
+                disabled={loading}
+                style={{
+                  flex: 1,
+                  padding: "8px 12px",
+                  background: "var(--warn)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "var(--r-sm)",
+                  cursor: loading ? "not-allowed" : "pointer",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  opacity: loading ? 0.6 : 1,
+                }}
+              >
+                {loading ? "Zapisuję..." : "Dodaj"}
+              </button>
+              <button
+                onClick={() => setPendingItemId(null)}
+                style={{
+                  flex: 1,
+                  padding: "8px 12px",
+                  background: "var(--ink-2)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "var(--r-sm)",
+                  cursor: "pointer",
+                  fontSize: 12,
+                }}
+              >
+                Anuluj
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -228,20 +374,38 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
                     <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>Razem</div>
                     <div style={{ fontWeight: 600, color: "var(--brand)" }}>{(item.finalPrice || 0).toFixed(2)} {item.currency}</div>
                   </div>
-                  <button
-                    onClick={() => handleEdit(item)}
-                    style={{
-                      padding: "4px 8px",
-                      background: "var(--brand)",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "var(--r-sm)",
-                      cursor: "pointer",
-                      fontSize: 12,
-                    }}
-                  >
-                    Edytuj
-                  </button>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <button
+                      onClick={() => handleEdit(item)}
+                      style={{
+                        padding: "4px 8px",
+                        background: "var(--brand)",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "var(--r-sm)",
+                        cursor: "pointer",
+                        fontSize: 12,
+                        flex: 1,
+                      }}
+                    >
+                      Edytuj
+                    </button>
+                    <button
+                      onClick={() => setPendingItemId(item.id)}
+                      style={{
+                        padding: "4px 8px",
+                        background: "var(--warn-soft)",
+                        color: "var(--warn)",
+                        border: "1px solid var(--warn)",
+                        borderRadius: "var(--r-sm)",
+                        cursor: "pointer",
+                        fontSize: 12,
+                        flex: 1,
+                      }}
+                    >
+                      ⏳ Później
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div>
