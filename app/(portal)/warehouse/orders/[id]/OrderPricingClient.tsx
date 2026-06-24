@@ -53,12 +53,28 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
 
   const handleEdit = async (item: OrderItem) => {
     setEditingItemId(item.id);
+
+    // Get saved discount from localStorage (per partner)
+    const savedDiscount = localStorage.getItem(`partner_discount_${partner.id}`);
+    let discountValue = item.discountValue || 0;
+    let discountType = item.discountType || "PERCENT";
+
+    if (savedDiscount) {
+      try {
+        const saved = JSON.parse(savedDiscount);
+        discountValue = saved.value || 0;
+        discountType = saved.type || "PERCENT";
+      } catch (e) {
+        // Ignore parse errors
+      }
+    }
+
     setFormData({
       [item.id]: {
         currency: item.currency || partner.currency,
         exchangeRate: item.exchangeRate || 1,
-        discountType: item.discountType || "PERCENT",
-        discountValue: item.discountValue || 0,
+        discountType,
+        discountValue,
         notes: item.notes || "",
       },
     });
@@ -115,6 +131,16 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
     setLoading(false);
 
     if (result.success) {
+      // Save discount to localStorage for next time
+      localStorage.setItem(
+        `partner_discount_${partner.id}`,
+        JSON.stringify({
+          type: data.discountType,
+          value: data.discountValue,
+          savedAt: new Date().toISOString(),
+        })
+      );
+
       setSuccess("Zapisano!");
       setEditingItemId(null);
       setTimeout(() => setSuccess(""), 3000);
