@@ -12,6 +12,7 @@ export default async function WarehouseProductsPage() {
   const products = await db.product.findMany({
     select: {
       id: true,
+      sku: true,
       name: true,
       costPrice: true,
       sellingPrice: true,
@@ -30,6 +31,7 @@ export default async function WarehouseProductsPage() {
       <PageHead title="Produkty" sub="Zarządzaj cenami i dostępnością produktów." />
       <ProductsClient products={products.map(p => ({
         id: p.id,
+        sku: p.sku,
         name: p.name,
         costPrice: p.costPrice ? parseFloat(p.costPrice.toString()) : null,
         sellingPrice: p.sellingPrice ? parseFloat(p.sellingPrice.toString()) : null,

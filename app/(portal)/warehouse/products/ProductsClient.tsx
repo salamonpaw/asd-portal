@@ -8,6 +8,7 @@ import { Icon } from "@/components/ui/Icon";
 
 interface Product {
   id: string;
+  sku: string;
   name: string;
   costPrice: number | null;
   sellingPrice: number | null;
@@ -32,7 +33,10 @@ export function ProductsClient({ products }: { products: Product[] }) {
   const [success, setSuccess] = useState<string | null>(null);
 
   const filteredProducts = products.filter((p) => {
-    const matchesSearch = !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch =
+      !searchTerm ||
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.sku.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStock =
       stockFilter === "all" ||
       (stockFilter === "inStock" && (p.inStock ?? 0) > 0) ||

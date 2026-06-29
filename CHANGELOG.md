@@ -33,6 +33,11 @@ projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0
   - Zapisywanie po każdym sukcesie
   - Przechowywanie: typ (PERCENT/AMOUNT), wartość, timestamp
 
+### Naprawione
+- Brakujący inventory field w OrderPricingClient items mapping
+  - Inventory.currentStock nie był przesyłany do komponentu
+  - Dodano pole inventory w product mapping w warehouse/orders/[id]/page.tsx
+
 ### Zmienione
 - OrderPricingClient: dodane state dla pending orders modal
 - warehouse/orders/[id]/page.tsx: fetchuje Inventory z Products
