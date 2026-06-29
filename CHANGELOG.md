@@ -5,6 +5,44 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.3] - 2026-06-25
+
+### Dodane
+- **Search po SKU w Produktach**
+  - Wyszukiwanie po nazwie LUB SKU w `/warehouse/products`
+  - Case-insensitive search dla obu pól
+  - SKU field dodany do Product interface
+
+- **Service Technician Dedicated View**
+  - `/service-technician/dashboard` — lista moich zamówień
+  - Kolorowe STATUS BADGES dla każdego zamówienia:
+    - 🔵 NOWE — oczekuje potwierdzenia
+    - 🟢 PRZYJĘTE — potwierdzone
+    - 🟡 CZĘŚCIOWO_ZREALIZOWANE
+    - 🟣 WYCENIONE — pricing done
+    - ⚫ ZREALIZOWANE — completed
+    - 🔴 ODRZUCONE — rejected
+  - Quick stats: total, pending confirmation, accepted, completed
+  - Status indicators z komunikatami (czeka wycena, itd)
+
+  - `/service-technician/products` — produkty do zamówienia
+  - Bez cen, bez stanów (tylko dostępność: "Na stanie" / "Niedostępny")
+  - Quick "Zamów" button dla każdego produktu
+  - Grid layout z image/name/SKU
+  - Auto-redirect do dashboard po utworzeniu zamówienia
+  - Search po nazwie/SKU
+
+- **Updated Navigation for SERVICE_TECHNICIAN**
+  - Dashboard link (moje zamówienia)
+  - Produkty link (zamów części)
+  - Profil link
+
+### Zmienione
+- PortalShell: NAV_SERVICE_TECHNICIAN points to new `/service-technician/*` routes
+- ProductsClient: added SKU field to interface and filtering
+
+---
+
 ## [0.6.2] - 2026-06-24
 
 ### Dodane
