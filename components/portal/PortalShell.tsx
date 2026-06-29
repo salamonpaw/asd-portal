@@ -18,8 +18,9 @@ const NAV_PARTNER = [
 ];
 
 const NAV_SERVICE_TECHNICIAN = [
-  { key: "orders",      href: "/partner/service",   label: "Moje zamówienia",  icon: "shoppingCart" },
-  { key: "profile",     href: "/partner/profile",   label: "Mój profil",       icon: "user" },
+  { key: "dashboard",   href: "/service-technician/dashboard", label: "Moje zamówienia", icon: "shoppingCart" },
+  { key: "products",    href: "/service-technician/products",  label: "Zamów części",    icon: "box" },
+  { key: "profile",     href: "/partner/profile",              label: "Mój profil",      icon: "user" },
 ];
 
 const NAV_WAREHOUSE_SPECIALIST = [
