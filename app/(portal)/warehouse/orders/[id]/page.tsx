@@ -166,6 +166,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                 costPrice: item.product.costPrice ? parseFloat(item.product.costPrice.toString()) : null,
                 sellingPrice: item.product.sellingPrice ? parseFloat(item.product.sellingPrice.toString()) : null,
                 inStock: item.product.inStock,
+                inventory: item.product.inventory,
               },
               quantity: item.quantity,
               unitPrice: item.unitPrice ? parseFloat(item.unitPrice.toString()) : null,
