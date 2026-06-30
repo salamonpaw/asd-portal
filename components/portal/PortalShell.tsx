@@ -39,6 +39,7 @@ const NAV_STAFF = [
 ];
 
 const NAV_ADMIN = [
+  { key: "admin-dashboard", href: "/admin/dashboard",   label: "Statystyki",      icon: "trending_up" },
   { key: "dashboard",   href: "/staff/dashboard",   label: "Pulpit",           icon: "gauge" },
   { key: "projects",    href: "/staff/projects",     label: "Projekty",         icon: "layers" },
   { key: "partners",    href: "/staff/partners",     label: "Partnerzy",        icon: "users" },
