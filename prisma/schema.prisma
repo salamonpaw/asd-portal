@@ -134,6 +134,7 @@ model Partner {
   serviceOrders    ServiceOrder[]
   productDiscounts PartnerProductDiscount[]
   exchangeRates    CurrencyExchangeRate[]
+  orderTemplates   OrderTemplate[]
 }
 
 model Market {
@@ -323,6 +324,7 @@ model Product {
   serviceOrderItems ServiceOrderItem[]
   partnerDiscounts PartnerProductDiscount[]
   inventory        Inventory?
+  templateItems    OrderTemplateItem[]
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 
@@ -432,11 +434,11 @@ model PendingOrderItem {
   serviceOrder       ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
   serviceOrderItemId String?
   serviceOrderItem   ServiceOrderItem? @relation(fields: [serviceOrderItemId], references: [id], onDelete: SetNull)
-  
+
   subOrderSuffix     String    // "/A", "/B", itd
   expectedDate       DateTime  // Przewidywana dostępność
   status             String    @default("PENDING") // PENDING, FULFILLED
-  
+
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
   reminderSentAt     DateTime?
@@ -444,4 +446,30 @@ model PendingOrderItem {
   @@index([serviceOrderId])
   @@index([expectedDate])
   @@index([status])
+}
+
+// ─── Order Templates ──────────────────────────────────────────────────────────
+
+model OrderTemplate {
+  id        String   @id @default(cuid())
+  partnerId String
+  partner   Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  name      String   // "Serwis A - Części standardowe", etc
+  items     OrderTemplateItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([partnerId])
+}
+
+model OrderTemplateItem {
+  id         String        @id @default(cuid())
+  templateId String
+  template   OrderTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product       @relation(fields: [productId], references: [id])
+  quantity   Int
+
+  @@index([templateId])
+  @@index([productId])
 }
