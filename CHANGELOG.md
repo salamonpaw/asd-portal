@@ -5,6 +5,26 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-06-30
+
+### Dodane
+- **Admin Dashboard (/admin/dashboard)**
+  - Overview statystyki: całkowite zamówienia, przychód, liczba partnerów
+  - Zamówienia wg statusu — breakdown po każdym statusie
+  - Top 5 partnerów (wg przychodu) — nazwa, liczba zamówień, wartość
+  - Ostatnie 10 zamówień — tabelka z kodem, partnerem, statusem, wartością, datą
+  - Formatowanie walut (PLN) dla wyświetlania przychodów
+  
+- **Server Action: getAdminDashboardStats()**
+  - Agregacja danych z ServiceOrder, Partner, ServiceOrderItem
+  - Obliczanie przychodów z finalPrice * quantity
+  - Grupowanie po partnerze i statusie
+  
+- **Navigation Update**
+  - Link do /admin/dashboard w NAV_ADMIN dla roli ADMIN
+
+---
+
 ## [0.8.0] - 2026-06-30
 
 ### Dodane
