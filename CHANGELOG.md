@@ -5,6 +5,33 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-06-30
+
+### Dodane
+- **Order Templates (Szablony Zamówień)**
+  - `/partner/templates` — zarządzanie szablonami zamówień
+  - Tworzenie szablonów z listą produktów i ilościami
+  - Edycja i usuwanie szablonów
+  - Lista szablonów z podglądem zawartości
+  - Integration z service technician quick order flow
+  
+- **Prisma Models**
+  - OrderTemplate model — przechowywanie szablonów per partner
+  - OrderTemplateItem model — produkty w szablonach
+
+- **Server Actions (lib/actions/order-templates.ts)**
+  - `createOrderTemplate()` — tworzenie nowego szablonu
+  - `getPartnerTemplates()` — lista szablonów partnera
+  - `getOrderTemplate()` — szczegóły szablonu
+  - `updateOrderTemplate()` — edycja szablonu
+  - `deleteOrderTemplate()` — usuwanie szablonu
+  - `createOrderFromTemplate()` — tworzenie zamówienia z szablonu
+
+### Zmienione
+- Prisma client regenerated dla nowych modelów
+
+---
+
 ## [0.6.3] - 2026-06-25
 
 ### Dodane
