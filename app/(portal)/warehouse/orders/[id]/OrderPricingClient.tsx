@@ -144,7 +144,7 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
       setSuccess("Zapisano!");
       setEditingItemId(null);
       setTimeout(() => setSuccess(""), 3000);
-      window.location.reload();
+      // window.location.reload();  // Usunięty agresywny reload
     } else {
       setError(result.error || "Błąd");
     }
@@ -174,7 +174,7 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
       setPendingDate("");
       setPendingSuffix("/A");
       setTimeout(() => setSuccess(""), 3000);
-      window.location.reload();
+      // window.location.reload();  // Usunięty agresywny reload
     } else {
       setError(result.error || "Błąd");
     }
