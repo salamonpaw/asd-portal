@@ -5,6 +5,29 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-06-30
+
+### Dodane
+- **Bulk Discount Assignment (/admin/bulk-discounts)**
+  - Trzy kolumny: wybór partnerów, wybór produktów, ustawienia rabatu
+  - Search po nazwie/skrócie partnera
+  - Search po nazwie/SKU produktu
+  - Input rabatu procentowego (0-100%)
+  - Live podsumowanie liczby przypisań do utworzenia
+  - Checkbox selekcja dla partnerów i produktów
+
+- **Server Actions**
+  - `applyBulkDiscount()` — przypisanie rabatów do wielu kombinacji
+  - `getPartnerDiscounts()` — rabaty partnera
+  - `getAllPartners()` — lista wszystkich partnerów
+  - `getAllProducts()` — lista wszystkich produktów
+  - `deleteDiscount()` — usunięcie pojedynczego rabatu
+
+- **Navigation**
+  - Link do /admin/bulk-discounts w panelu admina
+
+---
+
 ## [0.9.0] - 2026-06-30
 
 ### Dodane
