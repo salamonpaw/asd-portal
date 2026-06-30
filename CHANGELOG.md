@@ -5,6 +5,25 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-06-30
+
+### Dodane
+- **Cron Job dla Pending Order Reminders**
+  - `/api/cron/pending-reminders` endpoint z token-based auth (CRON_SECRET_TOKEN)
+  - Sprawdza PendingOrderItem z expectedDate w ciągu 5 dni
+  - Oznacza reminderSentAt i loguje do ServiceOrderHistory
+  - Grupuje remindery po zamówieniu aby uniknąć duplikatów
+  - Wysyła notyfikacje (loguje info o partnerze i techniku)
+
+- **Server Action: getPendingOrdersNeedingReminder()**
+  - Zwraca listę pending items czekających na reminder
+  - Dla dashboardów i monitorowania statusu
+
+- **Dependencies**
+  - date-fns dla date utilities (startOfDay, endOfDay, addDays)
+
+---
+
 ## [0.7.0] - 2026-06-30
 
 ### Dodane
