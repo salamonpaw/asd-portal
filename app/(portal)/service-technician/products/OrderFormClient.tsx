@@ -43,18 +43,14 @@ export function OrderFormClient({ products }: OrderFormClientProps) {
 
   const addToCart = (product: Product, quantity: number = 1) => {
     setError("");
-    if (quantity < 1 || quantity > product.warehouseStock) {
-      setError(`Ilość musi być od 1 do ${product.warehouseStock}`);
+    if (quantity < 1) {
+      setError("Ilość musi być co najmniej 1");
       return;
     }
 
     const existingItem = cart.find((item) => item.product.id === product.id);
     if (existingItem) {
       const newQuantity = existingItem.quantity + quantity;
-      if (newQuantity > product.warehouseStock) {
-        setError(`Maksymalnie ${product.warehouseStock} sztuk dostępne`);
-        return;
-      }
       setCart(
         cart.map((item) =>
           item.product.id === product.id
@@ -76,11 +72,6 @@ export function OrderFormClient({ products }: OrderFormClientProps) {
   const updateQuantity = (productId: string, quantity: number) => {
     if (quantity < 1) {
       removeFromCart(productId);
-      return;
-    }
-    const item = cart.find((i) => i.product.id === productId);
-    if (item && quantity > item.product.warehouseStock) {
-      setError(`Maksymalnie ${item.product.warehouseStock} sztuk dostępne`);
       return;
     }
     setCart(
@@ -245,26 +236,11 @@ export function OrderFormClient({ products }: OrderFormClientProps) {
               </div>
             )}
 
-            {/* Stock info */}
-            <div
-              style={{
-                padding: 12,
-                background: "var(--surface-2)",
-                borderRadius: "var(--r-sm)",
-                marginBottom: 16,
-                fontSize: 13,
-              }}
-            >
-              <span style={{ color: "var(--ink-3)" }}>Dostępne w magazynie: </span>
-              <strong>{selectedProduct.warehouseStock} szt</strong>
-            </div>
-
             {/* Add to cart */}
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input
                 type="number"
                 min="1"
-                max={selectedProduct.warehouseStock}
                 defaultValue="1"
                 id="product-detail-qty"
                 style={{
@@ -353,7 +329,7 @@ export function OrderFormClient({ products }: OrderFormClientProps) {
                     {product.name}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--ink-3)" }}>
-                    SKU: {product.sku} • Dostęp: {product.warehouseStock}
+                    SKU: {product.sku}
                   </div>
                   <div style={{ fontSize: 10, color: "var(--ink-3)", marginTop: 4 }}>
                     Kliknij aby zobaczyć szczegóły
@@ -364,7 +340,6 @@ export function OrderFormClient({ products }: OrderFormClientProps) {
                   <input
                     type="number"
                     min="1"
-                    max={product.warehouseStock}
                     defaultValue="1"
                     id={`qty-${product.id}`}
                     style={{
