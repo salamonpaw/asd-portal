@@ -28,6 +28,7 @@ export function OrderFormClient({ products }: OrderFormClientProps) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState({
     deliveryAddress: "",
     notes: "",
@@ -135,7 +136,7 @@ export function OrderFormClient({ products }: OrderFormClientProps) {
   };
 
   return (
-    <div style={{ maxWidth: "1200px" }}>
+    <div style={{ maxWidth: "1400px" }}>
       {error && (
         <div
           style={{
@@ -163,6 +164,141 @@ export function OrderFormClient({ products }: OrderFormClientProps) {
           }}
         >
           {success}
+        </div>
+      )}
+
+      {/* Product Details Modal */}
+      {selectedProduct && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: 16,
+          }}
+          onClick={() => setSelectedProduct(null)}
+        >
+          <div
+            style={{
+              background: "var(--paper)",
+              borderRadius: "var(--r)",
+              maxWidth: 600,
+              maxHeight: "90vh",
+              overflow: "auto",
+              padding: 24,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 16 }}>
+              <div>
+                <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>{selectedProduct.name}</h2>
+                <div style={{ fontSize: 12, color: "var(--ink-3)" }}>SKU: {selectedProduct.sku}</div>
+              </div>
+              <button
+                onClick={() => setSelectedProduct(null)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: 20,
+                  cursor: "pointer",
+                  color: "var(--ink-3)",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Image */}
+            {selectedProduct.image && (
+              <div
+                style={{
+                  width: "100%",
+                  height: 300,
+                  background: "var(--surface-2)",
+                  borderRadius: "var(--r-sm)",
+                  marginBottom: 16,
+                  overflow: "hidden",
+                }}
+              >
+                <img
+                  src={selectedProduct.image}
+                  alt={selectedProduct.name}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              </div>
+            )}
+
+            {/* Description */}
+            {selectedProduct.description && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 8, fontWeight: 600 }}>
+                  Opis
+                </div>
+                <div style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+                  {selectedProduct.description}
+                </div>
+              </div>
+            )}
+
+            {/* Stock info */}
+            <div
+              style={{
+                padding: 12,
+                background: "var(--surface-2)",
+                borderRadius: "var(--r-sm)",
+                marginBottom: 16,
+                fontSize: 13,
+              }}
+            >
+              <span style={{ color: "var(--ink-3)" }}>Dostępne w magazynie: </span>
+              <strong>{selectedProduct.warehouseStock} szt</strong>
+            </div>
+
+            {/* Add to cart */}
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                type="number"
+                min="1"
+                max={selectedProduct.warehouseStock}
+                defaultValue="1"
+                id="product-detail-qty"
+                style={{
+                  width: 80,
+                  padding: "8px 12px",
+                  border: "1px solid var(--ink-2)",
+                  borderRadius: "var(--r-sm)",
+                  fontSize: 13,
+                }}
+              />
+              <button
+                onClick={() => {
+                  const qty = parseInt(
+                    (document.getElementById("product-detail-qty") as HTMLInputElement)?.value || "1"
+                  );
+                  addToCart(selectedProduct, qty);
+                  setSelectedProduct(null);
+                }}
+                style={{
+                  flex: 1,
+                  padding: "8px 12px",
+                  background: "var(--brand)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "var(--r-sm)",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                + Dodaj do koszyka
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -197,12 +333,30 @@ export function OrderFormClient({ products }: OrderFormClientProps) {
                   background: "var(--paper)",
                   border: "1px solid var(--ink-2)",
                   borderRadius: "var(--r-sm)",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = "var(--brand)";
+                  (e.currentTarget as HTMLElement).style.boxShadow = "0 2px 8px rgba(0,102,255,0.1)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = "var(--ink-2)";
+                  (e.currentTarget as HTMLElement).style.boxShadow = "none";
                 }}
               >
-                <div style={{ marginBottom: 8 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{product.name}</div>
+                <div
+                  style={{ marginBottom: 8, cursor: "pointer" }}
+                  onClick={() => setSelectedProduct(product)}
+                >
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--brand)" }}>
+                    {product.name}
+                  </div>
                   <div style={{ fontSize: 11, color: "var(--ink-3)" }}>
                     SKU: {product.sku} • Dostęp: {product.warehouseStock}
+                  </div>
+                  <div style={{ fontSize: 10, color: "var(--ink-3)", marginTop: 4 }}>
+                    Kliknij aby zobaczyć szczegóły
                   </div>
                 </div>
 
