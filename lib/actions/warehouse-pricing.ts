@@ -15,8 +15,8 @@ export async function updateOrderItemPricing(
   }
 ) {
   const session = await getServerSession(authOptions);
-  if (!session?.user || session.user.role !== "WAREHOUSE_SPECIALIST") {
-    return { success: false, error: "Brak dostępu" };
+  if (!session?.user || (session.user as any).role !== "WAREHOUSE_SPECIALIST") {
+    return { success: false, error: "Brak dostępu - nie jesteś magazynierem" };
   }
 
   try {
@@ -32,31 +32,46 @@ export async function updateOrderItemPricing(
       return { success: false, error: "Pozycja nie znaleziona" };
     }
 
-    // Calculate final price
-    let finalPrice = parseFloat(item.unitPrice?.toString() || "0");
+    // Calculate final price based on unit price
+    let finalPrice = item.unitPrice ? parseFloat(item.unitPrice.toString()) : parseFloat(item.product.sellingPrice?.toString() || "0");
+
+    // Apply discount if provided
     if (data.discountValue && data.discountType) {
+      const discountVal = typeof data.discountValue === "string" ? parseFloat(data.discountValue) : data.discountValue;
       if (data.discountType === "PERCENT") {
-        finalPrice = finalPrice - (finalPrice * data.discountValue) / 100;
+        finalPrice = finalPrice - (finalPrice * discountVal) / 100;
       } else if (data.discountType === "AMOUNT") {
-        finalPrice = finalPrice - data.discountValue;
+        finalPrice = finalPrice - discountVal;
       }
     }
 
+    // Ensure finalPrice is not negative
+    finalPrice = Math.max(0, finalPrice);
+
+    // Convert discount value to number if it's a string
+    const discountValue = data.discountValue === undefined || data.discountValue === null
+      ? null
+      : typeof data.discountValue === "string" ? parseFloat(data.discountValue) : data.discountValue;
+
     // Update item
-    await db.serviceOrderItem.update({
+    const updateData: any = {
+      discountType: data.discountType as any,
+      discountValue: discountValue,
+      finalPrice,
+    };
+
+    if (data.currency) updateData.currency = data.currency as any;
+    if (data.exchangeRate !== undefined) updateData.exchangeRate = data.exchangeRate;
+    if (data.notes !== undefined) updateData.notes = data.notes;
+
+    const result = await db.serviceOrderItem.update({
       where: { id: itemId },
-      data: {
-        currency: (data.currency as any) || undefined,
-        exchangeRate: data.exchangeRate,
-        discountType: data.discountType as any,
-        discountValue: data.discountValue,
-        finalPrice,
-        notes: data.notes,
-      },
+      data: updateData,
     });
 
-    return { success: true };
+    return { success: true, data: result };
   } catch (error) {
+    console.error("[updateOrderItemPricing] Error:", error);
     return { success: false, error: (error as Error).message };
   }
 }
