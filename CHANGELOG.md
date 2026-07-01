@@ -5,6 +5,37 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] - 2026-07-01
+
+### NEW FEATURE - Image Gallery Management
+
+**Image Upload & Storage:**
+- New route: `/admin/images` (accessible to WAREHOUSE_SPECIALIST + ADMIN)
+- Drag-drop interface for easy image upload
+- Click to select images from computer
+- Images stored locally in `/public/images/`
+- Supported formats: JPEG, PNG, WebP, GIF
+- Maximum file size: 5MB per image
+
+**Image Management:**
+- View all uploaded images in grid gallery
+- Thumbnail preview of each image
+- Display file metadata: product name, SKU, filesize, upload date
+- Delete images with confirmation dialog
+- Database tracking: filename, path, filesize, uploader, timestamp
+
+**Database Model (ProductImage):**
+- Relation: Product → ProductImages (one-to-many)
+- Soft delete support (deletedAt field)
+- Full audit trail (who uploaded, when)
+
+**Next Steps:**
+- Display images in product detail views
+- Allow linking images directly from product pages
+- Image gallery on product details
+
+---
+
 ## [0.14.0] - 2026-07-01
 
 ### FIXES & FEATURES
