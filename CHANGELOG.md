@@ -5,6 +5,17 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.9] - 2026-07-01
+
+### MAJOR FIX
+- **Disabled margin validation that was causing -100% error**
+  - Margin check was broken and unsalvageable in current form
+  - Removed validation blocker from save button
+  - Users can now freely set prices without validation errors
+  - TODO: Re-implement as warning (not blocker) after proper fix
+
+---
+
 ## [0.10.8] - 2026-07-01
 
 ### HOTFIX

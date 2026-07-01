@@ -114,10 +114,11 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
     const marginPercent = finalPrice > costPrice ? ((finalPrice - costPrice) / finalPrice) * 100 : 0;
     const minMargin = parseFloat(partner.minProfitMargin?.toString() || "10");
 
-    if (marginPercent > 0 && marginPercent < minMargin) {
-      setError(`Marża za niska (${marginPercent.toFixed(1)}%). Minimum: ${minMargin}%`);
-      return;
-    }
+    // TODO: Margin validation - disabled for now, can be re-enabled as warning
+    // if (marginPercent > 0 && marginPercent < minMargin) {
+    //   setError(`Marża za niska (${marginPercent.toFixed(1)}%). Minimum: ${minMargin}%`);
+    //   return;
+    // }
 
     setLoading(true);
     const result = await updateOrderItemPricing(item.id, {
@@ -621,7 +622,8 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
                     </div>
                   </div>
 
-                  {isLowMargin && (
+                  {/* Margin validation disabled - TODO: re-enable as warning */}
+                  {false && isLowMargin && (
                     <div
                       style={{
                         padding: 8,
@@ -639,7 +641,7 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
                   <div style={{ display: "flex", gap: 8 }}>
                     <button
                       onClick={() => handleSave(item)}
-                      disabled={loading || isLowMargin}
+                      disabled={loading}
                       style={{
                         padding: "6px 12px",
                         background: isLowMargin ? "var(--ink-2)" : "var(--brand)",
