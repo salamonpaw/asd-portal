@@ -26,7 +26,7 @@ export default async function ServiceTechnicianProductsPage() {
     redirect("/login");
   }
 
-  // Get all products (no filtering by partner)
+  // Get all products with their images
   const products = await db.product.findMany({
     select: {
       id: true,
@@ -34,6 +34,12 @@ export default async function ServiceTechnicianProductsPage() {
       name: true,
       description: true,
       image: true,
+      productImages: {
+        where: { deletedAt: null },
+        select: { filePath: true },
+        take: 1,
+        orderBy: { uploadedAt: "desc" },
+      },
       inventory: { select: { currentStock: true } },
     },
     orderBy: { name: "asc" },
@@ -70,7 +76,7 @@ export default async function ServiceTechnicianProductsPage() {
           sku: p.sku,
           name: p.name,
           description: p.description || "",
-          image: p.image || "",
+          image: p.productImages.length > 0 ? p.productImages[0].filePath : (p.image || ""),
           warehouseStock: p.inventory?.currentStock || 0,
         }))}
         userId={userId}
