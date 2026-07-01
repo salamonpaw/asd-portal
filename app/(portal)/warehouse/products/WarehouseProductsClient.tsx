@@ -2,31 +2,64 @@
 
 import { useState } from "react";
 import { uploadProductImage, deleteProductImage } from "@/lib/actions/image-management";
-import { updateProduct } from "@/lib/actions/products";
+import { updateProduct, createProductAsWarehouse } from "@/lib/actions/products";
+import { PRODUCT_LOCATIONS, getLocationLabel, getLocationIcon } from "@/lib/constants/product-locations";
 
 interface Product {
   id: string;
   sku: string;
   name: string;
   description: string | null;
+  location: string | null;
+  machineTypeId: string;
   productImages: { id: string; filePath: string; fileName: string }[];
 }
 
 interface Props {
   initialProducts: Product[];
+  machineTypeId: string;
 }
 
-export function WarehouseProductsClient({ initialProducts }: Props) {
-  const [products] = useState(initialProducts);
+export function WarehouseProductsClient({ initialProducts, machineTypeId }: Props) {
+  const [products, setProducts] = useState(initialProducts);
   const [selectedProductId, setSelectedProductId] = useState(products.length > 0 ? products[0].id : "");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [editingDescription, setEditingDescription] = useState(false);
+  const [editingLocation, setEditingLocation] = useState(false);
   const [descriptionValue, setDescriptionValue] = useState("");
+  const [locationValue, setLocationValue] = useState("");
   const [savingDescription, setSavingDescription] = useState(false);
+  const [savingLocation, setSavingLocation] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [creatingProduct, setCreatingProduct] = useState(false);
+  const [newProductForm, setNewProductForm] = useState({
+    sku: "",
+    name: "",
+    description: "",
+    location: "",
+  });
 
   const currentProduct = products.find((p) => p.id === selectedProductId);
+
+  // Group products by location
+  const productsByLocation = PRODUCT_LOCATIONS.reduce((acc, loc) => {
+    const productsInLocation = products.filter((p) => p.location === loc.value);
+    if (productsInLocation.length > 0) {
+      acc[loc.value] = { label: loc.label, icon: loc.icon, products: productsInLocation };
+    }
+    return acc;
+  }, {} as Record<string, any>);
+
+  const unassignedProducts = products.filter((p) => !p.location);
+  if (unassignedProducts.length > 0) {
+    productsByLocation["unassigned"] = {
+      label: "Nie przypisane",
+      icon: "❓",
+      products: unassignedProducts,
+    };
+  }
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
@@ -102,9 +135,71 @@ export function WarehouseProductsClient({ initialProducts }: Props) {
     }
   };
 
+  const handleEditLocation = () => {
+    if (currentProduct) {
+      setLocationValue(currentProduct.location || "");
+      setEditingLocation(true);
+    }
+  };
+
+  const handleSaveLocation = async () => {
+    if (!selectedProductId) return;
+
+    setSavingLocation(true);
+    setError("");
+
+    const result = await updateProduct(selectedProductId, {
+      location: locationValue || undefined,
+    });
+
+    setSavingLocation(false);
+
+    if (result.success) {
+      setSuccess("Lokalizacja została zaktualizowana");
+      setEditingLocation(false);
+      setTimeout(() => window.location.reload(), 1500);
+    } else {
+      setError(result.error || "Błąd przy zapisywaniu lokalizacji");
+    }
+  };
+
+  const handleCreateProduct = async () => {
+    if (!newProductForm.sku.trim() || !newProductForm.name.trim()) {
+      setError("SKU i nazwa są wymagane");
+      return;
+    }
+
+    setCreatingProduct(true);
+    setError("");
+
+    const result = await createProductAsWarehouse({
+      sku: newProductForm.sku,
+      name: newProductForm.name,
+      description: newProductForm.description || undefined,
+      location: newProductForm.location || undefined,
+      machineTypeId,
+    });
+
+    setCreatingProduct(false);
+
+    if (result.success) {
+      setSuccess("Produkt został dodany");
+      setNewProductForm({ sku: "", name: "", description: "", location: "" });
+      setShowCreateForm(false);
+      setTimeout(() => window.location.reload(), 1500);
+    } else {
+      setError(result.error || "Błąd przy tworzeniu produktu");
+    }
+  };
+
   const handleCancelDescription = () => {
     setEditingDescription(false);
     setDescriptionValue("");
+  };
+
+  const handleCancelLocation = () => {
+    setEditingLocation(false);
+    setLocationValue("");
   };
 
   return (
@@ -137,36 +232,179 @@ export function WarehouseProductsClient({ initialProducts }: Props) {
         </div>
       )}
 
-      {/* Product Selector */}
+      {/* Create new product button */}
       <div style={{ marginBottom: 24 }}>
-        <label style={{ display: "block", marginBottom: 8, fontSize: 14, fontWeight: 600 }}>
-          Wybierz produkt do edycji
-        </label>
-        <select
-          value={selectedProductId}
-          onChange={(e) => setSelectedProductId(e.target.value)}
+        <button
+          onClick={() => setShowCreateForm(!showCreateForm)}
           style={{
-            width: "100%",
-            maxWidth: "400px",
-            padding: "8px 12px",
-            border: "1px solid var(--ink-2)",
+            padding: "8px 16px",
+            background: "var(--brand)",
+            color: "white",
+            border: "none",
             borderRadius: "var(--r-sm)",
-            fontSize: 14,
-            fontFamily: "inherit",
-            background: "var(--paper)",
             cursor: "pointer",
+            fontWeight: 600,
+            fontSize: 14,
           }}
         >
-          {products.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name} (SKU: {p.sku})
-            </option>
-          ))}
-        </select>
+          {showCreateForm ? "Anuluj" : "+ Dodaj nowy produkt"}
+        </button>
       </div>
 
+      {/* Create product form */}
+      {showCreateForm && (
+        <div
+          style={{
+            background: "var(--paper)",
+            border: "1px solid var(--ink-2)",
+            borderRadius: "var(--r)",
+            padding: 24,
+            marginBottom: 32,
+          }}
+        >
+          <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Nowy produkt</h2>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+            <div>
+              <label style={{ display: "block", marginBottom: 4, fontSize: 12, fontWeight: 600 }}>SKU *</label>
+              <input
+                type="text"
+                value={newProductForm.sku}
+                onChange={(e) => setNewProductForm({ ...newProductForm, sku: e.target.value })}
+                placeholder="np. 00078"
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid var(--ink-2)",
+                  borderRadius: "var(--r-sm)",
+                  fontSize: 13,
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: "block", marginBottom: 4, fontSize: 12, fontWeight: 600 }}>Nazwa *</label>
+              <input
+                type="text"
+                value={newProductForm.name}
+                onChange={(e) => setNewProductForm({ ...newProductForm, name: e.target.value })}
+                placeholder="np. B - blokada dolna drzwi prawe"
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid var(--ink-2)",
+                  borderRadius: "var(--r-sm)",
+                  fontSize: 13,
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", marginBottom: 4, fontSize: 12, fontWeight: 600 }}>Lokalizacja</label>
+            <select
+              value={newProductForm.location}
+              onChange={(e) => setNewProductForm({ ...newProductForm, location: e.target.value })}
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                border: "1px solid var(--ink-2)",
+                borderRadius: "var(--r-sm)",
+                fontSize: 13,
+              }}
+            >
+              <option value="">-- Wybierz lokalizację --</option>
+              {PRODUCT_LOCATIONS.map((loc) => (
+                <option key={loc.value} value={loc.value}>
+                  {loc.icon} {loc.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", marginBottom: 4, fontSize: 12, fontWeight: 600 }}>Opis</label>
+            <textarea
+              value={newProductForm.description}
+              onChange={(e) => setNewProductForm({ ...newProductForm, description: e.target.value })}
+              placeholder="Opcjonalny opis produktu..."
+              style={{
+                width: "100%",
+                minHeight: "80px",
+                padding: "8px 12px",
+                border: "1px solid var(--ink-2)",
+                borderRadius: "var(--r-sm)",
+                fontSize: 13,
+                fontFamily: "inherit",
+                resize: "vertical",
+              }}
+            />
+          </div>
+
+          <button
+            onClick={handleCreateProduct}
+            disabled={creatingProduct}
+            style={{
+              padding: "8px 16px",
+              background: "var(--brand)",
+              color: "white",
+              border: "none",
+              borderRadius: "var(--r-sm)",
+              cursor: "pointer",
+              fontWeight: 600,
+              opacity: creatingProduct ? 0.6 : 1,
+            }}
+          >
+            {creatingProduct ? "Tworzę..." : "Utwórz produkt"}
+          </button>
+        </div>
+      )}
+
+      {/* Products grouped by location */}
+      <div>
+        <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Produkty ({products.length})</h2>
+
+        {Object.entries(productsByLocation).map(([locationKey, locationData]) => (
+          <div key={locationKey} style={{ marginBottom: 24 }}>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                padding: "8px 12px",
+                background: "var(--surface-2)",
+                borderRadius: "var(--r-sm)",
+                marginBottom: 12,
+              }}
+            >
+              {locationData.icon} {locationData.label}
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 12 }}>
+              {locationData.products.map((product: Product) => (
+                <div
+                  key={product.id}
+                  onClick={() => setSelectedProductId(product.id)}
+                  style={{
+                    padding: 12,
+                    background: selectedProductId === product.id ? "var(--brand-soft)" : "var(--paper)",
+                    border: selectedProductId === product.id ? "2px solid var(--brand)" : "1px solid var(--ink-2)",
+                    borderRadius: "var(--r-sm)",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 2 }}>{product.name}</div>
+                  <div style={{ fontSize: 11, color: "var(--ink-3)" }}>SKU: {product.sku}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Edit selected product */}
       {currentProduct && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
+        <div style={{ marginTop: 32, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
           {/* Product Info */}
           <div>
             <div style={{ background: "var(--paper)", border: "1px solid var(--ink-2)", borderRadius: "var(--r)", padding: 24 }}>
@@ -180,6 +418,90 @@ export function WarehouseProductsClient({ initialProducts }: Props) {
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 4 }}>Nazwa</div>
                 <div style={{ fontSize: 13, fontWeight: 600 }}>{currentProduct.name}</div>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 4, display: "flex", justifyContent: "space-between" }}>
+                  Lokalizacja
+                  {!editingLocation && (
+                    <button
+                      onClick={handleEditLocation}
+                      disabled={savingLocation}
+                      style={{
+                        fontSize: 12,
+                        padding: "4px 8px",
+                        background: "var(--brand-soft)",
+                        color: "var(--brand)",
+                        border: "none",
+                        borderRadius: "var(--r-sm)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Edytuj
+                    </button>
+                  )}
+                </div>
+                {editingLocation ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <select
+                      value={locationValue}
+                      onChange={(e) => setLocationValue(e.target.value)}
+                      disabled={savingLocation}
+                      style={{
+                        width: "100%",
+                        padding: "8px 12px",
+                        border: "1px solid var(--ink-2)",
+                        borderRadius: "var(--r-sm)",
+                        fontSize: 13,
+                      }}
+                    >
+                      <option value="">-- Wybierz lokalizację --</option>
+                      {PRODUCT_LOCATIONS.map((loc) => (
+                        <option key={loc.value} value={loc.value}>
+                          {loc.icon} {loc.label}
+                        </option>
+                      ))}
+                    </select>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        onClick={handleSaveLocation}
+                        disabled={savingLocation}
+                        style={{
+                          padding: "6px 12px",
+                          background: "var(--brand)",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "var(--r-sm)",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          opacity: savingLocation ? 0.6 : 1,
+                        }}
+                      >
+                        {savingLocation ? "Zapisuję..." : "Zapisz"}
+                      </button>
+                      <button
+                        onClick={handleCancelLocation}
+                        disabled={savingLocation}
+                        style={{
+                          padding: "6px 12px",
+                          background: "var(--surface-2)",
+                          color: "var(--ink)",
+                          border: "none",
+                          borderRadius: "var(--r-sm)",
+                          fontSize: 12,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Anuluj
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 13 }}>
+                    {getLocationIcon(currentProduct.location)} {getLocationLabel(currentProduct.location)}
+                  </div>
+                )}
               </div>
 
               <div>

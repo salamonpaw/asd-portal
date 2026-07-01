@@ -216,3 +216,49 @@ export async function updateProductImages(
   }
 }
 
+export async function createProductAsWarehouse(input: {
+  sku: string;
+  name: string;
+  description?: string;
+  location?: string;
+  machineTypeId: string;
+}): Promise<ActionResult<any>> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return { success: false, error: "Nie zalogowany" };
+    }
+
+    const role = session.user.role;
+    if (role !== "WAREHOUSE_SPECIALIST" && role !== "ADMIN") {
+      return { success: false, error: "Brak uprawnień" };
+    }
+
+    // Check if SKU already exists
+    const existing = await db.product.findUnique({ where: { sku: input.sku } });
+    if (existing) {
+      return { success: false, error: `Produkt z SKU "${input.sku}" już istnieje` };
+    }
+
+    // Validate required fields
+    if (!input.sku.trim() || !input.name.trim()) {
+      return { success: false, error: "SKU i nazwa są wymagane" };
+    }
+
+    const product = await db.product.create({
+      data: {
+        sku: input.sku.trim(),
+        name: input.name.trim(),
+        description: input.description?.trim() || null,
+        location: input.location || null,
+        machineTypeId: input.machineTypeId,
+      },
+      include: { machineType: true },
+    });
+
+    return { success: true, data: product };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+

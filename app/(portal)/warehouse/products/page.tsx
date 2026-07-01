@@ -16,22 +16,29 @@ export default async function WarehouseProductsPage() {
     redirect("/login");
   }
 
+  // Get machine type for D810 (or first available)
+  const machineType = await db.machineType.findFirst({
+    orderBy: { name: "asc" },
+  });
+
   const products = await db.product.findMany({
     select: {
       id: true,
       sku: true,
       name: true,
       description: true,
+      location: true,
+      machineTypeId: true,
       productImages: {
         where: { deletedAt: null },
         select: { id: true, filePath: true, fileName: true },
       },
     },
-    orderBy: { name: "asc" },
+    orderBy: [{ location: "asc" }, { name: "asc" }],
   });
 
   return (
-    <div style={{ padding: "32px", maxWidth: "1200px" }}>
+    <div style={{ padding: "32px", maxWidth: "1400px" }}>
       <div style={{ marginBottom: 32 }}>
         <Link
           href="/warehouse/dashboard"
@@ -51,11 +58,11 @@ export default async function WarehouseProductsPage() {
 
         <h1 style={{ marginBottom: 8 }}>📦 Zarządzanie Produktami</h1>
         <p style={{ color: "var(--ink-3)" }}>
-          Dodawaj opisy i zdjęcia do produktów
+          Dodawaj, edytuj produkty, opisy i zdjęcia. Przypisuj produkty do lokalizacji w automacie.
         </p>
       </div>
 
-      <WarehouseProductsClient initialProducts={products} />
+      <WarehouseProductsClient initialProducts={products} machineTypeId={machineType?.id || ""} />
     </div>
   );
 }
