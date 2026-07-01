@@ -110,16 +110,6 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
       }
     }
 
-    const costPrice = parseFloat(item.costPrice?.toString() || item.product.costPrice?.toString() || "0");
-    const marginPercent = finalPrice > costPrice ? ((finalPrice - costPrice) / finalPrice) * 100 : 0;
-    const minMargin = parseFloat(partner.minProfitMargin?.toString() || "10");
-
-    // TODO: Margin validation - disabled for now, can be re-enabled as warning
-    // if (marginPercent > 0 && marginPercent < minMargin) {
-    //   setError(`Marża za niska (${marginPercent.toFixed(1)}%). Minimum: ${minMargin}%`);
-    //   return;
-    // }
-
     setLoading(true);
     const result = await updateOrderItemPricing(item.id, {
       currency: data.currency,
@@ -356,18 +346,12 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
             }
           }
 
-          const costPrice = parseFloat(item.costPrice?.toString() || item.product.costPrice?.toString() || "0");
-          const marginPercent = finalPrice > costPrice ? ((finalPrice - costPrice) / finalPrice) * 100 : 0;
-          const minMargin = parseFloat(partner.minProfitMargin?.toString() || "10");
-          const isLowMargin = marginPercent > 0 && marginPercent < minMargin;
-
           return (
             <div
               key={item.id}
               style={{
                 padding: 16,
                 borderBottom: idx < items.length - 1 ? "1px solid var(--ink-2)" : "none",
-                background: isLowMargin && isEditing ? "rgba(255, 0, 0, 0.02)" : "transparent",
               }}
             >
               {!isEditing ? (
@@ -614,7 +598,7 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
                       <div
                         style={{
                           fontWeight: 600,
-                          color: isLowMargin ? "var(--danger)" : "var(--brand)",
+                          color: false ? "var(--danger)" : "var(--brand)",
                         }}
                       >
                         {finalPrice.toFixed(2)} {data?.currency || partner.currency}
@@ -622,36 +606,20 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
                     </div>
                   </div>
 
-                  {/* Margin validation disabled - TODO: re-enable as warning */}
-                  {false && isLowMargin && (
-                    <div
-                      style={{
-                        padding: 8,
-                        background: "var(--danger-soft)",
-                        color: "var(--danger)",
-                        borderRadius: "var(--r-sm)",
-                        marginBottom: 16,
-                        fontSize: 12,
-                      }}
-                    >
-                      ❌ Marża za niska ({marginPercent.toFixed(1)}%). Minimum: {minMargin}%
-                    </div>
-                  )}
-
                   <div style={{ display: "flex", gap: 8 }}>
                     <button
                       onClick={() => handleSave(item)}
                       disabled={loading}
                       style={{
                         padding: "6px 12px",
-                        background: isLowMargin ? "var(--ink-2)" : "var(--brand)",
+                        background: "var(--brand)",
                         color: "white",
                         border: "none",
                         borderRadius: "var(--r-sm)",
-                        cursor: isLowMargin || loading ? "not-allowed" : "pointer",
+                        cursor: loading ? "not-allowed" : "pointer",
                         fontSize: 12,
                         fontWeight: 600,
-                        opacity: isLowMargin || loading ? 0.6 : 1,
+                        opacity: loading ? 0.6 : 1,
                       }}
                     >
                       {loading ? "Zapisuję..." : "Zapisz"}
