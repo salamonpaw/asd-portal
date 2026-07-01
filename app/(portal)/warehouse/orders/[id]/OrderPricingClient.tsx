@@ -111,10 +111,10 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
     }
 
     const costPrice = parseFloat(item.costPrice?.toString() || item.product.costPrice?.toString() || "0");
-    const marginPercent = finalPrice > 0 ? ((finalPrice - costPrice) / finalPrice) * 100 : costPrice > 0 ? -100 : 0;
+    const marginPercent = finalPrice > costPrice ? ((finalPrice - costPrice) / finalPrice) * 100 : 0;
     const minMargin = parseFloat(partner.minProfitMargin?.toString() || "10");
 
-    if (marginPercent < minMargin) {
+    if (marginPercent > 0 && marginPercent < minMargin) {
       setError(`Marża za niska (${marginPercent.toFixed(1)}%). Minimum: ${minMargin}%`);
       return;
     }
@@ -356,9 +356,9 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
           }
 
           const costPrice = parseFloat(item.costPrice?.toString() || item.product.costPrice?.toString() || "0");
-          const marginPercent = finalPrice > 0 ? ((finalPrice - costPrice) / finalPrice) * 100 : costPrice > 0 ? -100 : 0;
+          const marginPercent = finalPrice > costPrice ? ((finalPrice - costPrice) / finalPrice) * 100 : 0;
           const minMargin = parseFloat(partner.minProfitMargin?.toString() || "10");
-          const isLowMargin = marginPercent < minMargin;
+          const isLowMargin = marginPercent > 0 && marginPercent < minMargin;
 
           return (
             <div
