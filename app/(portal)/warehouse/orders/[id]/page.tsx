@@ -50,9 +50,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     );
   }
 
-  // Calculate totals - use finalPrice if available, else calculate from unitPrice
-  let itemsTotal = 0;
-  let discountsTotal = 0;
+  // Calculate totals: Wartość pozycji (gross) - Rabaty (discounts) = Do zapłaty (final)
+  let itemsTotal = 0; // Gross before discounts
+  let discountsTotal = 0; // Total discounts
 
   order.items.forEach((item) => {
     const quantity = item.quantity || 1;
@@ -62,28 +62,19 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     const discountValue = item.discountValue ? parseFloat(item.discountValue.toString()) : 0;
 
     const grossPrice = unitPrice * quantity;
+    itemsTotal += grossPrice; // Always add gross price
 
-    if (item.finalPrice) {
-      // If finalPrice is saved, use it for total
-      itemsTotal += parseFloat(item.finalPrice.toString()) * quantity;
-      // Calculate discount as difference between original and final
-      discountsTotal += grossPrice - parseFloat(item.finalPrice.toString()) * quantity;
-    } else {
-      // Otherwise use unitPrice with discount calculation
-      itemsTotal += grossPrice;
-
-      // Calculate discount amount
-      if (discountValue > 0 && item.discountType) {
-        if (item.discountType === "PERCENT") {
-          discountsTotal += (grossPrice * discountValue) / 100;
-        } else if (item.discountType === "AMOUNT") {
-          discountsTotal += discountValue * quantity;
-        }
+    // Calculate discount amount
+    if (discountValue > 0 && item.discountType) {
+      if (item.discountType === "PERCENT") {
+        discountsTotal += (grossPrice * discountValue) / 100;
+      } else if (item.discountType === "AMOUNT") {
+        discountsTotal += discountValue * quantity;
       }
     }
   });
 
-  const finalTotal = itemsTotal + discountsTotal;
+  const finalTotal = itemsTotal - discountsTotal;
 
   const statusColor: Record<string, string> = {
     NOWE: "var(--ink-3)",
