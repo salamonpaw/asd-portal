@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { updateBulkInventory, getInventoryHistory } from "@/lib/actions/inventory";
+import { getInventoryWithOrders } from "@/lib/actions/warehouse-inventory";
 
 interface InventoryAudit {
   id: string;
@@ -39,13 +40,42 @@ interface BulkItem {
   toStock: number;
 }
 
+interface OnOrderItem {
+  id: string;
+  sku: string;
+  name: string;
+  currentStock: number;
+  onOrder: number;
+  isShort: boolean;
+}
+
 export function InventoryClient({ initialInventory }: InventoryClientProps) {
   const [inventory, setInventory] = useState(initialInventory);
+  const [onOrderData, setOnOrderData] = useState<Record<string, number>>({});
+  const [shortItems, setShortItems] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showHistory, setShowHistory] = useState<string | null>(null);
   const [history, setHistory] = useState<Inventory | null>(null);
+
+  useEffect(() => {
+    loadOnOrderData();
+  }, []);
+
+  const loadOnOrderData = async () => {
+    const result = await getInventoryWithOrders();
+    if (result.success && result.data) {
+      const onOrderMap: Record<string, number> = {};
+      const shortMap: Record<string, boolean> = {};
+      result.data.forEach((item) => {
+        onOrderMap[item.id] = item.onOrder;
+        shortMap[item.id] = item.isShort;
+      });
+      setOnOrderData(onOrderMap);
+      setShortItems(shortMap);
+    }
+  };
 
   // Bulk update state
   const [showBulkForm, setShowBulkForm] = useState(false);
@@ -570,9 +600,10 @@ export function InventoryClient({ initialInventory }: InventoryClientProps) {
                 padding: 16,
                 borderBottom: idx < inventory.length - 1 ? "1px solid var(--ink-2)" : "none",
                 display: "grid",
-                gridTemplateColumns: "2fr 1fr 1fr 1fr auto auto",
+                gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr auto auto",
                 gap: 16,
                 alignItems: "center",
+                background: shortItems[item.productId] ? "rgba(255, 0, 0, 0.02)" : "transparent",
               }}
             >
               <div>
@@ -582,6 +613,12 @@ export function InventoryClient({ initialInventory }: InventoryClientProps) {
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>Stan magazynu</div>
                 <div style={{ fontWeight: 600 }}>{item.currentStock} szt.</div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>Na zamówieniu</div>
+                <div style={{ fontWeight: 600, color: onOrderData[item.productId] ? "var(--brand)" : "var(--ink-3)" }}>
+                  {onOrderData[item.productId] || 0} szt.
+                </div>
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>W systemie</div>
@@ -598,6 +635,21 @@ export function InventoryClient({ initialInventory }: InventoryClientProps) {
                   {(item.currentStock || 0) - (item.product.inStock || 0)}
                 </div>
               </div>
+              {shortItems[item.productId] && (
+                <div
+                  style={{
+                    padding: "4px 8px",
+                    background: "var(--danger-soft)",
+                    color: "var(--danger)",
+                    borderRadius: "var(--r-sm)",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    textAlign: "center",
+                  }}
+                >
+                  ⚠️ Brakuje
+                </div>
+              )}
               <button
                 onClick={() => handleViewHistory(item.productId)}
                 style={{

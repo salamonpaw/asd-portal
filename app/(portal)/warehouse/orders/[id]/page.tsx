@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { OrderPricingClient } from "./OrderPricingClient";
 import { OrderActionsClient } from "./OrderActionsClient";
+import { OrderStatusChanger } from "./OrderStatusChanger";
 
 // Wyłącz caching dla dynamic order pages - zawsze swieże dane
 export const revalidate = 0;
@@ -110,19 +111,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 4, fontWeight: 600 }}>Status</div>
-            <div
-              style={{
-                display: "inline-block",
-                fontSize: 13,
-                padding: "4px 8px",
-                background: "var(--surface-2)",
-                color: statusColor[order.status] || "var(--ink)",
-                borderRadius: "var(--r-sm)",
-                fontWeight: 500,
-              }}
-            >
-              {order.status}
-            </div>
+            <OrderStatusChanger orderId={order.id} currentStatus={order.status} />
           </div>
 
           <div style={{ marginBottom: 16 }}>
