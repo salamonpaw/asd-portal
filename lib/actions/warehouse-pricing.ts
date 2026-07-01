@@ -32,10 +32,6 @@ export async function updateOrderItemPricing(
       return { success: false, error: "Pozycja nie znaleziona" };
     }
 
-    // Get system config
-    const config = await db.systemConfig.findFirst();
-    const minMargin = parseFloat(config?.minProfitMargin?.toString() || "10");
-
     // Calculate final price
     let finalPrice = parseFloat(item.unitPrice?.toString() || "0");
     if (data.discountValue && data.discountType) {
@@ -44,20 +40,6 @@ export async function updateOrderItemPricing(
       } else if (data.discountType === "AMOUNT") {
         finalPrice = finalPrice - data.discountValue;
       }
-    }
-
-    const costPrice =
-      parseFloat(item.costPrice?.toString() || "0") ||
-      parseFloat(item.product.costPrice?.toString() || "0") ||
-      0;
-    const marginPercent = costPrice > 0 ? ((finalPrice - costPrice) / costPrice) * 100 : 0;
-
-    // Validate margin
-    if (marginPercent < minMargin) {
-      return {
-        success: false,
-        error: `Marża za niska (${marginPercent.toFixed(1)}%). Minimum: ${minMargin}%`,
-      };
     }
 
     // Update item

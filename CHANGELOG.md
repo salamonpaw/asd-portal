@@ -5,6 +5,18 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2026-07-01
+
+### CRITICAL FIX
+- **Removed server-side margin validation completely**
+  - Client-side validation was disabled in 0.10.9 but server-side was still active
+  - Server action `updateOrderItemPricing` was using WRONG margin formula (divided by costPrice instead of finalPrice)
+  - This was causing "Marża za niska (-100.0%)" error even on valid prices
+  - **Pricing now saves without any validation blockers**
+  - Margin validation will be completely redesigned and re-implemented as warning (not blocker) in future version
+
+---
+
 ## [0.10.9] - 2026-07-01
 
 ### MAJOR FIX
