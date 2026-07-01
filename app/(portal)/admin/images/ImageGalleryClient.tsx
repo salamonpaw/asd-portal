@@ -126,7 +126,7 @@ export function ImageGalleryClient() {
 
     const result = await deleteProductImage(imageId);
     if (result.success) {
-      await loadImages();
+      window.location.reload();
     } else {
       setError(result.error || "Błąd przy usuwaniu");
     }
