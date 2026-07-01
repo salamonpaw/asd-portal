@@ -123,7 +123,14 @@ export async function getProducts(): Promise<{ success: boolean; error: string; 
       orderBy: { name: "asc" },
     });
 
-    return { success: true, error: "", data: products };
+    // Convert Decimal types to numbers
+    const convertedProducts = products.map((p) => ({
+      ...p,
+      costPrice: p.costPrice ? parseFloat(p.costPrice.toString()) : null,
+      sellingPrice: p.sellingPrice ? parseFloat(p.sellingPrice.toString()) : null,
+    }));
+
+    return { success: true, error: "", data: convertedProducts };
   } catch (error) {
     return { success: false, error: (error as Error).message, data: [] };
   }
