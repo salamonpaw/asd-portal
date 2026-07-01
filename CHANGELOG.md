@@ -5,6 +5,21 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.5] - 2026-07-01
+
+### Naprawione
+- **Margin validation bug with costPrice = 0**
+  - Fixed: When product doesn't have cost price, validation showed -100% error
+  - Now: Shows 999% (no limit) when cost price is missing
+  - Only validates margin when cost price > 0
+  
+- **Number input "010" issue in discount field**
+  - Added min="0", max="100" attributes
+  - Fixed value handling: `value={data?.discountValue ?? ""}`
+  - Allows clear typing without leading zeros
+
+---
+
 ## [0.10.4] - 2026-07-01
 
 ### Naprawione

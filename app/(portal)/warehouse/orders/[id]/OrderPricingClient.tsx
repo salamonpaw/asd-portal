@@ -356,9 +356,9 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
           }
 
           const costPrice = parseFloat(item.costPrice?.toString() || item.product.costPrice?.toString() || "0");
-          const marginPercent = costPrice > 0 ? ((finalPrice - costPrice) / costPrice) * 100 : 0;
+          const marginPercent = costPrice > 0 ? ((finalPrice - costPrice) / costPrice) * 100 : finalPrice > 0 ? 999 : 0;
           const minMargin = parseFloat(partner.minProfitMargin?.toString() || "10");
-          const isLowMargin = marginPercent < minMargin;
+          const isLowMargin = costPrice > 0 && marginPercent < minMargin;
 
           return (
             <div
@@ -538,11 +538,13 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
                       <input
                         type="number"
                         step="0.01"
-                        value={data?.discountValue || 0}
+                        min="0"
+                        max="100"
+                        value={data?.discountValue ?? ""}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            [item.id]: { ...data, discountValue: parseFloat(e.target.value) },
+                            [item.id]: { ...data, discountValue: e.target.value === "" ? 0 : parseFloat(e.target.value) },
                           })
                         }
                         style={{
