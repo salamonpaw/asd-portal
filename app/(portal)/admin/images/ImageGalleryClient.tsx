@@ -53,6 +53,8 @@ export function ImageGalleryClient() {
             sku: p.sku,
           }))
         );
+      } else {
+        setError((prev) => prev ? `${prev}. Brak produktów: ${productsResult.error}` : `Brak produktów: ${productsResult.error}`);
       }
 
       setLoading(false);
