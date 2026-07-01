@@ -132,7 +132,7 @@ export default async function WarehouseDashboard() {
               >
                 <div>
                   <Link
-                    href={`/warehouse/orders`}
+                    href={`/warehouse/orders/${order.id}`}
                     style={{
                       fontSize: 14,
                       fontWeight: 500,
