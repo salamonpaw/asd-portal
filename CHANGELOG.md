@@ -5,6 +5,31 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] - 2026-07-01
+
+### FIXES & FEATURES
+- **Summary Calculation Fixes**
+  - Fixed: Wartość pozycji now shows GROSS total (before discounts)
+  - Fixed: Rabaty now correctly shows discount amount (negative value)
+  - Fixed: Do zapłaty now correctly calculated as (Gross - Discounts)
+  - Fixed: Discount calculation with finalPrice fallback logic
+  - All totals now mathematically accurate
+
+- **Service Technician Order Detail Page**
+  - New route: `/service-technician/orders/[id]`
+  - Service technicians can view order details (read-only)
+  - Shows order status, items, pricing, discounts, warehouse stock
+  - View complete order history and status changes
+  - Cannot edit prices or manage inventory (warehouse specialist only)
+
+- **Order Status Changer**
+  - Click any order status to open dropdown menu
+  - Manual status change for all order states
+  - Status changes logged to order history
+  - Inventory automatically deducted when status changes to ZREALIZOWANE
+
+---
+
 ## [0.13.0] - 2026-07-01
 
 ### MAJOR FEATURE - Inventory Management with Order Status Control

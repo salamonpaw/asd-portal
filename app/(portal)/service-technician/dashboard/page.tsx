@@ -82,7 +82,7 @@ export default async function ServiceTechnicianDashboard() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 32 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 32 }}>
         {stats.map((stat) => (
           <div
             key={stat.label}
@@ -90,31 +90,33 @@ export default async function ServiceTechnicianDashboard() {
               background: "var(--paper)",
               border: "1px solid var(--ink-2)",
               borderRadius: "var(--r)",
-              padding: 16,
+              padding: 20,
               display: "flex",
-              alignItems: "flex-start",
+              flexDirection: "column",
+              alignItems: "center",
+              textAlign: "center",
               gap: 12,
             }}
           >
             <div
               style={{
-                width: 44,
-                height: 44,
+                width: 64,
+                height: 64,
                 background: "var(--brand)",
                 borderRadius: "var(--r-sm)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
+                position: "relative",
               }}
             >
-              <Icon name={stat.icon as any} size={22} style={{ color: "white" }} />
+              <div style={{ fontSize: 32, fontWeight: 700, color: "white" }}>{stat.value}</div>
             </div>
             <div>
-              <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>
+              <div style={{ fontSize: 12, color: "var(--ink-3)", fontWeight: 500 }}>
                 {stat.label}
               </div>
-              <div style={{ fontSize: 20, fontWeight: 600 }}>{stat.value}</div>
             </div>
           </div>
         ))}
