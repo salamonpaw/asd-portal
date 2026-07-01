@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { uploadProductImage, deleteProductImage } from "@/lib/actions/image-management";
+import { updateProduct } from "@/lib/actions/products";
 
 interface Product {
   id: string;
@@ -21,6 +22,9 @@ export function WarehouseProductsClient({ initialProducts }: Props) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [descriptionValue, setDescriptionValue] = useState("");
+  const [savingDescription, setSavingDescription] = useState(false);
 
   const currentProduct = products.find((p) => p.id === selectedProductId);
 
@@ -68,6 +72,39 @@ export function WarehouseProductsClient({ initialProducts }: Props) {
     } else {
       setError(result.error || "Błąd przy usuwaniu");
     }
+  };
+
+  const handleEditDescription = () => {
+    if (currentProduct) {
+      setDescriptionValue(currentProduct.description || "");
+      setEditingDescription(true);
+    }
+  };
+
+  const handleSaveDescription = async () => {
+    if (!selectedProductId) return;
+
+    setSavingDescription(true);
+    setError("");
+
+    const result = await updateProduct(selectedProductId, {
+      description: descriptionValue || undefined,
+    });
+
+    setSavingDescription(false);
+
+    if (result.success) {
+      setSuccess("Opis został zaktualizowany");
+      setEditingDescription(false);
+      setTimeout(() => window.location.reload(), 1500);
+    } else {
+      setError(result.error || "Błąd przy zapisywaniu opisu");
+    }
+  };
+
+  const handleCancelDescription = () => {
+    setEditingDescription(false);
+    setDescriptionValue("");
   };
 
   return (
@@ -146,10 +183,85 @@ export function WarehouseProductsClient({ initialProducts }: Props) {
               </div>
 
               <div>
-                <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 4 }}>Opis</div>
-                <div style={{ fontSize: 13, color: currentProduct.description ? "var(--ink)" : "var(--ink-3)" }}>
-                  {currentProduct.description || "Brak opisu"}
+                <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  Opis
+                  {!editingDescription && (
+                    <button
+                      onClick={handleEditDescription}
+                      disabled={savingDescription}
+                      style={{
+                        fontSize: 12,
+                        padding: "4px 8px",
+                        background: "var(--brand-soft)",
+                        color: "var(--brand)",
+                        border: "none",
+                        borderRadius: "var(--r-sm)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Edytuj
+                    </button>
+                  )}
                 </div>
+                {editingDescription ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <textarea
+                      value={descriptionValue}
+                      onChange={(e) => setDescriptionValue(e.target.value)}
+                      disabled={savingDescription}
+                      style={{
+                        width: "100%",
+                        minHeight: "100px",
+                        padding: "8px 12px",
+                        border: "1px solid var(--ink-2)",
+                        borderRadius: "var(--r-sm)",
+                        fontSize: 13,
+                        fontFamily: "inherit",
+                        background: "var(--paper)",
+                        resize: "vertical",
+                      }}
+                      placeholder="Wpisz opis produktu..."
+                    />
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        onClick={handleSaveDescription}
+                        disabled={savingDescription}
+                        style={{
+                          padding: "6px 12px",
+                          background: "var(--brand)",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "var(--r-sm)",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          opacity: savingDescription ? 0.6 : 1,
+                        }}
+                      >
+                        {savingDescription ? "Zapisuję..." : "Zapisz"}
+                      </button>
+                      <button
+                        onClick={handleCancelDescription}
+                        disabled={savingDescription}
+                        style={{
+                          padding: "6px 12px",
+                          background: "var(--surface-2)",
+                          color: "var(--ink)",
+                          border: "none",
+                          borderRadius: "var(--r-sm)",
+                          fontSize: 12,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Anuluj
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 13, color: currentProduct.description ? "var(--ink)" : "var(--ink-3)", whiteSpace: "pre-wrap" }}>
+                    {currentProduct.description || "Brak opisu"}
+                  </div>
+                )}
               </div>
             </div>
           </div>
