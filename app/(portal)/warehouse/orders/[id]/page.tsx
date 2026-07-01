@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 import { OrderPricingClient } from "./OrderPricingClient";
 import { OrderActionsClient } from "./OrderActionsClient";
 import { OrderStatusChanger } from "./OrderStatusChanger";
+import { OrderTrackingClient } from "./OrderTrackingClient";
 
 // Wyłącz caching dla dynamic order pages - zawsze swieże dane
 export const revalidate = 0;
@@ -145,8 +146,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           </div>
 
           <div>
-            <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 4, fontWeight: 600 }}>Numer śledzenia</div>
-            <div style={{ fontSize: 14, fontFamily: "monospace" }}>{order.trackingNumber || "—"}</div>
+            <OrderTrackingClient orderId={order.id} initialTrackingNumber={order.trackingNumber} />
           </div>
         </div>
       </div>

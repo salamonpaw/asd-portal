@@ -4,25 +4,14 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
-import { ServiceTechnicianProductsClient } from "./ServiceTechnicianProductsClient";
+import { OrderFormClient } from "./OrderFormClient";
 
 export default async function ServiceTechnicianProductsPage() {
   const session = await getServerSession(authOptions);
   const userRole = (session?.user as any)?.role;
   const userId = (session?.user as any)?.id;
-  const partnerId = (session?.user as any)?.partnerId;
 
   if (!session || userRole !== "SERVICE_TECHNICIAN") {
-    redirect("/login");
-  }
-
-  // Get user info
-  const user = await db.user.findUnique({
-    where: { id: userId },
-    select: { partnerId: true, name: true },
-  });
-
-  if (!user || !user.partnerId) {
     redirect("/login");
   }
 
@@ -46,7 +35,7 @@ export default async function ServiceTechnicianProductsPage() {
   });
 
   return (
-    <div style={{ padding: "32px", maxWidth: "1200px" }}>
+    <div style={{ padding: "32px", maxWidth: "1400px" }}>
       {/* Header */}
       <div style={{ marginBottom: 32 }}>
         <Link
@@ -64,13 +53,13 @@ export default async function ServiceTechnicianProductsPage() {
           <Icon name="arrow-left" size={16} />
           Powrót do moich zamówień
         </Link>
-        <h1 style={{ marginBottom: 8 }}>Dostępne Produkty</h1>
+        <h1 style={{ marginBottom: 8 }}>Złóż zamówienie</h1>
         <p style={{ color: "var(--ink-3)" }}>
-          Przeglądaj i zamawiaj części. Po złożeniu zamówienia czeka ono na potwierdzenie i wycenę.
+          Dodaj części do koszyka, podaj adres dostawy i wyślij zamówienie. Po potwierdzeniu czeka ono na wycenę.
         </p>
       </div>
 
-      <ServiceTechnicianProductsClient
+      <OrderFormClient
         products={products.map((p) => ({
           id: p.id,
           sku: p.sku,
@@ -79,8 +68,6 @@ export default async function ServiceTechnicianProductsPage() {
           image: p.productImages.length > 0 ? p.productImages[0].filePath : (p.image || ""),
           warehouseStock: p.inventory?.currentStock || 0,
         }))}
-        userId={userId}
-        partnerId={user.partnerId}
       />
     </div>
   );
