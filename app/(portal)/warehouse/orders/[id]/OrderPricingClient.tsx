@@ -529,7 +529,7 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            [item.id]: { ...data, discountValue: e.target.value === "" ? 0 : parseFloat(e.target.value) },
+                            [item.id]: { ...data, discountValue: e.target.value === "" ? null : parseFloat(e.target.value) },
                           })
                         }
                         style={{
