@@ -5,6 +5,27 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.6] - 2026-07-01
+
+### Dodane
+- **Order Actions in Order Detail Page**
+  - Added OrderActionsClient component at bottom of order detail
+  - Buttons: Zatwierdź (Approve), Zawieś (Suspend), Odrzuć (Reject)
+  - Server actions for status changes with history logging
+  - Rejection reason dropdown when rejecting order
+  
+- **Server Actions (lib/actions/warehouse-orders.ts)**
+  - `approveOrder()` - sets status to PRZYJĘTE
+  - `suspendOrder()` - sets status to ZAWIESZONE  
+  - `rejectOrder()` - sets status to ODRZUCONE with reason
+  - All actions log to ServiceOrderHistory
+
+### Zmieniane
+- Order detail page now has complete order lifecycle management
+- Removed dependency on list-view dropdown for order actions
+
+---
+
 ## [0.10.5] - 2026-07-01
 
 ### Naprawione

@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { OrderPricingClient } from "./OrderPricingClient";
+import { OrderActionsClient } from "./OrderActionsClient";
 
 // Wyłącz caching dla dynamic order pages - zawsze swieże dane
 export const revalidate = 0;
@@ -231,7 +232,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         </div>
       </div>
 
+      {/* Order Actions */}
+      <OrderActionsClient orderId={order.id} currentStatus={order.status} />
+
       {/* History */}
+      <div style={{ marginTop: 32 }}>
       {order.history.length > 0 && (
         <div>
           <h2 style={{ marginBottom: 16, fontSize: 16, fontWeight: 600 }}>Historia zmian</h2>
@@ -264,6 +269,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
