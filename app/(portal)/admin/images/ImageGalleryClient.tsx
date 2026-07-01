@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getAllImages, uploadProductImage, deleteProductImage } from "@/lib/actions/image-management";
+import { getProducts } from "@/lib/actions/products";
 import { Icon } from "@/components/ui/Icon";
 
 interface ProductImage {
@@ -15,28 +16,49 @@ interface ProductImage {
   product: { id: string; name: string; sku: string } | null;
 }
 
+interface Product {
+  id: string;
+  name: string;
+  sku: string;
+}
+
 export function ImageGalleryClient() {
   const [images, setImages] = useState<ProductImage[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState("");
 
   useEffect(() => {
-    loadImages();
+    const load = async () => {
+      setLoading(true);
+      const [imagesResult, productsResult] = await Promise.all([
+        getAllImages(),
+        getProducts(),
+      ]);
+
+      if (imagesResult.success && imagesResult.data) {
+        setImages(imagesResult.data as ProductImage[]);
+      } else {
+        setError(imagesResult.error || "Nie udało się załadować zdjęć");
+      }
+
+      if (productsResult.success && productsResult.data) {
+        setProducts(
+          productsResult.data.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            sku: p.sku,
+          }))
+        );
+      }
+
+      setLoading(false);
+    };
+    load();
   }, []);
-
-  const loadImages = async () => {
-    setLoading(true);
-    const result = await getAllImages();
-    setLoading(false);
-
-    if (result.success && result.data) {
-      setImages(result.data as ProductImage[]);
-    } else {
-      setError(result.error || "Nie udało się załadować zdjęć");
-    }
-  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -69,12 +91,12 @@ export function ImageGalleryClient() {
   const handleFiles = async (files: FileList) => {
     if (files.length === 0) return;
 
-    const file = files[0];
+    if (!selectedProductId) {
+      setError("Wybierz produkt");
+      return;
+    }
 
-    // For now, we need to ask which product this is for
-    // In a more complete implementation, you'd have a product selector
-    const productId = prompt("Wpisz ID produktu:");
-    if (!productId) return;
+    const file = files[0];
 
     setUploading(true);
     setError("");
@@ -82,12 +104,16 @@ export function ImageGalleryClient() {
     const formData = new FormData();
     formData.append("file", file);
 
-    const result = await uploadProductImage(productId, formData);
+    const result = await uploadProductImage(selectedProductId, formData);
 
     setUploading(false);
 
     if (result.success) {
-      await loadImages();
+      setSelectedProductId("");
+      const imagesResult = await getAllImages();
+      if (imagesResult.success && imagesResult.data) {
+        setImages(imagesResult.data as ProductImage[]);
+      }
     } else {
       setError(result.error || "Błąd przy wgrywaniu");
     }
@@ -123,6 +149,36 @@ export function ImageGalleryClient() {
           {error}
         </div>
       )}
+
+      {/* Product Selector */}
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: "block", marginBottom: 8, fontSize: 14, fontWeight: 600 }}>
+          Wybierz produkt
+        </label>
+        <select
+          value={selectedProductId}
+          onChange={(e) => setSelectedProductId(e.target.value)}
+          disabled={uploading}
+          style={{
+            width: "100%",
+            padding: "8px 12px",
+            border: "1px solid var(--ink-2)",
+            borderRadius: "var(--r-sm)",
+            fontSize: 14,
+            fontFamily: "inherit",
+            background: "var(--paper)",
+            cursor: uploading ? "not-allowed" : "pointer",
+            opacity: uploading ? 0.6 : 1,
+          }}
+        >
+          <option value="">-- Wybierz produkt --</option>
+          {products.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name} (SKU: {p.sku})
+            </option>
+          ))}
+        </select>
+      </div>
 
       {/* Upload Area */}
       <div
