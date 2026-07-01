@@ -34,6 +34,7 @@ export function WarehouseProductsClient({ initialProducts, machineTypeId }: Prop
   const [savingLocation, setSavingLocation] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creatingProduct, setCreatingProduct] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [newProductForm, setNewProductForm] = useState({
     sku: "",
     name: "",
@@ -43,16 +44,25 @@ export function WarehouseProductsClient({ initialProducts, machineTypeId }: Prop
 
   const currentProduct = products.find((p) => p.id === selectedProductId);
 
-  // Group products by location
+  // Filter products by search query
+  const filteredProducts = searchQuery.trim()
+    ? products.filter(
+        (p) =>
+          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.sku.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : products;
+
+  // Group filtered products by location
   const productsByLocation = PRODUCT_LOCATIONS.reduce((acc, loc) => {
-    const productsInLocation = products.filter((p) => p.location === loc.value);
+    const productsInLocation = filteredProducts.filter((p) => p.location === loc.value);
     if (productsInLocation.length > 0) {
       acc[loc.value] = { label: loc.label, icon: loc.icon, products: productsInLocation };
     }
     return acc;
   }, {} as Record<string, any>);
 
-  const unassignedProducts = products.filter((p) => !p.location);
+  const unassignedProducts = filteredProducts.filter((p) => !p.location);
   if (unassignedProducts.length > 0) {
     productsByLocation["unassigned"] = {
       label: "Nie przypisane",
@@ -232,8 +242,22 @@ export function WarehouseProductsClient({ initialProducts, machineTypeId }: Prop
         </div>
       )}
 
-      {/* Create new product button */}
-      <div style={{ marginBottom: 24 }}>
+      {/* Search and Create button */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, marginBottom: 24 }}>
+        <input
+          type="text"
+          placeholder="Szukaj po nazwie lub SKU..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{
+            padding: "8px 12px",
+            border: "1px solid var(--ink-2)",
+            borderRadius: "var(--r-sm)",
+            fontSize: 13,
+            fontFamily: "inherit",
+            background: "var(--paper)",
+          }}
+        />
         <button
           onClick={() => setShowCreateForm(!showCreateForm)}
           style={{
@@ -245,9 +269,10 @@ export function WarehouseProductsClient({ initialProducts, machineTypeId }: Prop
             cursor: "pointer",
             fontWeight: 600,
             fontSize: 14,
+            whiteSpace: "nowrap",
           }}
         >
-          {showCreateForm ? "Anuluj" : "+ Dodaj nowy produkt"}
+          {showCreateForm ? "Anuluj" : "+ Dodaj nowy"}
         </button>
       </div>
 
@@ -360,51 +385,61 @@ export function WarehouseProductsClient({ initialProducts, machineTypeId }: Prop
         </div>
       )}
 
-      {/* Products grouped by location */}
-      <div>
-        <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Produkty ({products.length})</h2>
+      {/* Products and Edit Panel - 2 Column Layout */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginTop: 24 }}>
+        {/* Left: Products grouped by location */}
+        <div>
+          <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>
+            Produkty ({filteredProducts.length}{searchQuery && ` z ${products.length}`})
+          </h2>
 
-        {Object.entries(productsByLocation).map(([locationKey, locationData]) => (
-          <div key={locationKey} style={{ marginBottom: 24 }}>
-            <div
-              style={{
-                fontSize: 13,
-                fontWeight: 600,
-                padding: "8px 12px",
-                background: "var(--surface-2)",
-                borderRadius: "var(--r-sm)",
-                marginBottom: 12,
-              }}
-            >
-              {locationData.icon} {locationData.label}
+          {Object.keys(productsByLocation).length === 0 ? (
+            <div style={{ padding: 24, textAlign: "center", background: "var(--surface-2)", borderRadius: "var(--r)", color: "var(--ink-3)" }}>
+              {searchQuery ? "Nie znaleziono produktów" : "Brak produktów"}
             </div>
+          ) : (
+            Object.entries(productsByLocation).map(([locationKey, locationData]) => (
+            <div key={locationKey} style={{ marginBottom: 24 }}>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  padding: "8px 12px",
+                  background: "var(--surface-2)",
+                  borderRadius: "var(--r-sm)",
+                  marginBottom: 12,
+                }}
+              >
+                {locationData.icon} {locationData.label}
+              </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 12 }}>
-              {locationData.products.map((product: Product) => (
-                <div
-                  key={product.id}
-                  onClick={() => setSelectedProductId(product.id)}
-                  style={{
-                    padding: 12,
-                    background: selectedProductId === product.id ? "var(--brand-soft)" : "var(--paper)",
-                    border: selectedProductId === product.id ? "2px solid var(--brand)" : "1px solid var(--ink-2)",
-                    borderRadius: "var(--r-sm)",
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                  }}
-                >
-                  <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 2 }}>{product.name}</div>
-                  <div style={{ fontSize: 11, color: "var(--ink-3)" }}>SKU: {product.sku}</div>
-                </div>
-              ))}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {locationData.products.map((product: Product) => (
+                  <div
+                    key={product.id}
+                    onClick={() => setSelectedProductId(product.id)}
+                    style={{
+                      padding: 12,
+                      background: selectedProductId === product.id ? "var(--brand-soft)" : "var(--paper)",
+                      border: selectedProductId === product.id ? "2px solid var(--brand)" : "1px solid var(--ink-2)",
+                      borderRadius: "var(--r-sm)",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 2 }}>{product.name}</div>
+                    <div style={{ fontSize: 11, color: "var(--ink-3)" }}>SKU: {product.sku}</div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          )))}
+          )}
+        </div>
 
-      {/* Edit selected product */}
-      {currentProduct && (
-        <div style={{ marginTop: 32, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
+        {/* Right: Edit selected product */}
+        {currentProduct ? (
+          <div>
           {/* Product Info */}
           <div>
             <div style={{ background: "var(--paper)", border: "1px solid var(--ink-2)", borderRadius: "var(--r)", padding: 24 }}>
@@ -667,7 +702,14 @@ export function WarehouseProductsClient({ initialProducts, machineTypeId }: Prop
             </div>
           </div>
         </div>
-      )}
+          </div>
+        ) : (
+          <div style={{ padding: 32, textAlign: "center", background: "var(--paper)", borderRadius: "var(--r)", border: "1px solid var(--ink-2)" }}>
+            <div style={{ fontSize: 14, color: "var(--ink-3)", marginBottom: 8 }}>Wybierz produkt z listy po lewej</div>
+            <div style={{ fontSize: 12, color: "var(--ink-3)" }}>aby edytować opis, lokalizację i dodawać zdjęcia</div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
