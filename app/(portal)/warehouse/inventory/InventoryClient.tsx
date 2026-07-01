@@ -600,7 +600,7 @@ export function InventoryClient({ initialInventory }: InventoryClientProps) {
                 padding: 16,
                 borderBottom: idx < inventory.length - 1 ? "1px solid var(--ink-2)" : "none",
                 display: "grid",
-                gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr auto auto",
+                gridTemplateColumns: "2fr 1fr 1fr 1fr auto auto",
                 gap: 16,
                 alignItems: "center",
                 background: shortItems[item.productId] ? "rgba(255, 0, 0, 0.02)" : "transparent",
@@ -621,18 +621,14 @@ export function InventoryClient({ initialInventory }: InventoryClientProps) {
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>W systemie</div>
-                <div style={{ fontWeight: 600 }}>{item.product.inStock || 0} szt.</div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>Różnica</div>
+                <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>Dostępne</div>
                 <div
                   style={{
                     fontWeight: 600,
-                    color: item.currentStock !== (item.product.inStock || 0) ? "var(--warn)" : "var(--success)",
+                    color: (item.currentStock - (onOrderData[item.productId] || 0)) < 0 ? "var(--danger)" : "var(--success)",
                   }}
                 >
-                  {(item.currentStock || 0) - (item.product.inStock || 0)}
+                  {item.currentStock - (onOrderData[item.productId] || 0)} szt.
                 </div>
               </div>
               {shortItems[item.productId] && (
