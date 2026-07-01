@@ -5,6 +5,24 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.7] - 2026-07-01
+
+### CRITICAL FIX
+- **Margin calculation formula was completely wrong!**
+  - Old (WRONG): Marża = (finalPrice - costPrice) / costPrice * 100%
+  - New (CORRECT): Marża = (finalPrice - costPrice) / finalPrice * 100%
+  
+  **Example - was showing -100%, now shows 54.36%:**
+  - Cost: 23 zł
+  - Selling price: 56 zł  
+  - Discount: 10% (-5.60 zł)
+  - Final price: 50.40 zł
+  - Profit: 27.40 zł
+  - OLD CALC: 27.40/23 = 119% ❌ (but showed as -100% error)
+  - NEW CALC: 27.40/50.40 = 54.36% ✅
+
+---
+
 ## [0.10.6] - 2026-07-01
 
 ### Dodane
