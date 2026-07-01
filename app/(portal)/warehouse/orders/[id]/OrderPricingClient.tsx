@@ -97,7 +97,10 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
     setSuccess("");
 
     const data = formData[item.id];
-    if (!data) return;
+    if (!data) {
+      setError("Brak danych formularza");
+      return;
+    }
 
     const sellingPrice = parseFloat(item.unitPrice?.toString() || item.product.sellingPrice?.toString() || "0");
     let finalPrice = sellingPrice;
@@ -111,34 +114,40 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
     }
 
     setLoading(true);
-    const result = await updateOrderItemPricing(item.id, {
-      currency: data.currency,
-      exchangeRate: data.exchangeRate,
-      discountType: data.discountType,
-      discountValue: data.discountValue,
-      notes: data.notes,
-    });
+    try {
+      const result = await updateOrderItemPricing(item.id, {
+        currency: data.currency,
+        exchangeRate: data.exchangeRate,
+        discountType: data.discountType,
+        discountValue: data.discountValue ?? undefined,
+        notes: data.notes,
+      });
 
-    setLoading(false);
+      setLoading(false);
 
-    if (result.success) {
-      // Save discount to localStorage for next time
-      localStorage.setItem(
-        `partner_discount_${partner.id}`,
-        JSON.stringify({
-          type: data.discountType,
-          value: data.discountValue,
-          savedAt: new Date().toISOString(),
-        })
-      );
+      if (result?.success) {
+        localStorage.setItem(
+          `partner_discount_${partner.id}`,
+          JSON.stringify({
+            type: data.discountType,
+            value: data.discountValue,
+            savedAt: new Date().toISOString(),
+          })
+        );
 
-      setSuccess("Zapisano!");
-      setEditingItemId(null);
-      setFormData({});
-      setTimeout(() => setSuccess(""), 3000);
-      // window.location.reload();  // Usunięty agresywny reload
-    } else {
-      setError(result.error || "Błąd");
+        setSuccess("✓ Zapisano!");
+        setEditingItemId(null);
+        setFormData({});
+        setTimeout(() => {
+          setSuccess("");
+          window.location.reload();
+        }, 1500);
+      } else {
+        setError(result?.error || "Nie udało się zapisać");
+      }
+    } catch (err) {
+      setLoading(false);
+      setError(`Błąd: ${err instanceof Error ? err.message : "nieznany błąd"}`);
     }
   };
 
