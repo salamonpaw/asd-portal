@@ -434,7 +434,6 @@ export function WarehouseProductsClient({ initialProducts, machineTypeId }: Prop
               </div>
             </div>
           )))}
-          )}
         </div>
 
         {/* Right: Edit selected product */}
@@ -702,7 +701,6 @@ export function WarehouseProductsClient({ initialProducts, machineTypeId }: Prop
             </div>
           </div>
         </div>
-          </div>
         ) : (
           <div style={{ padding: 32, textAlign: "center", background: "var(--paper)", borderRadius: "var(--r)", border: "1px solid var(--ink-2)" }}>
             <div style={{ fontSize: 14, color: "var(--ink-3)", marginBottom: 8 }}>Wybierz produkt z listy po lewej</div>
