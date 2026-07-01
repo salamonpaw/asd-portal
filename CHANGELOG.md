@@ -5,6 +5,17 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.4] - 2026-07-01
+
+### Naprawione
+- **Critical: Prices not showing in OrderPricingClient**
+  - Fixed fallback logic for unit prices
+  - If item.unitPrice is NULL → fallback to product.sellingPrice
+  - Allows pricing older orders that don't have unitPrice set
+  - Fixes "Marża za niska" error when prices were 0.00 PLN
+
+---
+
 ## [0.10.3] - 2026-07-01
 
 ### Naprawione

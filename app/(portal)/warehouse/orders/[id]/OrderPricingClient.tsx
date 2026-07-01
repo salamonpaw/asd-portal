@@ -99,7 +99,7 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
     const data = formData[item.id];
     if (!data) return;
 
-    const sellingPrice = parseFloat(item.unitPrice?.toString() || "0");
+    const sellingPrice = parseFloat(item.unitPrice?.toString() || item.product.sellingPrice?.toString() || "0");
     let finalPrice = sellingPrice;
 
     if (data.discountValue && data.discountType) {
@@ -344,7 +344,7 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
         {items.map((item, idx) => {
           const isEditing = editingItemId === item.id;
           const data = formData[item.id];
-          const sellingPrice = parseFloat(item.unitPrice?.toString() || "0");
+          const sellingPrice = parseFloat(item.unitPrice?.toString() || item.product.sellingPrice?.toString() || "0");
 
           let finalPrice = sellingPrice;
           if (isEditing && data?.discountValue && data?.discountType) {
