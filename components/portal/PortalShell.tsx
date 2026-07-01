@@ -47,6 +47,7 @@ const NAV_ADMIN = [
   { key: "sep", href: "", label: "", icon: "" }, // separator
   { key: "machines",    href: "/admin/machine-types", label: "Typy automatów",  icon: "settings" },
   { key: "products",    href: "/admin/products",      label: "Produkty",         icon: "package" },
+  { key: "images",      href: "/admin/images",        label: "Zdjęcia produktów",icon: "image" },
   { key: "rates",       href: "/admin/exchange-rates",label: "Kursy walut",     icon: "trending_up" },
   { key: "discounts",   href: "/admin/bulk-discounts",label: "Rabaty hurtowe",  icon: "percent" },
   { key: "sep", href: "", label: "", icon: "" }, // separator

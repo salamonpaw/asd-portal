@@ -25,7 +25,13 @@ export function WarehouseProductsClient({ initialProducts }: Props) {
   const currentProduct = products.find((p) => p.id === selectedProductId);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!selectedProductId || !e.target.files?.length) return;
+    if (!e.target.files?.length) return;
+
+    if (!selectedProductId) {
+      setError("Wybierz produkt przed wgraniem zdjęcia");
+      e.target.value = "";
+      return;
+    }
 
     setUploading(true);
     setError("");
@@ -40,9 +46,13 @@ export function WarehouseProductsClient({ initialProducts }: Props) {
 
     if (result.success) {
       setSuccess("Zdjęcie wgrane pomyślnie");
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (fileInput) fileInput.value = "";
       setTimeout(() => window.location.reload(), 1500);
     } else {
       setError(result.error || "Błąd przy wgrywaniu");
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (fileInput) fileInput.value = "";
     }
   };
 
