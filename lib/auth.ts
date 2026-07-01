@@ -58,5 +58,12 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
+    async redirect({ url, baseUrl }) {
+      // Role-based redirect after login
+      if (url.startsWith(baseUrl)) {
+        return url;
+      }
+      return baseUrl;
+    },
   },
 };

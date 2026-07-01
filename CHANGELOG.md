@@ -5,6 +5,20 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.3] - 2026-07-01
+
+### Naprawione
+- **Role-based redirect after login**
+  - Dodane middleware.ts do automatycznego redirectu po zalogowaniu
+  - SERVICE_TECHNICIAN → /service-technician/dashboard
+  - WAREHOUSE_SPECIALIST → /warehouse
+  - ADMIN → /admin/dashboard
+  - STAFF → /staff/dashboard
+  - PARTNER/PARTNER_ADMIN → /partner/dashboard
+  - Eliminuje pokazywanie landing page po zalogowaniu
+
+---
+
 ## [0.10.2] - 2026-07-01
 
 ### Naprawione
