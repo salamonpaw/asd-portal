@@ -24,6 +24,7 @@ const NAV_SERVICE_TECHNICIAN = [
 ];
 
 const NAV_WAREHOUSE_SPECIALIST = [
+  { key: "dashboard",   href: "/warehouse/dashboard",label: "Pulpit",          icon: "gauge" },
   { key: "warehouse",   href: "/warehouse",         label: "Zamówienia",       icon: "package" },
   { key: "products",    href: "/warehouse/products",label: "Produkty",         icon: "box" },
   { key: "inventory",   href: "/warehouse/inventory",label: "Stan magazynu",   icon: "layers" },

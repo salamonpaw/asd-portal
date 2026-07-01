@@ -58,36 +58,34 @@ export default async function WarehouseDashboard() {
           <div
             key={stat.label}
             style={{
-              background: "var(--surface)",
+              background: "var(--paper)",
               border: "1px solid var(--ink-2)",
               borderRadius: "var(--r)",
               padding: 20,
               display: "flex",
-              alignItems: "flex-start",
-              gap: 16,
+              flexDirection: "column",
+              gap: 12,
               boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
             }}
           >
+            <div style={{ fontSize: 13, color: "var(--ink-3)" }}>
+              {stat.label}
+            </div>
             <div
               style={{
-                width: 56,
-                height: 56,
-                background: "var(--brand)",
+                width: 64,
+                height: 64,
+                background: "#2d3e66",
                 borderRadius: "var(--r-sm)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                fontSize: 32,
+                fontWeight: 700,
+                color: "white",
               }}
             >
-              <Icon name={stat.icon as any} size={28} style={{ color: "white" }} />
-            </div>
-            <div>
-              <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 4 }}>
-                {stat.label}
-              </div>
-              <div style={{ fontSize: 28, fontWeight: 600, color: "var(--ink)" }}>
-                {stat.value}
-              </div>
+              {stat.value}
             </div>
           </div>
         ))}
