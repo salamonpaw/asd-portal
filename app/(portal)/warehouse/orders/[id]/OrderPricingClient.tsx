@@ -139,9 +139,8 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
         setEditingItemId(null);
         setFormData({});
         setTimeout(() => {
-          setSuccess("");
           window.location.reload();
-        }, 1500);
+        }, 800);
       } else {
         setError(result?.error || "Nie udało się zapisać");
       }
