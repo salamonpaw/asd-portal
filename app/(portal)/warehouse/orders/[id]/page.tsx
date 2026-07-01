@@ -6,6 +6,9 @@ import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { OrderPricingClient } from "./OrderPricingClient";
 
+// Wyłącz caching dla dynamic order pages - zawsze swieże dane
+export const revalidate = 0;
+
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await getServerSession(authOptions);

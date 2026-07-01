@@ -5,6 +5,16 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.2] - 2026-07-01
+
+### Naprawione
+- **Caching issue w warehouse orders**
+  - Dodane `revalidate = 0` na order detail page
+  - Eliminuje konieczność drugiego kliknięcia aby wczytały się świeże dane
+  - Zawsze pokazuje aktualny widok OrderPricingClient
+
+---
+
 ## [0.10.1] - 2026-06-30
 
 ### Naprawione
