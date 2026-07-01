@@ -50,30 +50,38 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     );
   }
 
-  // Calculate totals
-  let grossTotal = 0; // Total before discounts
-  let discountsTotal = 0; // Total discounts
+  // Calculate totals - use finalPrice if available, else calculate from unitPrice
+  let itemsTotal = 0;
+  let discountsTotal = 0;
 
   order.items.forEach((item) => {
     const quantity = item.quantity || 1;
-    const unitPrice = item.unitPrice ? parseFloat(item.unitPrice.toString()) : 0;
-    const discountValue = item.discountValue ? parseFloat(item.discountValue.toString()) : 0;
 
-    // Gross total (before discounts)
-    grossTotal += unitPrice * quantity;
+    if (item.finalPrice) {
+      // If finalPrice is saved, use it (prices have been edited)
+      itemsTotal += parseFloat(item.finalPrice.toString()) * quantity;
+    } else {
+      // Otherwise calculate from unitPrice (with fallback to sellingPrice)
+      const unitPrice = item.unitPrice
+        ? parseFloat(item.unitPrice.toString())
+        : parseFloat(item.product?.sellingPrice?.toString() || "0");
+      const discountValue = item.discountValue ? parseFloat(item.discountValue.toString()) : 0;
 
-    // Calculate discount amount
-    if (discountValue > 0 && item.discountType) {
-      if (item.discountType === "PERCENT") {
-        discountsTotal += (unitPrice * quantity * discountValue) / 100;
-      } else if (item.discountType === "AMOUNT") {
-        discountsTotal += discountValue * quantity;
+      const itemPrice = unitPrice * quantity;
+      itemsTotal += itemPrice;
+
+      // Calculate discount amount
+      if (discountValue > 0 && item.discountType) {
+        if (item.discountType === "PERCENT") {
+          discountsTotal += (itemPrice * discountValue) / 100;
+        } else if (item.discountType === "AMOUNT") {
+          discountsTotal += discountValue * quantity;
+        }
       }
     }
   });
 
-  const finalTotal = grossTotal - discountsTotal;
-  const itemsTotal = finalTotal; // For display compatibility
+  const finalTotal = itemsTotal - discountsTotal;
 
   const statusColor: Record<string, string> = {
     NOWE: "var(--ink-3)",
