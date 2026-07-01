@@ -5,6 +5,39 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] - 2026-07-01
+
+### MAJOR FEATURE - Inventory Management with Order Status Control
+
+**Manual Status Changing:**
+- Click order status to open dropdown menu
+- Change any order to any status (NOWE, PRZYJĘTE, CZĘŚCIOWO_ZREALIZOWANE, ZREALIZOWANE, ZAWIESZONE, ODRZUCONE)
+- Status change logged to order history
+- All changes trigger inventory audit trail
+
+**Auto-Deduct Inventory on Fulfillment:**
+- When order marked as ZREALIZOWANE, products are automatically deducted from stock
+- Deduction is immediate and accurate (doesn't go below 0)
+- Audit log created for each deduction with full traceability
+- Shows which order triggered the deduction
+
+**Warehouse Inventory View Enhanced:**
+- NEW COLUMN: "Na zamówieniu" (On Order) - shows qty from all active orders
+- Products with active orders show order quantity in blue
+- Shortage alert (red background) when on-order qty > current stock
+- Shows: Current Stock | On Order | In System | Difference | Shortage Alert
+- Sorted by shortage severity (most urgent first)
+
+**Use Case Flow:**
+1. Service technician creates order for products
+2. Warehouse specialist views order, edits prices
+3. Warehouse specialist marks order as ZREALIZOWANE
+4. System auto-deducts from inventory
+5. Warehouse inventory view shows current situation
+6. If "Na zamówieniu" > "Stan magazynu" → shortage alert
+
+---
+
 ## [0.12.0] - 2026-07-01
 
 ### FIXES
