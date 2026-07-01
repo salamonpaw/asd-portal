@@ -5,6 +5,27 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2026-07-01
+
+### FIXES
+- **Pricing save now works correctly**
+  - Server-side type handling for discount values (string to number conversion)
+  - Proper null/undefined handling for optional fields
+  - Discount field now allows clearing to empty value (not forced to 0)
+  - Auto-reload after save to confirm persistence (800ms instead of 1500ms)
+
+- **Summary calculation fixed**
+  - Order summary now correctly shows discount totals
+  - "Do zapłaty" (Total to pay) now includes all applied discounts
+  - Calculates from unitPrice + discountValue for accurate display
+  
+- **Price editing UX improvements**
+  - Faster feedback after save (800ms reload vs 1500ms)
+  - Better error messages when save fails
+  - No more "Marża za niska" validation errors
+
+---
+
 ## [0.11.0] - 2026-07-01
 
 ### CRITICAL FIX

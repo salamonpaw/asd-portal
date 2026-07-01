@@ -49,34 +49,30 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     );
   }
 
-  // Calculate totals - use finalPrice if available, else calculate from unitPrice
-  let itemsTotal = 0;
-  let discountsTotal = 0;
+  // Calculate totals
+  let grossTotal = 0; // Total before discounts
+  let discountsTotal = 0; // Total discounts
 
   order.items.forEach((item) => {
     const quantity = item.quantity || 1;
+    const unitPrice = item.unitPrice ? parseFloat(item.unitPrice.toString()) : 0;
+    const discountValue = item.discountValue ? parseFloat(item.discountValue.toString()) : 0;
 
-    if (item.finalPrice) {
-      // Use finalPrice if it's already calculated and saved
-      itemsTotal += parseFloat(item.finalPrice.toString()) * quantity;
-    } else {
-      // Calculate from unitPrice and discount
-      const unitPrice = item.unitPrice ? parseFloat(item.unitPrice.toString()) : 0;
-      const discountValue = item.discountValue ? parseFloat(item.discountValue.toString()) : 0;
+    // Gross total (before discounts)
+    grossTotal += unitPrice * quantity;
 
-      itemsTotal += unitPrice * quantity;
-
-      if (discountValue > 0) {
-        if (item.discountType === "PERCENT") {
-          discountsTotal += (unitPrice * quantity * discountValue) / 100;
-        } else if (item.discountType === "AMOUNT") {
-          discountsTotal += discountValue * quantity;
-        }
+    // Calculate discount amount
+    if (discountValue > 0 && item.discountType) {
+      if (item.discountType === "PERCENT") {
+        discountsTotal += (unitPrice * quantity * discountValue) / 100;
+      } else if (item.discountType === "AMOUNT") {
+        discountsTotal += discountValue * quantity;
       }
     }
   });
 
-  const finalTotal = itemsTotal - discountsTotal;
+  const finalTotal = grossTotal - discountsTotal;
+  const itemsTotal = finalTotal; // For display compatibility
 
   const statusColor: Record<string, string> = {
     NOWE: "var(--ink-3)",
