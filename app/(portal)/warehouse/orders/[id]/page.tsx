@@ -56,24 +56,26 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
   order.items.forEach((item) => {
     const quantity = item.quantity || 1;
+    const unitPrice = item.unitPrice
+      ? parseFloat(item.unitPrice.toString())
+      : parseFloat(item.product?.sellingPrice?.toString() || "0");
+    const discountValue = item.discountValue ? parseFloat(item.discountValue.toString()) : 0;
+
+    const grossPrice = unitPrice * quantity;
 
     if (item.finalPrice) {
-      // If finalPrice is saved, use it (prices have been edited)
+      // If finalPrice is saved, use it for total
       itemsTotal += parseFloat(item.finalPrice.toString()) * quantity;
+      // Calculate discount as difference between original and final
+      discountsTotal += grossPrice - parseFloat(item.finalPrice.toString()) * quantity;
     } else {
-      // Otherwise calculate from unitPrice (with fallback to sellingPrice)
-      const unitPrice = item.unitPrice
-        ? parseFloat(item.unitPrice.toString())
-        : parseFloat(item.product?.sellingPrice?.toString() || "0");
-      const discountValue = item.discountValue ? parseFloat(item.discountValue.toString()) : 0;
-
-      const itemPrice = unitPrice * quantity;
-      itemsTotal += itemPrice;
+      // Otherwise use unitPrice with discount calculation
+      itemsTotal += grossPrice;
 
       // Calculate discount amount
       if (discountValue > 0 && item.discountType) {
         if (item.discountType === "PERCENT") {
-          discountsTotal += (itemPrice * discountValue) / 100;
+          discountsTotal += (grossPrice * discountValue) / 100;
         } else if (item.discountType === "AMOUNT") {
           discountsTotal += discountValue * quantity;
         }
@@ -81,7 +83,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     }
   });
 
-  const finalTotal = itemsTotal - discountsTotal;
+  const finalTotal = itemsTotal + discountsTotal;
 
   const statusColor: Record<string, string> = {
     NOWE: "var(--ink-3)",
