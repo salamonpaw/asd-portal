@@ -1,418 +1,166 @@
-# ASD Partner Portal — VM Deployment Guide
+# Deployment Guide — ASD Partner Portal
 
-Instrukcje deployment aplikacji na produkcyjnym serwerze (Virtual Machine).
+## One-time Setup
 
-**Current Setup (VM: 192.160.20.254):**
-- App Directory: `/home/psalamon/apps/asd-portal`
-- App Port: 3310
-- Database Port: 8002
-- Database: PostgreSQL (zewnętrzna lub containerized)
-
----
-
-## 📋 Prerequisites (VM)
-
-Przed deploymentem upewnij się, że VM ma:
-
+### 1. Install Node.js (if not already installed)
 ```bash
-# Check versions on VM
-node --version        # 18+ required
-npm --version         # 8+ required
-git --version         # Required
-psql --version        # PostgreSQL client (opcjonalnie)
-docker --version      # (opcjonalnie) Jeśli używasz Docker
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+
+### 2. Set up log directory
+```bash
+sudo mkdir -p /var/log/asd-portal
+sudo chown psalamon:psalamon /var/log/asd-portal
+```
+
+### 3. Copy systemd service file
+```bash
+sudo cp /Users/pawel/Zgłaszanie\ projektów/portal/asd-portal.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable asd-portal
+```
+
+### 4. Ensure deploy.sh is executable
+```bash
+chmod +x /Users/pawel/Zgłaszanie\ projektów/portal/deploy.sh
+```
+
+### 5. Create sudo rule (optional — allows deploy without password)
+```bash
+echo "psalamon ALL=(ALL) NOPASSWD: /usr/bin/systemctl start asd-portal, /usr/bin/systemctl stop asd-portal, /usr/bin/systemctl restart asd-portal, /usr/bin/systemctl enable asd-portal" | sudo tee -a /etc/sudoers.d/asd-portal
 ```
 
 ---
 
-## 🚀 Deployment Steps
+## Deployment
 
-### Phase 1: Update Code
-
+### Full Deploy (Reset + Build + Start)
 ```bash
-cd /home/psalamon/apps/asd-portal
-
-# Fetch latest
-git fetch origin
-
-# Pull v0.1.0 (or latest main)
-git pull origin main
-
-# Verify version
-cat VERSION
-git log --oneline -1
+cd /Users/pawel/Zgłaszanie\ projektów/portal
+sudo -u psalamon ./deploy.sh
 ```
 
-### Phase 2: Install Dependencies
+This will:
+- ✅ Fetch latest from origin/main
+- ✅ Reset local changes
+- ✅ Install dependencies (npm ci)
+- ✅ Run database migrations
+- ✅ Generate Prisma Client
+- ✅ Build the application
+- ✅ Stop old service
+- ✅ Start new service via systemd
+- ✅ Log everything to `/var/log/asd-portal/deploy.log`
 
+### Check Service Status
 ```bash
-npm ci --omit=dev
-# (lub npm install jeśli nie masz lock file)
+systemctl status asd-portal
 ```
 
-### Phase 3: Verify & Update .env
-
+### View Logs
 ```bash
-# Check current .env configuration
-cat .env
+# Last 50 lines
+journalctl -u asd-portal -n 50
 
-# Key variables to verify:
-# - DATABASE_URL (pointing to correct PostgreSQL)
-# - NEXTAUTH_SECRET (must be set!)
-# - NEXTAUTH_URL (must be http://192.160.20.254:3310 or your VM IP:port)
-# - PORTAL_URL (must be same as NEXTAUTH_URL)
-# - APP_PORT=3310
+# Follow logs in real-time
+journalctl -u asd-portal -f
 
-# If NEXTAUTH_SECRET is empty/placeholder, generate one:
-openssl rand -base64 32
-# Then update .env with the output
+# Full deploy log
+cat /var/log/asd-portal/deploy.log
 ```
 
-**Minimal .env Template:**
-
+### Restart Service
 ```bash
-# Database (external PostgreSQL on port 8002)
-DATABASE_URL="postgresql://asd_portal_user:W3ryfik4cj4@localhost:8002/asd_portal_prod"
-
-# NextAuth
-NEXTAUTH_SECRET="your_generated_secret_here"
-NEXTAUTH_URL="http://192.160.20.254:3310"
-PORTAL_URL="http://192.160.20.254:3310"
-
-# App
-APP_PORT=3310
-
-# Optional (for future email support)
-SMTP_HOST=smtp.office365.com
-SMTP_PORT=587
-SMTP_SECURE=true
-SMTP_USER=placeholder@asdsystems.pl
-SMTP_PASS=placeholder
+sudo systemctl restart asd-portal
 ```
 
-### Phase 4: Database Migrations
-
+### Stop Service
 ```bash
-# Run pending Prisma migrations
-npx prisma migrate deploy
-
-# Verify database is accessible:
-npx prisma db execute --stdin << 'EOF'
-SELECT COUNT(*) FROM "User";
-EOF
-```
-
-### Phase 5: Build Application
-
-```bash
-# Production build (generates optimized .next output)
-npm run build
-
-# Verify build succeeded
-ls -la .next/
-```
-
-### Phase 6: Start Application
-
-#### Option A: Direct Node Process (Simple)
-
-```bash
-# Start production server
-npm run start
-
-# Should see: ▲ Next.js 16.2.7 listening on port 3310
-
-# Test in another terminal:
-curl http://localhost:3310/login
-```
-
-#### Option B: PM2 (Recommended for Production)
-
-```bash
-# Install PM2 globally
-npm install -g pm2
-
-# Create PM2 ecosystem config
-cat > ecosystem.config.js << 'EOF'
-module.exports = {
-  apps: [{
-    name: 'asd-portal',
-    script: 'npm',
-    args: 'run start',
-    instances: 1,
-    exec_mode: 'cluster',
-    env: {
-      NODE_ENV: 'production',
-      PORT: 3310
-    },
-    error_file: './logs/err.log',
-    out_file: './logs/out.log',
-    log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-  }]
-};
-EOF
-
-# Create logs directory
-mkdir -p logs
-
-# Start with PM2
-pm2 start ecosystem.config.js
-
-# Check status
-pm2 status
-
-# View logs
-pm2 logs asd-portal
-
-# Setup auto-restart on VM boot
-pm2 startup
-pm2 save
-```
-
-#### Option C: Docker Compose (If Docker Available)
-
-```bash
-# If docker-compose is available:
-docker-compose up -d
-
-# Check status
-docker-compose ps
-
-# View logs
-docker-compose logs -f portal
-```
-
-### Phase 7: Verify Application
-
-```bash
-# Test API
-curl http://localhost:3310/api/auth/session
-
-# Should respond with JSON (with or without session)
-
-# Test login page
-curl http://localhost:3310/login | head -20
-
-# Should return HTML with login form
-```
-
-### Phase 8: Configure Nginx Reverse Proxy (Optional)
-
-If you want to access app via domain (e.g., `partner.asdsystems.eu`):
-
-```bash
-# Create Nginx config
-sudo tee /etc/nginx/sites-available/asd-portal > /dev/null << 'EOF'
-server {
-    listen 80;
-    server_name 192.160.20.254;  # or your.domain.com
-
-    location / {
-        proxy_pass http://127.0.0.1:3310;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-EOF
-
-# Enable site
-sudo ln -s /etc/nginx/sites-available/asd-portal /etc/nginx/sites-enabled/
-
-# Test config
-sudo nginx -t
-
-# Reload Nginx
-sudo systemctl reload nginx
-
-# Now accessible via http://192.160.20.254/
-```
-
-### Phase 9: SSL/TLS (When Domain Ready)
-
-Once IT provides `partner.asdsystems.eu` domain with DNS:
-
-```bash
-# Install certbot
-sudo apt install certbot python3-certbot-nginx -y
-
-# Get certificate
-sudo certbot certonly --nginx -d partner.asdsystems.eu
-
-# Update Nginx config to use HTTPS
-sudo nano /etc/nginx/sites-available/asd-portal
-# Add 443 block with ssl_certificate directives
-
-# Reload Nginx
-sudo systemctl reload nginx
+sudo systemctl stop asd-portal
 ```
 
 ---
 
-## 📊 Verification Checklist
+## How It Works
 
-After deployment, verify:
+1. **deploy.sh** — handles the entire deployment pipeline
+   - Pulls latest code from git
+   - Installs dependencies
+   - Runs migrations
+   - Builds the app
+   - Starts/restarts the service
 
-- [ ] `npm run build` completes without errors
-- [ ] `npm run start` starts on port 3310
-- [ ] Login page loads: `http://192.160.20.254:3310/login`
-- [ ] Test login works: `p.nowak@vendmax.pl` / `demo1234`
-- [ ] Dashboard loads after login
-- [ ] Can create service order (SERVICE_TECHNICIAN role)
-- [ ] Can view orders (WAREHOUSE_SPECIALIST role)
-- [ ] Logout works without redirect loops
-- [ ] Database migrations applied: `psql ... -c "SELECT version();"`
+2. **asd-portal.service** — systemd service unit
+   - Runs the app as `psalamon` user
+   - Auto-restarts on failure (after 10s)
+   - Logs to systemd journal
+   - Starts on boot
+
+3. **Environment** — loaded from `.env.local`
+   - DATABASE_URL
+   - NEXTAUTH_SECRET
+   - NEXTAUTH_URL
+   - etc.
 
 ---
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
-### Port Already in Use
-
+### Service won't start
 ```bash
-# Check what's using port 3310
-lsof -i :3310
-
-# Kill process if needed
-kill -9 <PID>
+journalctl -u asd-portal -n 100  # Check logs
+systemctl status asd-portal      # Check status
 ```
 
-### Database Connection Error
-
+### Port 3000 already in use
 ```bash
-# Verify PostgreSQL is running
-psql postgresql://asd_portal_user:W3ryfik4cj4@localhost:8002/asd_portal_prod -c "SELECT 1;"
-
-# Check DATABASE_URL in .env
-cat .env | grep DATABASE_URL
+sudo lsof -i :3000  # Find what's using it
+sudo kill -9 <PID>  # Kill it
+sudo systemctl restart asd-portal
 ```
 
-### NEXTAUTH_SECRET Issues
-
+### Database migration fails
 ```bash
-# Generate new secret
-openssl rand -base64 32
-
-# Update .env
-sed -i 's/NEXTAUTH_SECRET=.*/NEXTAUTH_SECRET="new_secret_here"/' .env
-
-# Restart application
-npm run start
+npx prisma migrate status  # Check migration status
+npx prisma migrate deploy  # Try again manually
 ```
 
-### Build Fails
+### Build fails
+```bash
+npm ci              # Clean install
+npm run build       # Build manually to see error
+```
+
+---
+
+## Manual Commands (if needed)
 
 ```bash
-# Clean build cache
-rm -rf .next
-rm -rf node_modules
+# Manual build
+cd /Users/pawel/Zgłaszanie\ projektów/portal
 npm ci
 npm run build
-```
 
----
+# Start dev server manually
+npm run dev
 
-## 📈 Monitoring & Logs
-
-### View Application Logs
-
-```bash
-# If using PM2
-pm2 logs asd-portal
-
-# If using direct Node
-# Logs go to stdout (capture with supervisor/systemd)
-
-# If using Docker Compose
-docker-compose logs -f portal
-```
-
-### Check Processes
-
-```bash
-# All Node processes
-ps aux | grep node
-
-# PM2 status
-pm2 status
-
-# Docker containers
-docker-compose ps
-```
-
-### Database Health
-
-```bash
-# Check PostgreSQL connection
-psql postgresql://asd_portal_user:W3ryfik4cj4@localhost:8002/asd_portal_prod -c "\dt"
-
-# Should list all tables: users, projects, serviceorders, etc.
-```
-
----
-
-## 🔄 Updates & Redeployment
-
-To deploy a newer version:
-
-```bash
-cd /home/psalamon/apps/asd-portal
-
-# Stop current app
-npm stop
-# or pm2 stop asd-portal
-# or docker-compose down
-
-# Update code
-git pull origin main
-
-# Reinstall (if package.json changed)
+# Reset everything
+git reset --hard origin/main
 npm ci
-
-# Run migrations (if schema changed)
 npx prisma migrate deploy
-
-# Rebuild
 npm run build
-
-# Restart
-npm run start
-# or pm2 start ecosystem.config.js
-# or docker-compose up -d
+sudo systemctl restart asd-portal
 ```
 
 ---
 
-## 📋 Configuration Matrix
+## Production Checklist
 
-| Component | Development | Production |
-|-----------|------------|-----------|
-| **Host** | localhost | 192.160.20.254 |
-| **Port** | 3000 | 3310 |
-| **Database** | localhost:5432 | localhost:8002 |
-| **NEXTAUTH_URL** | http://localhost:3000 | http://192.160.20.254:3310 |
-| **Node Env** | development | production |
-| **Build** | `npm run dev` | `npm run build && npm run start` |
-
----
-
-## 📞 Support
-
-For deployment issues:
-1. Check logs: `pm2 logs asd-portal`
-2. Verify .env configuration
-3. Check database connectivity
-4. Review NEXTAUTH_SECRET and NEXTAUTH_URL
-5. Check port availability
-
-**Contact:** Paweł Sałamon (salamonpaw@gmail.com)
-
----
-
-**Last Updated:** 2026-06-11
-
-**Version:** 0.1.0 — See [CHANGELOG.md](./CHANGELOG.md)
+- [ ] `.env.local` is configured with production values
+- [ ] Database is set up and accessible
+- [ ] PostgreSQL is running and responding
+- [ ] systemd service is enabled: `systemctl is-enabled asd-portal`
+- [ ] Service auto-restarts on failure
+- [ ] Logs are being written to `/var/log/asd-portal/deploy.log`
+- [ ] NEXTAUTH_SECRET is set and same across deployments
+- [ ] NEXTAUTH_URL matches actual domain/port

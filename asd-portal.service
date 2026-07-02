@@ -1,0 +1,33 @@
+[Unit]
+Description=ASD Partner Portal — Next.js 16 Application
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=psalamon
+WorkingDirectory=/Users/pawel/Zgłaszanie projektów/portal
+Environment="NODE_ENV=production"
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+
+# Load env vars
+EnvironmentFile=/Users/pawel/Zgłaszanie projektów/portal/.env.local
+
+# Start command
+ExecStart=/usr/local/bin/node /Users/pawel/Zgłaszanie projektów/portal/node_modules/.bin/next start -p 3000
+
+# Auto-restart on failure
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Give the service 30s to start
+TimeoutStartSec=30
+
+# Process management
+KillMode=process
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target
