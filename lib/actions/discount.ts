@@ -186,3 +186,47 @@ export async function getPartnerById(partnerId: string) {
     };
   }
 }
+
+export async function getPartnerActiveDiscount(partnerId: string) {
+  try {
+    const partner = await db.partner.findUnique({
+      where: { id: partnerId },
+      include: {
+        discounts: {
+          where: {
+            status: "ACTIVE",
+            expirationDate: {
+              gte: new Date(),
+            },
+          },
+          orderBy: { expirationDate: "asc" },
+          take: 1,
+        },
+      },
+    });
+
+    if (!partner) return null;
+
+    if (partner.discounts.length > 0) {
+      const activeTier = partner.discounts[0];
+      return {
+        percentage: parseFloat(activeTier.percentage.toString()),
+        expirationDate: activeTier.expirationDate,
+        fallbackPercentage: parseFloat(activeTier.fallbackPercentage.toString()),
+        machineCountRequired: activeTier.machineCountRequired,
+        source: "tier",
+      };
+    }
+
+    return {
+      percentage: partner.discount,
+      expirationDate: null,
+      fallbackPercentage: null,
+      machineCountRequired: null,
+      source: "default",
+    };
+  } catch (error) {
+    console.error("[getPartnerActiveDiscount]", error);
+    return null;
+  }
+}
