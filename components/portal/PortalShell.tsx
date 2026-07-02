@@ -35,6 +35,7 @@ const NAV_STAFF = [
   { key: "dashboard",   href: "/staff/dashboard",   label: "Pulpit",           icon: "gauge" },
   { key: "projects",    href: "/staff/projects",     label: "Projekty",         icon: "layers" },
   { key: "partners",    href: "/staff/partners",     label: "Moi Partnerzy",    icon: "users" },
+  { key: "discounts",   href: "/staff/discounts",    label: "Rabaty i Rebaty",  icon: "percent" },
   { key: "duplicates",  href: "/staff/duplicates",   label: "Duplikaty",        icon: "copy" },
   { key: "profile",     href: "/staff/profile",      label: "Mój profil",       icon: "user" },
 ];
