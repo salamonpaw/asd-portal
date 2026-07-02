@@ -99,11 +99,14 @@ model Rep {
   photoUrl    String?
   bio         String?
 
-  users         User[]
-  partners      Partner[]
-  projects      Project[]
-  ordersAsRep   Order[]  @relation("supervisorRep")
-  ordersAsBok   Order[]  @relation("supervisorBok")
+  users                        User[]
+  partners                     Partner[]
+  projects                     Project[]
+  ordersAsRep                  Order[]  @relation("supervisorRep")
+  ordersAsBok                  Order[]  @relation("supervisorBok")
+  createdDiscounts             PartnerDiscount[]
+  partnerAssignments           PartnerRepAssignment[]
+  discountNotifications        PartnerDiscountNotification[]
 }
 
 // ─── Partners ────────────────────────────────────────────────────────────────
@@ -127,14 +130,18 @@ model Partner {
   minProfitMargin  Decimal      @default(10)
   createdAt        DateTime     @default(now())
 
-  rep              Rep                       @relation(fields: [repId], references: [id])
-  users            User[]
-  projects         Project[]
-  markets          Market[]
-  serviceOrders    ServiceOrder[]
-  productDiscounts PartnerProductDiscount[]
-  exchangeRates    CurrencyExchangeRate[]
-  orderTemplates   OrderTemplate[]
+  rep                      Rep                            @relation(fields: [repId], references: [id])
+  users                    User[]
+  projects                 Project[]
+  markets                  Market[]
+  serviceOrders            ServiceOrder[]
+  productDiscounts         PartnerProductDiscount[]
+  exchangeRates            CurrencyExchangeRate[]
+  orderTemplates           OrderTemplate[]
+  discounts                PartnerDiscount[]
+  repAssignments           PartnerRepAssignment[]
+  discountNotifications    PartnerDiscountNotification[]
+  marketingMaterialAccess  MarketingMaterialAccess[]
 }
 
 model Market {
@@ -165,6 +172,7 @@ model Project {
   support         String[]
   notes           String?
   discount        Int?
+  lockedDiscountPercentage Int?
   status          ProjectStatus @default(VERIFY)
   protected       Boolean       @default(false)
   conflictsWith   String?
@@ -319,6 +327,7 @@ model Product {
   serialNumber     String?
   supplier         String?
   inStock          Int?
+  machineCount     Int?
   costPrice        Decimal?      // Cena zakupu
   sellingPrice     Decimal?      // Cena sprzedaży dla klienta
   serviceOrderItems ServiceOrderItem[]
@@ -462,6 +471,91 @@ model PendingOrderItem {
   @@index([serviceOrderId])
   @@index([expectedDate])
   @@index([status])
+}
+
+// ─── Staff Discount & Rebate System ───────────────────────────────────────
+
+model PartnerDiscount {
+  id                   String   @id @default(cuid())
+  partnerId            String
+  partner              Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  percentage           Decimal
+  expirationDate       DateTime
+  fallbackPercentage   Decimal  @default(0)
+  machineCountRequired Int?
+  status               String   @default("ACTIVE")
+  createdByRepId       String
+  createdBy            Rep      @relation(fields: [createdByRepId], references: [id])
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  notifications        PartnerDiscountNotification[]
+
+  @@unique([partnerId, expirationDate])
+  @@index([partnerId])
+  @@index([createdByRepId])
+}
+
+model PartnerRepAssignment {
+  id        String   @id @default(cuid())
+  partnerId String
+  partner   Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  repId     String
+  rep       Rep      @relation(fields: [repId], references: [id])
+  role      String   // "PRIMARY", "SECONDARY"
+  createdAt DateTime @default(now())
+
+  @@unique([partnerId, repId])
+  @@index([partnerId])
+  @@index([repId])
+}
+
+model PartnerDiscountNotification {
+  id                    String   @id @default(cuid())
+  partnerId             String
+  partner               Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  repId                 String
+  rep                   Rep      @relation(fields: [repId], references: [id])
+  partnerDiscountId     String
+  partnerDiscount       PartnerDiscount @relation(fields: [partnerDiscountId], references: [id], onDelete: Cascade)
+  daysUntilExpiry       Int
+  notificationSent60Days Boolean @default(false)
+  notificationSent30Days Boolean @default(false)
+  status                String   @default("PENDING")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([partnerId])
+  @@index([repId])
+  @@index([partnerDiscountId])
+}
+
+// ─── Marketing Materials Library ──────────────────────────────────────────
+
+model MarketingMaterial {
+  id         String   @id @default(cuid())
+  filename   String
+  type       String   // VIDEO, CATALOG, DATASHEET, BROCHURE, etc
+  version    Int      @default(1)
+  isActive   Boolean  @default(true)
+  createdBy  String   // email of admin/superadmin
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  partnerAccess MarketingMaterialAccess[]
+
+  @@index([type])
+}
+
+model MarketingMaterialAccess {
+  id                String   @id @default(cuid())
+  materialId        String
+  material          MarketingMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  partnerId         String
+  partner           Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  accessGrantedAt   DateTime @default(now())
+
+  @@unique([materialId, partnerId])
+  @@index([materialId])
+  @@index([partnerId])
 }
 
 // ─── Order Templates ──────────────────────────────────────────────────────────
