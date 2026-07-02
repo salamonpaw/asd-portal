@@ -5,6 +5,29 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2026-07-02
+
+### Dodane
+
+**Service Technician — Nowy System Zamówień**
+- Koszyk z wieloma produktami w jednym zamówieniu
+- Brak ograniczeń stockowych — zamów co chcesz
+- Wyszukiwanie produktów po nazwie i SKU
+- Modal z pełnymi szczegółami produktu (opis + zdjęcia)
+
+**Warehouse Specialist — Zarządzanie Zamówieniami**
+- Edycja numeru śledzenia dla każdego zamówienia
+- Inteligentna realizacja z auto-split'em
+- Kompleksowe zarządzanie produktami (create, edit, delete)
+- Dashboard ze statystykami
+
+**Inteligentna Realizacja Zamówień (Auto-Split)**
+- Gdy dostępne są tylko niektóre produkty:
+  - Dostępne → status CZĘŚCIOWO_ZREALIZOWANE
+  - Niedostępne → nowe zamówienie (ZAWIESZONE - czeka na części)
+
+---
+
 ## [0.15.0] - 2026-07-01
 
 ### NEW FEATURE - Image Gallery Management
