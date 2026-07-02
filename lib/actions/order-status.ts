@@ -69,10 +69,10 @@ export async function changeOrderStatus(orderId: string, newStatus: string) {
             code: newCode,
             partnerId: order.partnerId,
             technicianId: order.technicianId,
-            status: ServiceOrderStatus.OCZEKIWANIE_NA_CZĘŚCI,
+            status: ServiceOrderStatus.ZAWIESZONE,
             deliveryAddress: order.deliveryAddress,
             neededDate: order.neededDate,
-            notes: `Split z zamówienia ${order.code} - części niedostępne`,
+            notes: `Split z zamówienia ${order.code} - czeka na części`,
             items: {
               create: unavailableItems.map((item) => ({
                 productId: item.productId,
