@@ -5,6 +5,38 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] - 2026-07-02
+
+### Dodane
+
+**Rabaty i Rebaty — System zarządzania tier'ami rabatów**
+- Nowy model PartnerDiscount: rabaty pięcioprocentowe z wygaśnięciem i fallback'iem
+- Strona `/staff/discounts` dla handlowców do zarządzania rabatami swoich partnerów
+- Warunki dla rabatów: liczba maszyn (machineCountRequired)
+- Status rabatów z color-codingiem: ACTIVE (zielony), EXPIRING_SOON (żółty), EXPIRED (czerwony)
+- Licznik dni do wygaśnięcia na każdym rabacie
+- Tworzenie/edycja/usuwanie rabatów z modalem
+- Server actions: createPartnerDiscount, updatePartnerDiscount, deletePartnerDiscount
+- Notyfikacje o wygaśnięciu rabatów (model PartnerDiscountNotification)
+
+**Partner-Rep Assignment — Przybliżenie do wielu asignacji**
+- Model PartnerRepAssignment: każdy Partner może mieć wielu Reps (PRIMARY/SECONDARY)
+- Przygotowanie do obsługi wielu handlowców na partnera
+
+**Marketing Materials Library — Biblioteka materiałów marketingowych**
+- Model MarketingMaterial: globalna biblioteka (VIDEO, CATALOG, DATASHEET, BROCHURE)
+- Model MarketingMaterialAccess: per-partner access control
+- Przygotowanie do zarządzania dostępem materiałów dla partnerów
+
+**Rozszerzenia schematu**
+- Product.machineCount: liczba maszyn do liczenia dla warunków rabatów
+- Project.lockedDiscountPercentage: zapamiętany rabat z dnia utworzenia projektu
+
+### Zmienione
+- Nawigacja staff'u: dodano link "Rabaty i Rebaty" w menu bocznym
+
+---
+
 ## [0.16.0] - 2026-07-02
 
 ### Dodane
