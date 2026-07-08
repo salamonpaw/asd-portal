@@ -142,7 +142,7 @@ export function ProjectDetailClient({ project: initial, conflict, isStaff, backH
             <div style={{ marginTop: 18, paddingTop: 18, borderTop: "1px solid var(--line)" }}>
               <KV label="Opis potrzeby klienta"><span style={{ fontWeight: 400, lineHeight: 1.6 }}>{project.description}</span></KV>
             </div>
-            {project.support.length > 0 && (
+            {(project.support?.length ?? 0) > 0 && (
               <div style={{ marginTop: 16 }}>
                 <div style={{ fontSize: 11.5, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: ".04em", fontWeight: 600, marginBottom: 8 }}>Zakres wsparcia ASD</div>
                 <div className="chips">{project.support.map((s) => <span key={s} className="badge st-new">{s}</span>)}</div>
