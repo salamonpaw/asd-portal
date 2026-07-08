@@ -6,7 +6,6 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 LOG_FILE="/var/log/asd-portal/deploy.log"
 LOG_DIR=$(dirname "$LOG_FILE")
 SERVICE_NAME="asd-portal"
-USER="psalamon"
 
 # Ensure log directory exists
 mkdir -p "$LOG_DIR"
@@ -31,9 +30,12 @@ git reset --hard origin/main
 log "Installing dependencies..."
 npm ci
 
-# 3. Apply database migrations
-log "Applying database migrations..."
-npx prisma migrate deploy
+# 3. Sync database schema
+# Uses `db push` (not `migrate deploy`) because the production DB was created
+# manually and has no _prisma_migrations table. db push aligns the schema to
+# prisma/schema.prisma without requiring migration history.
+log "Syncing database schema (prisma db push)..."
+npx prisma db push --skip-generate
 
 # 4. Generate Prisma Client
 log "Generating Prisma Client..."
@@ -43,17 +45,13 @@ npx prisma generate
 log "Building application..."
 npm run build
 
-# 6. Stop old service if running
-log "Stopping old service..."
-systemctl stop "$SERVICE_NAME" || true
-
-# 7. Start service
-log "Starting service..."
-systemctl start "$SERVICE_NAME"
+# 6. Restart service
+log "Restarting service..."
+systemctl restart "$SERVICE_NAME"
 systemctl enable "$SERVICE_NAME"
 
 log "=========================================="
 log "Deployment completed successfully"
 log "=========================================="
 log "Service status:"
-systemctl status "$SERVICE_NAME"
+systemctl status "$SERVICE_NAME" --no-pager || true
