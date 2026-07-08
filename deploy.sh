@@ -15,16 +15,22 @@ log() {
   echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
 }
 
+cd "$SCRIPT_DIR"
+
+# Pull latest FIRST, then re-exec the freshly pulled script once. This avoids
+# the self-update race where bash runs a stale copy of this file after the
+# git reset swaps it underneath a running process.
+if [ -z "$DEPLOY_REEXEC" ]; then
+  log "Resetting to origin/main..."
+  git fetch origin
+  git reset --hard origin/main
+  export DEPLOY_REEXEC=1
+  exec bash "$SCRIPT_DIR/deploy.sh" "$@"
+fi
+
 log "=========================================="
 log "Starting ASD Portal deployment"
 log "=========================================="
-
-cd "$SCRIPT_DIR"
-
-# 1. Reset to origin/main
-log "Resetting to origin/main..."
-git fetch origin
-git reset --hard origin/main
 
 # 2. Install dependencies
 log "Installing dependencies..."
