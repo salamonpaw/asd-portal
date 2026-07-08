@@ -30,5 +30,13 @@ export default async function PartnerProjectDetailPage({ params }: { params: Pro
     ? await db.project.findUnique({ where: { id: project.conflictsWith }, include: { partner: true } })
     : null;
 
-  return <ProjectDetailClient project={project} conflict={conflict} isStaff={false} backHref="/partner/projects" />;
+  const activeTier = await db.partnerDiscount.findFirst({
+    where: { partnerId, status: "ACTIVE", expirationDate: { gte: new Date() } },
+    orderBy: { expirationDate: "asc" },
+  });
+  const partnerActiveDiscount = activeTier
+    ? { percentage: parseFloat(activeTier.percentage.toString()), expirationDate: activeTier.expirationDate, source: "tier" as const }
+    : { percentage: project.partner.discount, expirationDate: null, source: "default" as const };
+
+  return <ProjectDetailClient project={project} conflict={conflict} isStaff={false} backHref="/partner/projects" partnerActiveDiscount={partnerActiveDiscount} />;
 }

@@ -12,7 +12,17 @@ export default async function PartnerDashboardPage() {
   if (!partnerId) redirect("/login");
 
   const [partner, projects, rep, orders] = await Promise.all([
-    db.partner.findUnique({ where: { id: partnerId }, include: { markets: true } }),
+    db.partner.findUnique({
+      where: { id: partnerId },
+      include: {
+        markets: true,
+        discounts: {
+          where: { status: "ACTIVE", expirationDate: { gte: new Date() } },
+          orderBy: { expirationDate: "asc" },
+          take: 1,
+        },
+      },
+    }),
     db.project.findMany({
       where: { partnerId },
       include: { history: { orderBy: { date: "asc" } } },
@@ -29,5 +39,27 @@ export default async function PartnerDashboardPage() {
 
   const openOrders = orders.filter((o) => !["delivered", "done"].includes(o.status)).length;
 
-  return <PartnerDashboardClient partner={partner} projects={projects} rep={rep} openOrders={openOrders} />;
+  // Aktywny tier rabatowy (jeśli istnieje) nadpisuje domyślny rabat partnera
+  const activeTier = partner.discounts[0] ?? null;
+  const activeDiscount = activeTier
+    ? {
+        percentage: parseFloat(activeTier.percentage.toString()),
+        expirationDate: activeTier.expirationDate,
+        source: "tier" as const,
+      }
+    : {
+        percentage: partner.discount,
+        expirationDate: null,
+        source: "default" as const,
+      };
+
+  return (
+    <PartnerDashboardClient
+      partner={partner}
+      projects={projects}
+      rep={rep}
+      openOrders={openOrders}
+      activeDiscount={activeDiscount}
+    />
+  );
 }

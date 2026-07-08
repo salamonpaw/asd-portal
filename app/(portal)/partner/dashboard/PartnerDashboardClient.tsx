@@ -17,14 +17,23 @@ function enrich(p: Project) {
   return { ...p, daysLeft: dl, isActive, expiringSoon };
 }
 
+type ActiveDiscount = {
+  percentage: number;
+  expirationDate: Date | null;
+  source: "tier" | "default";
+};
+
 export function PartnerDashboardClient({
-  partner, projects, rep, openOrders = 0,
+  partner, projects, rep, openOrders = 0, activeDiscount,
 }: {
   partner: Partner & { markets: Market[] };
   projects: ProjectWithHistory[];
   rep: Rep | null;
   openOrders?: number;
+  activeDiscount?: ActiveDiscount;
 }) {
+  const discountPercent = activeDiscount?.percentage ?? partner.discount;
+  const discountExpiry = activeDiscount?.expirationDate ?? null;
   const router = useRouter();
   const enriched = projects.map(enrich);
   const active = enriched.filter((p) => p.isActive);
@@ -38,7 +47,7 @@ export function PartnerDashboardClient({
     <div className="fadeup">
       <PageHead
         title={`Dzień dobry, ${partner.contact.split(" ")[0]}`}
-        sub={`${partner.name} · poziom ${partner.level} · rabat ${partner.discount}%`}
+        sub={`${partner.name} · poziom ${partner.level} · rabat ${discountPercent}%`}
       >
         <Link href="/partner/projects/new" className="btn btn-primary">
           <Icon name="plus" size={16} />Nowe zgłoszenie
@@ -94,7 +103,13 @@ export function PartnerDashboardClient({
               <Icon name="award" size={20} style={{ opacity: .9 }} />
             </div>
             <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 30, marginTop: 14 }}>Partner {partner.level}</div>
-            <div style={{ fontSize: 38, fontFamily: "var(--font-display)", fontWeight: 600, marginTop: 6 }}>{partner.discount}<span style={{ fontSize: 20, opacity: .8 }}>% rabatu</span></div>
+            <div style={{ fontSize: 38, fontFamily: "var(--font-display)", fontWeight: 600, marginTop: 6 }}>{discountPercent}<span style={{ fontSize: 20, opacity: .8 }}>% rabatu</span></div>
+            {discountExpiry && (
+              <div style={{ fontSize: 12.5, opacity: .85, marginTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                <Icon name="clock" size={14} style={{ opacity: .9 }} />
+                Rabat specjalny · ważny do {new Date(discountExpiry).toLocaleDateString("pl")}
+              </div>
+            )}
           </div>
 
           {rep && (

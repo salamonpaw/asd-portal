@@ -17,11 +17,12 @@ type FullProject = Project & {
 
 const PROCUREMENT_LABELS: Record<string, string> = { BIEZACA: "Bieżąca sprzedaż", ZAPYTANIE: "Zapytanie ofertowe", PRZETARG: "Przetarg" };
 
-export function ProjectDetailClient({ project: initial, conflict, isStaff, backHref }: {
+export function ProjectDetailClient({ project: initial, conflict, isStaff, backHref, partnerActiveDiscount }: {
   project: FullProject;
   conflict: (Project & { partner: Partner }) | null;
   isStaff: boolean;
   backHref: string;
+  partnerActiveDiscount?: { percentage: number; expirationDate: Date | null; source: "tier" | "default" } | null;
 }) {
   const router = useRouter();
   const [project, setProject] = useState(initial);
@@ -215,25 +216,36 @@ export function ProjectDetailClient({ project: initial, conflict, isStaff, backH
             <KV label="Data zgłoszenia">{fmtDate(project.createdAt)}</KV>
             {project.acceptedAt && <KV label="Data akceptacji">{fmtDate(project.acceptedAt)}</KV>}
             {project.expiresAt && <KV label="Wygaśnięcie ochrony">{fmtDate(project.expiresAt)}</KV>}
-            {project.discount != null && <KV label="Rabat projektu">{project.discount}%</KV>}
+            {project.discount != null ? (
+              <KV label="Rabat projektu">{project.discount}%</KV>
+            ) : partnerActiveDiscount != null ? (
+              <KV label={partnerActiveDiscount.source === "tier" ? "Rabat partnera (specjalny)" : "Rabat partnera"}>
+                {partnerActiveDiscount.percentage}%
+                {partnerActiveDiscount.expirationDate && (
+                  <span style={{ fontSize: 12, color: "var(--ink-3)", fontWeight: 400 }}>
+                    {" "}· do {fmtDate(partnerActiveDiscount.expirationDate)}
+                  </span>
+                )}
+              </KV>
+            ) : null}
           </div>
         </div>
       </div>
 
       {/* Accept modal */}
-      <AcceptModal open={modal === "accept"} project={project} onClose={() => setModal(null)} onAccept={(data) => action("accept", data)} />
+      <AcceptModal open={modal === "accept"} project={project} defaultDiscount={partnerActiveDiscount?.percentage} onClose={() => setModal(null)} onAccept={(data) => action("accept", data)} />
       <RejectModal open={modal === "reject"} onClose={() => setModal(null)} onReject={(reason) => action("reject", { reason })} />
       <InfoModal open={modal === "info"} onClose={() => setModal(null)} onSend={(msg) => action("request-info", { message: msg })} />
     </div>
   );
 }
 
-function AcceptModal({ open, project, onClose, onAccept }: {
-  open: boolean; project: FullProject; onClose: () => void;
+function AcceptModal({ open, project, defaultDiscount, onClose, onAccept }: {
+  open: boolean; project: FullProject; defaultDiscount?: number; onClose: () => void;
   onAccept: (data: { months: number; discount: number; tender: boolean }) => void;
 }) {
   const [months, setMonths] = useState(3);
-  const [discount, setDiscount] = useState(project.partner.discount);
+  const [discount, setDiscount] = useState(defaultDiscount ?? project.partner.discount);
   const isTender = project.procurement === "PRZETARG";
 
   return (
