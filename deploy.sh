@@ -41,7 +41,7 @@ npm ci
 # manually and has no _prisma_migrations table. db push aligns the schema to
 # prisma/schema.prisma without requiring migration history.
 log "Syncing database schema (prisma db push)..."
-npx prisma db push --skip-generate
+npx prisma db push
 
 # 4. Generate Prisma Client
 log "Generating Prisma Client..."
