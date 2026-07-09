@@ -547,7 +547,10 @@ model PartnerDiscountNotification {
 
 model MarketingMaterial {
   id         String   @id @default(cuid())
-  filename   String
+  filename   String   // nazwa wyświetlana / oryginalna nazwa pliku
+  url        String   // /uploads/marketing/... (plik) lub link zewnętrzny (http...)
+  mimeType   String?
+  fileSize   Int?
   type       String   // VIDEO, CATALOG, DATASHEET, BROCHURE, etc
   version    Int      @default(1)
   isActive   Boolean  @default(true)
