@@ -5,6 +5,51 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0] - 2026-07-09
+
+### Dodane
+
+**Rabaty — widoczność i cykl życia (domknięcie systemu)**
+- Aktywny tier rabatowy widoczny dla partnera: karta „Poziom rabatowy" na
+  pulpicie pokazuje realny rabat (aktywny tier zamiast stałego) + datę ważności
+- Rabat widoczny w szczegółach projektu (widok partnera i handlowca)
+- Zamrożenie rabatu przy zgłoszeniu: `Project.lockedDiscountPercentage` zapisywany
+  w chwili utworzenia projektu — późniejsza zmiana tieru go nie rusza
+  („Rabat zgłoszenia (zamrożony)"); modal akceptacji domyśla zamrożoną wartość
+- Automatyzacja cyklu życia (`/api/cron/discount-lifecycle` + timer systemd):
+  po wygaśnięciu tier spada do `fallbackPercentage`; ostrzeżenia 60/30 dni przed
+  końcem (raz każde, śledzone w PartnerDiscountNotification)
+- Wspólny helper `getPartnerEffectiveDiscount` jako jedno źródło prawdy o rabacie
+
+**Kalendarz MS365 dla partnerów + zliczanie**
+- Handlowiec wkleja link do kalendarza (MS Bookings / Outlook) w profilu
+- Partner ma na pulpicie przycisk „Umów spotkanie" (w karcie handlowca)
+- Kliknięcie przechodzi przez `/api/calendar-redirect` — loguje kliknięcie
+  (model CalendarClick: kto, kiedy, który handlowiec) i przekierowuje
+- Handlowiec widzi w profilu licznik „Kliknięć partnerów"
+
+**Hub materiałów marketingowych**
+- Admin `/admin/marketing-materials`: wgrywanie plików (do 100 MB) lub dodawanie
+  linków (wideo), typy (Katalog/Karta/Broszura/Wideo/Inne), ukryj/pokaż, usuń
+- Nadawanie dostępu per partner (checkboxy)
+- Partner `/partner/marketing-materials`: widzi tylko aktywne i udostępnione mu
+  materiały, pobiera pliki / otwiera linki
+- Pliki na dysku serwera (`public/uploads/marketing`), przeżywają redeploy
+
+**Wdrożenie**
+- Deploy jedną komendą `sudo ./deploy.sh` (git reset → npm ci → prisma db push →
+  build → restart usługi systemd `asd-portal`); self-update skryptu przez re-exec
+- Usługa `asd-portal` w systemd (auto-restart, start przy bootcie, port 3310)
+- Timer systemd `asd-discount-cron` — codzienny cykl życia rabatów o 07:00
+
+### Zmienione
+- Nawigacja: „Materiały" (partner) i „Materiały marketingowe" (admin) w menu bocznym
+
+### Naprawione
+- Crash na szczegółach projektu gdy `support` był NULL (guard)
+
+---
+
 ## [0.17.0] - 2026-07-02
 
 ### Dodane
