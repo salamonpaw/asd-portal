@@ -5,5 +5,5 @@ After=network.target asd-portal.service
 [Service]
 Type=oneshot
 WorkingDirectory=/home/psalamon/apps/asd-portal
-# Reads CRON_SECRET_TOKEN from .env and hits the cron endpoint on the local app
-ExecStart=/bin/bash -c 'TOKEN=$(grep CRON_SECRET_TOKEN /home/psalamon/apps/asd-portal/.env | cut -d\" -f2); curl -sS -H "Authorization: Bearer $TOKEN" http://localhost:3310/api/cron/discount-lifecycle'
+# Wrapper script reads CRON_SECRET_TOKEN from .env and hits the local endpoint
+ExecStart=/home/psalamon/apps/asd-portal/scripts/discount-cron.sh
