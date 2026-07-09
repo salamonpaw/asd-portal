@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect, notFound } from "next/navigation";
 import { ProjectDetailClient } from "@/components/portal/ProjectDetailClient";
+import { getPartnerEffectiveDiscount } from "@/lib/discount";
 
 export default async function PartnerProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -30,13 +31,7 @@ export default async function PartnerProjectDetailPage({ params }: { params: Pro
     ? await db.project.findUnique({ where: { id: project.conflictsWith }, include: { partner: true } })
     : null;
 
-  const activeTier = await db.partnerDiscount.findFirst({
-    where: { partnerId, status: "ACTIVE", expirationDate: { gte: new Date() } },
-    orderBy: { expirationDate: "asc" },
-  });
-  const partnerActiveDiscount = activeTier
-    ? { percentage: parseFloat(activeTier.percentage.toString()), expirationDate: activeTier.expirationDate, source: "tier" as const }
-    : { percentage: project.partner.discount, expirationDate: null, source: "default" as const };
+  const partnerActiveDiscount = await getPartnerEffectiveDiscount(partnerId);
 
   return <ProjectDetailClient project={project} conflict={conflict} isStaff={false} backHref="/partner/projects" partnerActiveDiscount={partnerActiveDiscount} />;
 }

@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getPartnerEffectiveDiscount } from "@/lib/discount";
 import { ProjectStatus, Procurement } from "@prisma/client";
 import { NextResponse } from "next/server";
 
@@ -44,11 +45,17 @@ export async function POST(req: Request) {
   const isDup = !!conflict;
   const status = isDup ? ProjectStatus.DUP : ProjectStatus.VERIFY;
 
+  // Zamrożenie rabatu z dnia zgłoszenia — snapshot efektywnego rabatu partnera,
+  // niezależny od późniejszych zmian tieru.
+  const effective = await getPartnerEffectiveDiscount(partnerId);
+  const lockedDiscountPercentage = effective ? Math.round(effective.percentage) : null;
+
   const project = await db.project.create({
     data: {
       id,
       partnerId,
       repId: partner.repId,
+      lockedDiscountPercentage,
       customerName: body.name.trim(),
       customerTaxId: body.taxId,
       customerCountry: body.country,

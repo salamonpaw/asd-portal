@@ -218,6 +218,13 @@ export function ProjectDetailClient({ project: initial, conflict, isStaff, backH
             {project.expiresAt && <KV label="Wygaśnięcie ochrony">{fmtDate(project.expiresAt)}</KV>}
             {project.discount != null ? (
               <KV label="Rabat projektu">{project.discount}%</KV>
+            ) : project.lockedDiscountPercentage != null ? (
+              <KV label="Rabat zgłoszenia (zamrożony)">
+                {project.lockedDiscountPercentage}%
+                <span style={{ fontSize: 12, color: "var(--ink-3)", fontWeight: 400 }}>
+                  {" "}· z dnia {fmtDate(project.createdAt)}
+                </span>
+              </KV>
             ) : partnerActiveDiscount != null ? (
               <KV label={partnerActiveDiscount.source === "tier" ? "Rabat partnera (specjalny)" : "Rabat partnera"}>
                 {partnerActiveDiscount.percentage}%
@@ -245,7 +252,7 @@ function AcceptModal({ open, project, defaultDiscount, onClose, onAccept }: {
   onAccept: (data: { months: number; discount: number; tender: boolean }) => void;
 }) {
   const [months, setMonths] = useState(3);
-  const [discount, setDiscount] = useState(defaultDiscount ?? project.partner.discount);
+  const [discount, setDiscount] = useState(project.lockedDiscountPercentage ?? defaultDiscount ?? project.partner.discount);
   const isTender = project.procurement === "PRZETARG";
 
   return (
@@ -267,7 +274,7 @@ function AcceptModal({ open, project, defaultDiscount, onClose, onAccept }: {
             </div>
           </Field>
           {!isTender && (
-            <Field label="Poziom rabatowy projektu" hint="Domyślnie dziedziczony z profilu Partnera – można nadpisać.">
+            <Field label="Poziom rabatowy projektu" hint={project.lockedDiscountPercentage != null ? "Domyślnie rabat zamrożony z dnia zgłoszenia – można nadpisać." : "Domyślnie dziedziczony z profilu Partnera – można nadpisać."}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <input className="input" type="number" style={{ width: 100 }} value={discount} onChange={(e) => setDiscount(Number(e.target.value))} />
                 <span style={{ color: "var(--ink-2)" }}>% rabatu</span>
