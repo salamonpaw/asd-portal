@@ -7,7 +7,7 @@ import { ChangePasswordCard } from "@/components/portal/ChangePasswordCard";
 import { UserProfileEditCard } from "@/components/portal/UserProfileEditCard";
 import type { Rep } from "@prisma/client";
 
-export function RepProfileClient({ rep: initial, userName, userEmail }: { rep: Rep; userName: string; userEmail: string }) {
+export function RepProfileClient({ rep: initial, userName, userEmail, calendarClicks = 0 }: { rep: Rep; userName: string; userEmail: string; calendarClicks?: number }) {
   const [rep, setRep] = useState(initial);
   const [editing, setEditing] = useState(false);
   const [f, setF] = useState({
@@ -117,9 +117,15 @@ export function RepProfileClient({ rep: initial, userName, userEmail }: { rep: R
             <div>
               <div style={{ fontSize: 11.5, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: ".04em", fontWeight: 600, marginBottom: 4 }}>Link do kalendarza</div>
               {rep.calendarUrl
-                ? <a href={rep.calendarUrl} target="_blank" rel="noopener" style={{ fontSize: 14, color: "var(--brand)", display: "flex", alignItems: "center", gap: 6 }}>
-                    <Icon name="arrowRight" size={14} />Umów spotkanie
-                  </a>
+                ? <>
+                    <a href={rep.calendarUrl} target="_blank" rel="noopener" style={{ fontSize: 14, color: "var(--brand)", display: "flex", alignItems: "center", gap: 6 }}>
+                      <Icon name="calendar" size={14} />Umów spotkanie
+                    </a>
+                    <div style={{ fontSize: 12.5, color: "var(--ink-3)", marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                      <Icon name="users" size={13} />
+                      Kliknięć partnerów: <strong style={{ color: "var(--ink)" }}>{calendarClicks}</strong>
+                    </div>
+                  </>
                 : <span style={{ color: "var(--ink-4)", fontSize: 14 }}>Nie podano</span>}
             </div>
           </div>

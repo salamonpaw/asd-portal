@@ -107,6 +107,19 @@ model Rep {
   createdDiscounts             PartnerDiscount[]
   partnerAssignments           PartnerRepAssignment[]
   discountNotifications        PartnerDiscountNotification[]
+  calendarClicks               CalendarClick[]
+}
+
+model CalendarClick {
+  id        String   @id @default(cuid())
+  repId     String
+  rep       Rep      @relation(fields: [repId], references: [id], onDelete: Cascade)
+  partnerId String?
+  partner   Partner? @relation(fields: [partnerId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@index([repId])
+  @@index([partnerId])
 }
 
 // ─── Partners ────────────────────────────────────────────────────────────────
@@ -142,6 +155,7 @@ model Partner {
   repAssignments           PartnerRepAssignment[]
   discountNotifications    PartnerDiscountNotification[]
   marketingMaterialAccess  MarketingMaterialAccess[]
+  calendarClicks           CalendarClick[]
 }
 
 model Market {

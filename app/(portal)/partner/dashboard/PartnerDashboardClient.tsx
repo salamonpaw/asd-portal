@@ -122,10 +122,15 @@ export function PartnerDashboardClient({
                   <div style={{ fontSize: 12.5, color: "var(--ink-3)" }}>{rep.region}</div>
                 </div>
               </div>
-              <div style={{ marginTop: 14 }}>
+              <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 8 }}>
                 <a className="btn btn-soft btn-sm" style={{ width: "100%" }} href={`mailto:${rep.email}`}>
                   <Icon name="mail" size={15} />E-mail
                 </a>
+                {rep.calendarUrl && (
+                  <a className="btn btn-primary btn-sm" style={{ width: "100%" }} href="/api/calendar-redirect" target="_blank" rel="noopener">
+                    <Icon name="calendar" size={15} />Umów spotkanie
+                  </a>
+                )}
               </div>
             </div>
           )}
