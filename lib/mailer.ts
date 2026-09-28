@@ -1,9 +1,9 @@
-import nodemailer from "nodemailer";
+import nodemailer, { type Transporter } from "nodemailer";
 import type { MailSettings } from "@prisma/client";
 import { db } from "@/lib/db";
 import { decryptSecret } from "@/lib/crypto";
 
-type Resolved = { transporter: nodemailer.Transporter; from: string; replyTo?: string; source: "partner" | "global" | "env" };
+type Resolved = { transporter: Transporter; from: string; replyTo?: string; source: "partner" | "global" | "env" };
 
 function fromSettings(s: MailSettings, source: "partner" | "global"): Resolved {
   const transporter = nodemailer.createTransport({

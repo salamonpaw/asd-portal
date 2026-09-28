@@ -5,6 +5,23 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.1] - 2026-09-28
+
+### Bezpieczeństwo — aktualizacje zależności
+- `next` 16.2.7 → 16.3.6 (krytyczna: obejście proxy w App Router; + poprawki sharp/postcss)
+- `next-auth` 4.24.14 → 4.24.15 (krytyczna, dotyczy logowania linkiem e-mail — u nas nieużywane)
+- `nodemailer` 7 → 10 (wysoka: wstrzyknięcie komend SMTP); `overrides` dla next-auth,
+  który deklaruje opcjonalnie nodemailer 7 wyłącznie dla nieużywanego EmailProvider
+- Prisma 7.8 → 7.10
+- `npm audit`: z 19 (2 krytyczne) do 7 (0 krytycznych). Pozostałe „high”: wewnętrzne
+  zależności CLI Prismy (nieużywane w działaniu aplikacji) oraz `xlsx` bez poprawki
+  (używany tylko do zapisu eksportów)
+
+### Zmienione
+- Serwer: Node.js 20 (koniec wsparcia) → 22 LTS
+
+---
+
 ## [0.20.0] - 2026-09-28
 
 Audyt bezpieczeństwa, refaktoryzacja i porządki. Każda poprawka zweryfikowana testem
