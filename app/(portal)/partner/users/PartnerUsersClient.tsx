@@ -43,8 +43,8 @@ export function PartnerUsersClient({ initialUsers }: PartnerUsersClientProps) {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError("Hasło musi mieć co najmniej 6 znaków");
+    if (formData.password.length < 8) {
+      setError("Hasło musi mieć co najmniej 8 znaków");
       return;
     }
 
@@ -186,7 +186,7 @@ export function PartnerUsersClient({ initialUsers }: PartnerUsersClientProps) {
 
             <div>
               <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 6 }}>
-                Hasło (min. 6 znaków) *
+                Hasło (min. 8 znaków) *
               </label>
               <input
                 type="password"

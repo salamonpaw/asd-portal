@@ -9,9 +9,9 @@ export const revalidate = 0;
 
 export default async function ImagesPage() {
   const session = await getServerSession(authOptions);
-  const role = (session?.user as any)?.role;
+  const role = session?.user?.role;
 
-  if (!session || !["WAREHOUSE_SPECIALIST", "ADMIN"].includes(role)) {
+  if (!session || !["WAREHOUSE_SPECIALIST", "ADMIN"].includes(role ?? "")) {
     redirect("/login");
   }
 

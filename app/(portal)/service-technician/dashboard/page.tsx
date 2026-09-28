@@ -3,7 +3,6 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import Link from "next/link";
-import { Icon } from "@/components/ui/Icon";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   NOWE: { label: "Nowe — oczekuje potwierdzenia", color: "#0066ff", bg: "#e6f2ff" },
@@ -16,8 +15,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
 
 export default async function ServiceTechnicianDashboard() {
   const session = await getServerSession(authOptions);
-  const userRole = (session?.user as any)?.role;
-  const userId = (session?.user as any)?.id;
+  const userRole = session?.user?.role;
+  const userId = session?.user?.id;
 
   if (!session || userRole !== "SERVICE_TECHNICIAN") {
     redirect("/login");

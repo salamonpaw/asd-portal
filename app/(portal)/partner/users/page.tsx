@@ -8,8 +8,7 @@ import { PartnerUsersClient } from "./PartnerUsersClient";
 
 export default async function PartnerUsersPage() {
   const session = await getServerSession(authOptions);
-  const userRole = (session?.user as any)?.role;
-  const partnerId = (session?.user as any)?.partnerId;
+  const userRole = session?.user?.role;
 
   if (!session || (userRole !== "PARTNER" && userRole !== "PARTNER_ADMIN")) {
     redirect("/login");

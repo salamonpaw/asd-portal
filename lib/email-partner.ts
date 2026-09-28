@@ -1,7 +1,6 @@
-import { base } from "@/lib/email";
+import { base, esc } from "@/lib/email";
 
-export const esc = (s: string | null | undefined) =>
-  String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+export { esc };
 
 const fmt = (d: Date) => d.toLocaleDateString("pl-PL");
 

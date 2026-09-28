@@ -7,7 +7,7 @@ import { Icon, EmptyState } from "@/components/ui";
 
 export default async function WarehouseDashboard() {
   const session = await getServerSession(authOptions);
-  const userRole = (session?.user as any)?.role;
+  const userRole = session?.user?.role;
 
   if (!session || userRole !== "WAREHOUSE_SPECIALIST") {
     redirect("/login");
@@ -19,8 +19,8 @@ export default async function WarehouseDashboard() {
   const pricedItems = await db.serviceOrderItem.count({
     where: { unitPrice: { not: null } },
   });
-  const productsInStock = await db.product.count({
-    where: { inStock: { gt: 0 } },
+  const productsInStock = await db.inventory.count({
+    where: { currentStock: { gt: 0 } },
   });
 
   // Recent orders
@@ -34,6 +34,7 @@ export default async function WarehouseDashboard() {
   const recentProducts = await db.product.findMany({
     take: 5,
     orderBy: { createdAt: "desc" },
+    include: { inventory: { select: { currentStock: true } } },
   });
 
   const stats = [
@@ -96,7 +97,7 @@ export default async function WarehouseDashboard() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <h2 style={{ fontSize: 16, fontWeight: 600 }}>Ostatnie zamówienia</h2>
           <Link
-            href="/warehouse/orders"
+            href="/warehouse"
             style={{
               fontSize: 13,
               color: "var(--brand)",
@@ -227,13 +228,13 @@ export default async function WarehouseDashboard() {
                 <div
                   style={{
                     fontSize: 12,
-                    background: product.inStock ? "var(--success-soft)" : "var(--danger-soft)",
-                    color: product.inStock ? "var(--success)" : "var(--danger)",
+                    background: product.inventory?.currentStock ? "var(--success-soft)" : "var(--danger-soft)",
+                    color: product.inventory?.currentStock ? "var(--success)" : "var(--danger)",
                     padding: "4px 8px",
                     borderRadius: "var(--r-sm)",
                   }}
                 >
-                  {product.inStock ? `${product.inStock} szt.` : "Brak"}
+                  {product.inventory?.currentStock ? `${product.inventory.currentStock} szt.` : "Brak"}
                 </div>
               </div>
             ))}

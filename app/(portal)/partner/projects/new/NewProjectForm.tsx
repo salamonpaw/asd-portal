@@ -19,7 +19,6 @@ export function NewProjectForm({ partnerId, partnerShort, repName, repId, ownAct
   const router = useRouter();
   const [f, setF] = useState(blank);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const set = (k: string, v: unknown) => {
@@ -98,7 +97,6 @@ export function NewProjectForm({ partnerId, partnerShort, repName, repId, ownAct
                 placeholder={f.country === "Polska" ? "1234567890" : "np. DE123456789"}
                 value={f.taxId}
                 onChange={(e) => set("taxId", e.target.value)}
-                onBlur={() => setTouched(true)}
               />
             </Field>
             <Field label="Lokalizacja">
@@ -113,7 +111,7 @@ export function NewProjectForm({ partnerId, partnerShort, repName, repId, ownAct
               <Icon name="alert" size={18} />Masz już aktywny projekt na tego klienta. Otwórz istniejący projekt zamiast zgłaszać nowy.
             </div>
           )}
-          {nipValid && !isOwnDup && touched && (
+          {nipValid && !isOwnDup && (
             <div className="nip-note" style={{ background: "var(--ok-soft)", color: "#14633f" }}>
               <Icon name="checkCircle" size={18} />Klient nie jest jeszcze zarejestrowany – możesz zgłosić projekt.
             </div>

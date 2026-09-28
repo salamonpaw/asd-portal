@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getOrder } from "@/lib/actions/orders";
-import { SectionCard, Icon } from "@/components/ui";
+import { SectionCard } from "@/components/ui";
 import { fmtDate } from "@/lib/dates";
 import Link from "next/link";
 

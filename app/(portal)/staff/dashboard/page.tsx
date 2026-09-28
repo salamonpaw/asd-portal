@@ -1,32 +1,33 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requirePageRole, staffScope } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { StaffDashboardClient } from "./StaffDashboardClient";
 
 export default async function StaffDashboardPage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
-
-  const repId = session.user.repId;
-  if (!repId) redirect("/login");
+  const user = await requirePageRole("STAFF", "ADMIN");
+  const scope = staffScope(user);
 
   const [rep, projects, partners, orders] = await Promise.all([
-    db.rep.findUnique({ where: { id: repId } }),
+    scope.repId ? db.rep.findUnique({ where: { id: scope.repId } }) : Promise.resolve(null),
     db.project.findMany({
-      where: { repId },
+      where: scope,
       include: { partner: true },
       orderBy: { createdAt: "desc" },
     }),
-    db.partner.findMany({ where: { repId } }),
+    db.partner.findMany({ where: scope }),
     db.order.findMany({
-      where: { project: { repId } },
+      where: { project: scope },
       include: { project: { include: { partner: true } } },
       orderBy: { createdAt: "desc" },
     }),
   ]);
 
-  if (!rep) redirect("/login");
+  if (scope.repId && !rep) redirect("/login");
+  // Admin nie ma rekordu handlowca — widok wszystkich partnerów pod jego nazwą
+  const viewer = rep ?? {
+    id: "", name: user.name, initials: user.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase(),
+    email: user.email, region: "Wszyscy partnerzy", phone: null, calendarUrl: null, photoUrl: null, bio: null,
+  };
 
-  return <StaffDashboardClient rep={rep} projects={projects} partners={partners} orders={orders} />;
+  return <StaffDashboardClient rep={viewer} projects={projects} partners={partners} orders={orders} />;
 }

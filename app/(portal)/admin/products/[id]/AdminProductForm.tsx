@@ -20,7 +20,7 @@ interface AdminProductFormProps {
     location: string;
     serialNumber: string;
     supplier: string;
-    inStock: number | null;
+    stock: number;
     costPrice: number | null;
     sellingPrice: number | null;
   };
@@ -36,7 +36,7 @@ export function AdminProductForm({ product, machineTypes, images: initialImages 
     location: product.location,
     serialNumber: product.serialNumber,
     supplier: product.supplier,
-    inStock: product.inStock ?? undefined,
+    stock: product.stock,
     costPrice: product.costPrice ?? undefined,
     sellingPrice: product.sellingPrice ?? undefined,
   });
@@ -82,7 +82,7 @@ export function AdminProductForm({ product, machineTypes, images: initialImages 
       return;
     }
 
-    if (formData.inStock !== undefined && formData.inStock < 0) {
+    if (formData.stock !== undefined && formData.stock < 0) {
       setError("Stan magazynowy nie może być ujemny");
       return;
     }
@@ -99,7 +99,7 @@ export function AdminProductForm({ product, machineTypes, images: initialImages 
         location: formData.location,
         serialNumber: formData.serialNumber,
         supplier: formData.supplier,
-        inStock: formData.inStock,
+        stock: formData.stock,
         costPrice: formData.costPrice,
         sellingPrice: formData.sellingPrice,
       });
@@ -254,8 +254,8 @@ export function AdminProductForm({ product, machineTypes, images: initialImages 
               className="input"
               type="number"
               min="0"
-              value={formData.inStock || ""}
-              onChange={(e) => setFormData({ ...formData, inStock: e.target.value ? parseInt(e.target.value) : undefined })}
+              value={formData.stock ?? ""}
+              onChange={(e) => setFormData({ ...formData, stock: e.target.value ? parseInt(e.target.value) : 0 })}
             />
           </div>
         </div>

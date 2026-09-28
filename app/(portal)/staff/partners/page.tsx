@@ -1,7 +1,5 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requirePageRole, staffScope } from "@/lib/authz";
 import { db } from "@/lib/db";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { PageHead, Avatar } from "@/components/ui";
 
@@ -10,14 +8,11 @@ function levelColor(level: string) {
 }
 
 export default async function StaffPartnersPage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
-
-  const repId = session.user.repId;
-  if (!repId) redirect("/login");
+  const user = await requirePageRole("STAFF", "ADMIN");
+  const scope = staffScope(user);
 
   const partners = await db.partner.findMany({
-    where: { repId },
+    where: scope,
     include: { projects: true },
   });
 

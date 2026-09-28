@@ -15,6 +15,8 @@ export function UserProfileEditCard({
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(initialName);
   const [email, setEmail] = useState(initialEmail);
+  const [password, setPassword] = useState("");
+  const emailChanged = email.trim().toLowerCase() !== initialEmail.toLowerCase();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -25,7 +27,8 @@ export function UserProfileEditCard({
     setError(null);
     setSuccess(false);
 
-    const result = await updateUserProfile(name, email);
+    const result = await updateUserProfile(name, email, emailChanged ? password : undefined);
+    setPassword("");
     setLoading(false);
 
     if (result.success) {
@@ -120,6 +123,22 @@ export function UserProfileEditCard({
             }}
           />
         </div>
+
+        {emailChanged && (
+          <div>
+            <label style={{ display: "block", fontSize: 12, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: ".04em", fontWeight: 600, marginBottom: 6 }}>
+              Obecne hasło (wymagane do zmiany e-maila)
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+              style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--line)", borderRadius: 6, fontSize: 14, fontFamily: "inherit" }}
+            />
+          </div>
+        )}
 
         {error && (
           <div style={{ padding: 12, background: "#fee", borderRadius: 6, fontSize: 13, color: "#c00" }}>

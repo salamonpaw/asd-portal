@@ -1,12 +1,10 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requirePageRole } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { PartnerDashboardClient } from "./PartnerDashboardClient";
 
 export default async function PartnerDashboardPage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
+  const session = { user: await requirePageRole("PARTNER", "PARTNER_ADMIN") };
 
   const partnerId = session.user.partnerId;
   if (!partnerId) redirect("/login");

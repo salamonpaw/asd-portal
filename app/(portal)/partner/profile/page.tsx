@@ -1,5 +1,4 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requirePageRole } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { PageHead, SectionCard, KV } from "@/components/ui";
@@ -18,8 +17,7 @@ function fmtMonth(s: string) {
 }
 
 export default async function PartnerProfilePage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
+  const session = { user: await requirePageRole("PARTNER", "PARTNER_ADMIN", "SERVICE_TECHNICIAN") };
 
   const partnerId = session.user.partnerId;
   if (!partnerId) redirect("/login");

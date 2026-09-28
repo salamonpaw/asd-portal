@@ -16,7 +16,7 @@ const INCLUDE_FULL = {
   partner: { include: { markets: true } },
   rep: true,
   history: { orderBy: { date: "asc" as const } },
-  comments: { include: { user: true } },
+  comments: { include: { user: { select: { id: true, name: true } } } },
 };
 
 // ─── Accept ──────────────────────────────────────────────────────────────────
@@ -93,8 +93,8 @@ export async function rejectProject(id: string, repName: string, reason: string)
 
 // ─── Request info ─────────────────────────────────────────────────────────────
 
-export async function requestInfoProject(id: string, repName: string, repId: string, message: string): Promise<ActionResult<Project & { partner: any; rep: any; history: any[]; comments: any[] }>> {
-  const userId = await db.user.findFirst({ where: { repId } });
+export async function requestInfoProject(id: string, repName: string, authorUserId: string, message: string): Promise<ActionResult<Project & { partner: any; rep: any; history: any[]; comments: any[] }>> {
+  const userId = { id: authorUserId };
   const project = await db.project.update({
     where: { id },
     data: {

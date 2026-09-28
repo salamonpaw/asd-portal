@@ -1,11 +1,9 @@
 import { processReminders } from "@/lib/cron/reminders";
 import { NextRequest, NextResponse } from "next/server";
+import { isCronAuthorized } from "@/lib/cron-auth";
 
 export async function GET(request: NextRequest) {
-  const authToken = request.headers.get("authorization");
-  const expectedToken = process.env.CRON_SECRET_TOKEN;
-
-  if (!expectedToken || authToken !== `Bearer ${expectedToken}`) {
+  if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -14,6 +12,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(await processReminders({ dryRun }));
   } catch (error) {
     console.error("[Cron Error] reminders", error);
-    return NextResponse.json({ error: "Failed to process reminders", details: (error as Error).message }, { status: 500 });
+    return NextResponse.json({ error: "Failed to process reminders" }, { status: 500 });
   }
 }

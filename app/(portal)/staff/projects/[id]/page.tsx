@@ -1,14 +1,12 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requirePageRole } from "@/lib/authz";
 import { db } from "@/lib/db";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import { ProjectDetailClient } from "@/components/portal/ProjectDetailClient";
 import { getPartnerEffectiveDiscount } from "@/lib/discount";
 import { ProjectSalesRepInfo } from "@/components/portal/ProjectSalesRepCard";
 
 export default async function StaffProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
+  await requirePageRole("STAFF", "ADMIN");
 
   const { id } = await params;
 
@@ -19,7 +17,7 @@ export default async function StaffProjectDetailPage({ params }: { params: Promi
       rep: true,
       salesRep: { select: { id: true, name: true, email: true, phone: true, active: true } },
       history: { orderBy: { date: "asc" } },
-      comments: { include: { user: true }, orderBy: { createdAt: "asc" } },
+      comments: { include: { user: { select: { id: true, name: true } } }, orderBy: { createdAt: "asc" } },
     },
   });
 

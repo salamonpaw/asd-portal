@@ -1,7 +1,7 @@
 // Dates from Prisma are Date objects server-side but become strings after
 // JSON serialization to client components. Always use toDate() before arithmetic.
 
-export function toDate(d: Date | string | null | undefined): Date | null {
+function toDate(d: Date | string | null | undefined): Date | null {
   if (!d) return null;
   if (d instanceof Date) return d;
   return new Date(d);

@@ -10,7 +10,7 @@ export const revalidate = 0;
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await getServerSession(authOptions);
-  const userRole = (session?.user as any)?.role;
+  const userRole = session?.user?.role;
 
   if (!session || userRole !== "SERVICE_TECHNICIAN") {
     redirect("/login");

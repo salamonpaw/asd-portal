@@ -36,10 +36,28 @@ log "=========================================="
 log "Installing dependencies..."
 npm ci
 
+# Pliki marketingowe poza public/ (dostęp tylko przez /api/marketing/[id]/download)
+SERVICE_USER=$(systemctl show -p User --value "$SERVICE_NAME" 2>/dev/null || true)
+mkdir -p storage/marketing
+if [ -d public/uploads/marketing ] && [ -n "$(ls -A public/uploads/marketing 2>/dev/null)" ]; then
+  log "Moving marketing files out of public/..."
+  mv -n public/uploads/marketing/* storage/marketing/
+fi
+mkdir -p public/uploads public/images
+[ -n "$SERVICE_USER" ] && chown -R "$SERVICE_USER": storage public/uploads public/images 2>/dev/null || true
+
 # 3. Sync database schema
 # Uses `db push` (not `migrate deploy`) because the production DB was created
 # manually and has no _prisma_migrations table. db push aligns the schema to
 # prisma/schema.prisma without requiring migration history.
+# Migracje danych (idempotentne SQL, w kolejności nazw) — PRZED db push,
+# żeby db push nie musiał usuwać kolumn z danymi
+for SQL in prisma/sql/*.sql; do
+  [ -e "$SQL" ] || continue
+  log "Running data migration $SQL..."
+  npx prisma db execute --file "$SQL"
+done
+
 log "Syncing database schema (prisma db push)..."
 npx prisma db push
 

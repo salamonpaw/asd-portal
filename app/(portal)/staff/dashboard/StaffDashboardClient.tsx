@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageHead, StatCard, SectionCard, EmptyState, Avatar } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
-import { Badge } from "@/components/ui";
-import { fmtDate, daysUntil } from "@/lib/dates";
+import { daysUntil } from "@/lib/dates";
 import type { Partner, Project, Rep } from "@prisma/client";
 
 type ProjectWithPartner = Project & { partner: Partner };
@@ -43,7 +42,7 @@ export function StaffDashboardClient({ rep, projects, partners, orders = [] }: {
         <StatCard icon="shieldCheck" label="Aktywne projekty" value={active.length} tone="var(--ok)" soft="var(--ok-soft)" onClick={() => router.push("/staff/projects?tab=active")} />
         <StatCard icon="copy" label="Duplikaty / konflikty" value={dups.length} tone="var(--dup)" soft="var(--dup-soft)" onClick={() => router.push("/staff/duplicates")} />
         <StatCard icon="alert" label="Wygasają w 30 dni" value={expiring.length} tone="var(--accent)" soft="var(--accent-soft)" onClick={() => router.push("/staff/projects?tab=expiring")} />
-        <StatCard icon="shoppingCart" label="Otwarte zamówienia" value={openOrders.length} tone="var(--brand)" soft="var(--brand-soft)" onClick={() => router.push("/staff/orders")} />
+        <StatCard icon="shoppingCart" label="Otwarte zamówienia" value={openOrders.length} tone="var(--brand)" soft="var(--brand-soft)" />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 320px", gap: 20, marginTop: 20, alignItems: "start" }}>
@@ -74,7 +73,7 @@ export function StaffDashboardClient({ rep, projects, partners, orders = [] }: {
           )}
         </SectionCard>
 
-        <SectionCard title="Otwarte zamówienia" pad={false} action={<Link href="/staff/orders" className="btn btn-ghost btn-sm">Wszystkie</Link>}>
+        <SectionCard title="Otwarte zamówienia" pad={false}>
           {openOrders.length === 0 ? (
             <div style={{ padding: 8 }}><EmptyState title="Brak otwartych zamówień" sub="Wszystkie zamówienia są gotowe." icon="checkCircle" /></div>
           ) : (

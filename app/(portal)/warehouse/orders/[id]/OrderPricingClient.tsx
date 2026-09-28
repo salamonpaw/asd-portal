@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Icon } from "@/components/ui/Icon";
-import { updateOrderItemPricing, getExchangeRates, checkPartnerOrderStatus } from "@/lib/actions/warehouse-pricing";
-import { createPendingOrderItem, getPendingOrderItems } from "@/lib/actions/partial-orders";
+import { updateOrderItemPricing, getExchangeRates } from "@/lib/actions/warehouse-pricing";
+import { checkPartnerOrderStatus } from "@/lib/actions/partner-discounts";
+import { createPendingOrderItem } from "@/lib/actions/partial-orders";
 
 interface Product {
   id: string;
@@ -11,7 +11,6 @@ interface Product {
   name: string;
   costPrice: number | null;
   sellingPrice: number | null;
-  inStock: number | null;
   inventory?: { currentStock: number } | null;
 }
 
@@ -87,7 +86,7 @@ export function OrderPricingClient({ orderId, items, partner }: OrderPricingClie
 
     // Check if partner hasn't ordered in 12m
     const statusResult = await checkPartnerOrderStatus(partner.id);
-    if (statusResult.data?.needsVerification) {
+    if (statusResult.needsVerification) {
       setWarning12m("Partner nie zamawiał w ciągu 12 miesięcy — zweryfikuj rabat");
     }
   };

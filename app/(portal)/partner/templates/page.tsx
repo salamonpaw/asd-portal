@@ -8,8 +8,8 @@ import { OrderTemplatesClient } from "./OrderTemplatesClient";
 
 export default async function OrderTemplatesPage() {
   const session = await getServerSession(authOptions);
-  const userRole = (session?.user as any)?.role;
-  const partnerId = (session?.user as any)?.partnerId;
+  const userRole = session?.user?.role;
+  const partnerId = session?.user?.partnerId;
 
   if (!session || (userRole !== "PARTNER_ADMIN" && userRole !== "SERVICE_TECHNICIAN")) {
     redirect("/login");

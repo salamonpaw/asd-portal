@@ -1,12 +1,14 @@
 "use server";
 
+import { errMsg } from "@/lib/authz";
+
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
 export async function getInventoryWithOrders() {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "WAREHOUSE_SPECIALIST") {
+  if (!session?.user || session.user.role !== "WAREHOUSE_SPECIALIST") {
     return { success: false, error: "Brak dostępu", data: null };
   }
 
@@ -70,6 +72,6 @@ export async function getInventoryWithOrders() {
     return { success: true, data: inventoryData };
   } catch (error) {
     console.error("[getInventoryWithOrders] Error:", error);
-    return { success: false, error: (error as Error).message, data: null };
+    return { success: false, error: errMsg(error), data: null };
   }
 }

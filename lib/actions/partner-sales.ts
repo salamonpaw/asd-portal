@@ -1,5 +1,7 @@
 "use server";
 
+import { errMsg, AuthError } from "@/lib/authz";
+
 import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { authOptions } from "@/lib/auth";
@@ -17,7 +19,7 @@ async function requirePartner() {
   const role = session?.user?.role as string | undefined;
   const partnerId = session?.user?.partnerId;
   if (!session || (role !== "PARTNER" && role !== "PARTNER_ADMIN") || !partnerId) {
-    throw new Error("Brak dostępu");
+    throw new AuthError();
   }
   return { partnerId, userName: session.user.name ?? "Partner" };
 }
@@ -46,12 +48,14 @@ export async function saveSalesRep(input: {
       const { count } = await db.partnerSalesRep.updateMany({ where: { id: input.id, partnerId }, data });
       if (!count) return { success: false, error: "Nie znaleziono handlowca." };
     } else {
-      await db.partnerSalesRep.create({ data: { ...data, partnerId } });
+      const { randomBytes } = await import("crypto");
+      // token linku w pełni losowy (domyślny cuid jest częściowo przewidywalny)
+      await db.partnerSalesRep.create({ data: { ...data, partnerId, formToken: randomBytes(18).toString("base64url") } });
     }
     revalidatePath("/partner/sales-reps");
     return { success: true };
   } catch (e) {
-    return { success: false, error: (e as Error).message };
+    return { success: false, error: errMsg(e) };
   }
 }
 
@@ -62,7 +66,7 @@ export async function deleteSalesRep(id: string): Promise<Res> {
     revalidatePath("/partner/sales-reps");
     return { success: true };
   } catch (e) {
-    return { success: false, error: (e as Error).message };
+    return { success: false, error: errMsg(e) };
   }
 }
 
@@ -74,7 +78,7 @@ export async function regenerateFormToken(id: string): Promise<Res> {
     revalidatePath("/partner/sales-reps");
     return { success: true };
   } catch (e) {
-    return { success: false, error: (e as Error).message };
+    return { success: false, error: errMsg(e) };
   }
 }
 
@@ -88,7 +92,7 @@ export async function sendFormLink(id: string): Promise<Res> {
     await sendMail({ partnerId, to: rep.email, ...mail, replyTo: rep.partner.email || undefined });
     return { success: true };
   } catch (e) {
-    return { success: false, error: `Nie udało się wysłać: ${(e as Error).message}` };
+    return { success: false, error: `Nie udało się wysłać e-maila — sprawdź konfigurację poczty.` };
   }
 }
 
@@ -131,7 +135,7 @@ export async function approveRequest(id: string, note?: string): Promise<Res<{ p
     revalidatePath("/partner/projects");
     return { success: true, data: { projectId: project.id } };
   } catch (e) {
-    return { success: false, error: (e as Error).message };
+    return { success: false, error: errMsg(e) };
   }
 }
 
@@ -154,7 +158,7 @@ export async function rejectRequest(id: string, note: string): Promise<Res> {
     revalidatePath("/partner/requests");
     return { success: true };
   } catch (e) {
-    return { success: false, error: (e as Error).message };
+    return { success: false, error: errMsg(e) };
   }
 }
 
@@ -180,7 +184,7 @@ export async function saveReminderSettings(input: {
     revalidatePath("/partner/settings");
     return { success: true };
   } catch (e) {
-    return { success: false, error: (e as Error).message };
+    return { success: false, error: errMsg(e) };
   }
 }
 
@@ -212,6 +216,6 @@ export async function updateProjectPartnerSettings(projectId: string, input: {
     revalidatePath(`/partner/projects/${projectId}`);
     return { success: true };
   } catch (e) {
-    return { success: false, error: (e as Error).message };
+    return { success: false, error: errMsg(e) };
   }
 }

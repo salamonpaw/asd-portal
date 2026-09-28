@@ -1,5 +1,7 @@
 "use server";
 
+import { errMsg } from "@/lib/authz";
+
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -28,7 +30,7 @@ export interface DashboardStats {
 
 export async function getAdminDashboardStats(): Promise<ActionResult<DashboardStats>> {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "ADMIN") {
+  if (!session?.user || session.user.role !== "ADMIN") {
     return { success: false, error: "Brak dostępu" };
   }
 
@@ -135,6 +137,6 @@ export async function getAdminDashboardStats(): Promise<ActionResult<DashboardSt
       },
     };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errMsg(error) };
   }
 }

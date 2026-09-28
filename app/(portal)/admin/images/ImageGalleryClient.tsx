@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { getAllImages, uploadProductImage, deleteProductImage } from "@/lib/actions/image-management";
 import { getProducts } from "@/lib/actions/products";
-import { Icon } from "@/components/ui/Icon";
 
 interface ProductImage {
   id: string;

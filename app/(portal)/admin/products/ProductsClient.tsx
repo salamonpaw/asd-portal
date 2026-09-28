@@ -14,7 +14,7 @@ type Product = {
   image: string | null;
   serialNumber: string | null;
   supplier: string | null;
-  inStock: number | null;
+  stock: number;
   sellingPrice: number | null;
   createdAt: Date;
 };
@@ -46,7 +46,7 @@ export function ProductsClient({ initialProducts, machineTypes, userRole }: Prop
     image: "",
     serialNumber: "",
     supplier: "",
-    inStock: undefined,
+    stock: undefined,
     costPrice: undefined,
     sellingPrice: undefined,
   });
@@ -76,7 +76,7 @@ export function ProductsClient({ initialProducts, machineTypes, userRole }: Prop
         image: "",
         serialNumber: "",
         supplier: "",
-        inStock: undefined,
+        stock: undefined,
         sellingPrice: undefined,
       });
       setIsAdding(false);
@@ -108,7 +108,7 @@ export function ProductsClient({ initialProducts, machineTypes, userRole }: Prop
         image: "",
         serialNumber: "",
         supplier: "",
-        inStock: undefined,
+        stock: undefined,
         sellingPrice: undefined,
       });
       setError("");
@@ -272,7 +272,7 @@ export function ProductsClient({ initialProducts, machineTypes, userRole }: Prop
                   image: "",
                   serialNumber: "",
                   supplier: "",
-                  inStock: undefined,
+                  stock: undefined,
                   sellingPrice: undefined,
                 });
                 setError("");
@@ -385,7 +385,7 @@ export function ProductsClient({ initialProducts, machineTypes, userRole }: Prop
                             image: product.image || "",
                             serialNumber: product.serialNumber || "",
                             supplier: product.supplier || "",
-                            inStock: product.inStock || undefined,
+                            stock: undefined, // stan edytuje się w szczegółach produktu
                             sellingPrice: product.sellingPrice ? parseFloat(product.sellingPrice.toString()) : undefined,
                           });
                         }}

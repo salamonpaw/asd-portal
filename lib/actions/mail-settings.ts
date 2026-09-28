@@ -1,5 +1,7 @@
 "use server";
 
+import { errMsg, AuthError } from "@/lib/authz";
+
 import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 import nodemailer from "nodemailer";
@@ -29,11 +31,11 @@ async function resolveScope(scope: Scope) {
   const session = await getServerSession(authOptions);
   const role = session?.user?.role as string | undefined;
   if (scope === "global") {
-    if (role !== "ADMIN") throw new Error("Tylko administrator może zmieniać serwer poczty ASD.");
+    if (role !== "ADMIN") throw new AuthError("Tylko administrator może zmieniać serwer poczty ASD.");
     return { partnerId: null as string | null, email: session!.user.email };
   }
   const partnerId = session?.user?.partnerId;
-  if ((role !== "PARTNER" && role !== "PARTNER_ADMIN") || !partnerId) throw new Error("Brak dostępu");
+  if ((role !== "PARTNER" && role !== "PARTNER_ADMIN") || !partnerId) throw new AuthError();
   return { partnerId, email: session!.user.email };
 }
 
@@ -72,7 +74,7 @@ export async function saveMailSettings(scope: Scope, input: MailSettingsInput): 
     revalidatePath(scope === "global" ? "/admin/mail-settings" : "/partner/settings");
     return { success: true, message: "Zapisano ustawienia poczty." };
   } catch (e) {
-    return { success: false, error: (e as Error).message };
+    return { success: false, error: errMsg(e) };
   }
 }
 
@@ -84,7 +86,7 @@ export async function deleteMailSettings(scope: Scope): Promise<Res> {
     revalidatePath(scope === "global" ? "/admin/mail-settings" : "/partner/settings");
     return { success: true, message: "Usunięto — wysyłka wraca do serwera domyślnego." };
   } catch (e) {
-    return { success: false, error: (e as Error).message };
+    return { success: false, error: errMsg(e) };
   }
 }
 

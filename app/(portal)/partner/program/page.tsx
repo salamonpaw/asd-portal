@@ -1,7 +1,5 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requirePageRole } from "@/lib/authz";
 import { db } from "@/lib/db";
-import { redirect } from "next/navigation";
 import { PageHead, SectionCard } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
 
@@ -26,8 +24,7 @@ const SCORING = [
 ];
 
 export default async function PartnerProgramPage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
+  const session = { user: await requirePageRole("PARTNER", "PARTNER_ADMIN") };
 
   const partnerId = session.user.partnerId;
   const partner = partnerId ? await db.partner.findUnique({ where: { id: partnerId } }) : null;

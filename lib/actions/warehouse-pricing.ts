@@ -1,5 +1,9 @@
 "use server";
 
+import { errMsg } from "@/lib/authz";
+
+import { getSessionUser, AuthError } from "@/lib/authz";
+
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -15,7 +19,7 @@ export async function updateOrderItemPricing(
   }
 ) {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "WAREHOUSE_SPECIALIST") {
+  if (!session?.user || session.user.role !== "WAREHOUSE_SPECIALIST") {
     return { success: false, error: "Brak dostępu - nie jesteś magazynierem" };
   }
 
@@ -72,7 +76,7 @@ export async function updateOrderItemPricing(
     return { success: true, data: result };
   } catch (error) {
     console.error("[updateOrderItemPricing] Error:", error);
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errMsg(error) };
   }
 }
 
@@ -80,6 +84,8 @@ export async function getExchangeRates(
   partnerId: string,
   baseCurrency: string
 ) {
+  const __u = await getSessionUser();
+  if (!__u || !["WAREHOUSE_SPECIALIST", "ADMIN"].includes(__u.role)) throw new AuthError();
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -104,7 +110,7 @@ export async function getExchangeRates(
 
     return { success: true, data: latestRates };
   } catch (error) {
-    return { success: false, error: (error as Error).message, data: {} };
+    return { success: false, error: errMsg(error), data: {} };
   }
 }
 
@@ -133,80 +139,6 @@ export async function addExchangeRate(
 
     return { success: true };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
-  }
-}
-
-export async function getSystemConfig() {
-  try {
-    let config = await db.systemConfig.findFirst();
-    if (!config) {
-      config = await db.systemConfig.create({
-        data: {
-          minProfitMargin: 10,
-          reminderDaysBefore: 5,
-        },
-      });
-    }
-    return {
-      success: true,
-      data: {
-        minProfitMargin: parseFloat(config.minProfitMargin.toString()),
-        reminderDaysBefore: config.reminderDaysBefore,
-      },
-    };
-  } catch (error) {
-    return { success: false, error: (error as Error).message, data: null };
-  }
-}
-
-export async function updateSystemConfig(data: {
-  minProfitMargin?: number;
-  reminderDaysBefore?: number;
-}) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return { success: false, error: "Brak dostępu" };
-  }
-
-  try {
-    let config = await db.systemConfig.findFirst();
-    if (!config) {
-      config = await db.systemConfig.create({
-        data: {
-          minProfitMargin: data.minProfitMargin || 10,
-          reminderDaysBefore: data.reminderDaysBefore || 5,
-        },
-      });
-    } else {
-      config = await db.systemConfig.update({
-        where: { id: config.id },
-        data,
-      });
-    }
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: (error as Error).message };
-  }
-}
-
-export async function checkPartnerOrderStatus(partnerId: string) {
-  try {
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-
-    const lastOrder = await db.serviceOrder.findFirst({
-      where: {
-        partnerId,
-        createdAt: { gte: oneYearAgo },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    const needsVerification = !lastOrder;
-
-    return { success: true, data: { needsVerification, lastOrderDate: lastOrder?.createdAt || null } };
-  } catch (error) {
-    return { success: false, error: (error as Error).message, data: null };
+    return { success: false, error: errMsg(error) };
   }
 }

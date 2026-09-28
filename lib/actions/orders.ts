@@ -1,147 +1,56 @@
-"use server";
-
+// Tylko po stronie serwera (strony + /api/orders) — celowo BEZ "use server",
+// żeby funkcje nie były wystawione jako publiczne akcje serwera.
+import { randomInt } from "crypto";
+import type { Order } from "@prisma/client";
 import { db } from "@/lib/db";
 import { sendOrderCreated } from "@/lib/email";
 import { PORTAL_URL } from "@/lib/config";
-import type { Order, WaitingItem } from "@prisma/client";
 import { ActionResult } from "@/lib/types/actions";
 
-function generateOrderCode(): string {
-  const year = new Date().getFullYear();
-  const random = Math.floor(Math.random() * 10000)
-    .toString()
-    .padStart(4, "0");
-  return `ORD-${year}-${random}`;
-}
+const ORDER_INCLUDE = { supervisorRep: true, supervisorBok: true, waitingFor: { orderBy: { createdAt: "asc" as const } } };
 
-export async function createOrder(projectId: string): Promise<ActionResult<Order & { project: any; supervisorRep: any; supervisorBok: any; waitingFor: any[] }>> {
-  const project = await db.project.findUnique({
-    where: { id: projectId },
-    include: { partner: true, rep: true },
-  });
-
+/** Wywołujący odpowiada za sprawdzenie, że projekt należy do partnera. */
+export async function createOrder(projectId: string): Promise<ActionResult<Order>> {
+  const project = await db.project.findUnique({ where: { id: projectId }, include: { partner: true, rep: true } });
   if (!project) throw new Error("Project not found");
 
-  const code = generateOrderCode();
-  const order = await db.order.create({
-    data: {
-      code,
-      projectId,
-      supervisorRepId: project.repId,
-    },
-    include: {
-      project: true,
-      supervisorRep: true,
-      supervisorBok: true,
-      waitingFor: true,
-    },
-  });
-
-  // Send email to rep (handlowiec)
-  try {
-    await sendOrderCreated({
-      to: project.rep.email,
-      repName: project.rep.name,
-      partnerName: project.partner.name,
-      orderId: order.id,
-      orderCode: order.code,
-      projectId: project.id,
-      customerName: project.customerName,
-      portalUrl: PORTAL_URL,
-    });
-  } catch (err) {
-    console.error("Failed to send order created email:", err);
+  let order: Order | null = null;
+  for (let attempt = 0; attempt < 5 && !order; attempt++) {
+    const code = `ORD-${new Date().getFullYear()}-${String(randomInt(0, 1_000_000)).padStart(6, "0")}`;
+    try {
+      order = await db.order.create({ data: { code, projectId, supervisorRepId: project.repId } });
+    } catch (e) {
+      if ((e as { code?: string }).code !== "P2002") throw e; // kolizja kodu → kolejna próba
+    }
   }
+  if (!order) throw new Error("Nie udało się nadać numeru zamówienia");
+
+  sendOrderCreated({
+    to: project.rep.email, repName: project.rep.name, partnerName: project.partner.name,
+    orderId: order.id, orderCode: order.code, projectId: project.id,
+    customerName: project.customerName, portalUrl: PORTAL_URL,
+  }).catch((err) => console.error("Failed to send order created email:", err));
 
   return { success: true, data: order };
 }
 
-export async function getOrdersByProject(projectId: string): Promise<ActionResult<(Order & { supervisorRep: any; supervisorBok: any; waitingFor: any[] })[]>> {
-  return { success: true, data: await db.order.findMany({
-    where: { projectId },
-    include: {
-      supervisorRep: true,
-      supervisorBok: true,
-      waitingFor: { orderBy: { createdAt: "asc" } },
-    },
-    orderBy: { createdAt: "desc" },
-  }) };
+export async function getOrdersByPartner(partnerId: string) {
+  return {
+    success: true as const,
+    data: await db.order.findMany({
+      where: { project: { partnerId } },
+      include: { project: true, ...ORDER_INCLUDE },
+      orderBy: { createdAt: "desc" },
+    }),
+  };
 }
 
-export async function getOrdersByPartner(partnerId: string): Promise<ActionResult<(Order & { project: any; supervisorRep: any; supervisorBok: any; waitingFor: any[] })[]>> {
-  return { success: true, data: await db.order.findMany({
-    where: { project: { partnerId } },
-    include: {
-      project: true,
-      supervisorRep: true,
-      supervisorBok: true,
-      waitingFor: { orderBy: { createdAt: "asc" } },
-    },
-    orderBy: { createdAt: "desc" },
-  }) };
-}
-
-export async function getOrder(orderId: string): Promise<ActionResult<Order & { project: any; supervisorRep: any; supervisorBok: any; waitingFor: any[] } | null>> {
-  return { success: true, data: await db.order.findUnique({
-    where: { id: orderId },
-    include: {
-      project: { include: { partner: true, rep: true } },
-      supervisorRep: true,
-      supervisorBok: true,
-      waitingFor: { orderBy: { createdAt: "asc" } },
-    },
-  }) };
-}
-
-export async function updateOrderStatus(
-  orderId: string,
-  status: string,
-  deliveryDate?: Date,
-  estimatedDays?: number
-): Promise<ActionResult<Order & { project: any; supervisorRep: any; supervisorBok: any; waitingFor: any[] }>> {
-  return { success: true, data: await db.order.update({
-    where: { id: orderId },
-    data: {
-      status,
-      deliveryDate: deliveryDate || undefined,
-      estimatedDays: estimatedDays || undefined,
-    },
-    include: {
-      project: true,
-      supervisorRep: true,
-      supervisorBok: true,
-      waitingFor: true,
-    },
-  }) };
-}
-
-export async function addWaitingItem(
-  orderId: string,
-  type: string,
-  note?: string
-): Promise<ActionResult<WaitingItem>> {
-  return { success: true, data: await db.waitingItem.create({
-    data: { orderId, type, note },
-  }) };
-}
-
-export async function updateWaitingItem(
-  itemId: string,
-  status: string,
-  trackingNumber?: string,
-  note?: string
-): Promise<ActionResult<WaitingItem>> {
-  return { success: true, data: await db.waitingItem.update({
-    where: { id: itemId },
-    data: {
-      status,
-      trackingNumber: trackingNumber || undefined,
-      note: note || undefined,
-    },
-  }) };
-}
-
-export async function deleteWaitingItem(itemId: string): Promise<ActionResult<void>> {
-  await db.waitingItem.delete({ where: { id: itemId } });
-  return { success: true };
+export async function getOrder(orderId: string) {
+  return {
+    success: true as const,
+    data: await db.order.findUnique({
+      where: { id: orderId },
+      include: { project: { include: { partner: true, rep: true } }, ...ORDER_INCLUDE },
+    }),
+  };
 }

@@ -1,5 +1,4 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requirePageRole } from "@/lib/authz";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { Icon } from "@/components/ui/Icon";
@@ -18,8 +17,7 @@ function fmtSize(bytes: number | null) {
 }
 
 export default async function PartnerMarketingPage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
+  const session = { user: await requirePageRole("PARTNER", "PARTNER_ADMIN") };
   const partnerId = session.user.partnerId;
   if (!partnerId) redirect("/login");
 
@@ -43,14 +41,13 @@ export default async function PartnerMarketingPage() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {materials.map((m) => {
-            const external = m.url.startsWith("http");
+            const external = /^https?:\/\//i.test(m.url);
             return (
               <a
                 key={m.id}
-                href={m.url}
-                target="_blank"
-                rel="noopener"
-                download={external ? undefined : m.filename}
+                href={external ? m.url : `/api/marketing/${m.id}/download`}
+                target={external ? "_blank" : undefined}
+                rel="noopener noreferrer"
                 className="card"
                 style={{ padding: 16, display: "flex", alignItems: "center", gap: 14, textDecoration: "none", color: "inherit" }}
               >

@@ -59,18 +59,3 @@ export const ValidationRules = {
   },
 };
 
-export function validateForm(
-  data: Record<string, any>,
-  rules: Record<string, (value: any) => string | null>
-): Record<string, string> {
-  const errors: Record<string, string> = {};
-
-  Object.entries(rules).forEach(([field, rule]) => {
-    const error = rule(data[field]);
-    if (error) {
-      errors[field] = error;
-    }
-  });
-
-  return errors;
-}

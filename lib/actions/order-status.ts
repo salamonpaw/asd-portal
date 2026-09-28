@@ -1,5 +1,7 @@
 "use server";
 
+import { errMsg } from "@/lib/authz";
+
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -7,7 +9,7 @@ import { ServiceOrderStatus } from "@prisma/client";
 
 export async function changeOrderStatus(orderId: string, newStatus: string) {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "WAREHOUSE_SPECIALIST") {
+  if (!session?.user || session.user.role !== "WAREHOUSE_SPECIALIST") {
     return { success: false, error: "Brak dostępu" };
   }
 
@@ -86,7 +88,7 @@ export async function changeOrderStatus(orderId: string, newStatus: string) {
             },
             history: {
               create: [{
-                changedBy: (session.user as any).email || "unknown",
+                changedBy: session.user.email || "unknown",
                 action: "CREATED",
                 notes: `Utworzone przez split zamówienia ${order.code}`,
               }],
@@ -123,7 +125,7 @@ export async function changeOrderStatus(orderId: string, newStatus: string) {
               fromStock: oldStock,
               toStock: newStock,
               notes: `Zamówienie ${order.code} zrealizowane - zwolniono ${item.quantity} szt.`,
-              changedBy: (session.user as any).email || "unknown",
+              changedBy: session.user.email || "unknown",
             },
           });
         }
@@ -140,7 +142,7 @@ export async function changeOrderStatus(orderId: string, newStatus: string) {
     await db.serviceOrderHistory.create({
       data: {
         serviceOrderId: orderId,
-        changedBy: (session.user as any).email || "unknown",
+        changedBy: session.user.email || "unknown",
         action: `STATUS_CHANGED_TO_${newStatus}`,
         notes: `Status zmieniony na ${newStatus}${
           newStatus === "ZREALIZOWANE" ? " - magazyn zaktualizowany" : ""
@@ -151,6 +153,6 @@ export async function changeOrderStatus(orderId: string, newStatus: string) {
     return { success: true };
   } catch (error) {
     console.error("[changeOrderStatus] Error:", error);
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errMsg(error) };
   }
 }

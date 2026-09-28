@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PageHead, StatCard, SectionCard, EmptyState, Avatar, KV } from "@/components/ui";
+import { PageHead, StatCard, SectionCard, EmptyState, Avatar } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
 import { ProjectsTable } from "@/components/portal/ProjectsTable";
 import { daysUntil } from "@/lib/dates";

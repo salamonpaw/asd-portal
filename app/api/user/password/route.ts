@@ -18,14 +18,15 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Nowe hasło musi mieć minimum 8 znaków." }, { status: 400 });
   }
 
-  const user = await db.user.findUnique({ where: { id: userId } });
+  const user = await db.user.findUnique({ where: { id: userId }, omit: { password: false } });
   if (!user) return NextResponse.json({ error: "Użytkownik nie znaleziony." }, { status: 404 });
 
   const ok = await bcrypt.compare(currentPassword, user.password);
   if (!ok) return NextResponse.json({ error: "Aktualne hasło jest nieprawidłowe." }, { status: 400 });
 
   const hash = await bcrypt.hash(newPassword, 10);
-  await db.user.update({ where: { id: userId }, data: { password: hash } });
+  // podbicie sessionVersion wylogowuje wszystkie sesje (także skradzione)
+  await db.user.update({ where: { id: userId }, data: { password: hash, sessionVersion: { increment: 1 } } });
 
   return NextResponse.json({ ok: true });
 }

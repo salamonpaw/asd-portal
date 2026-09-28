@@ -1,40 +1,22 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { Role } from "@prisma/client";
-import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import { db } from "@/lib/db";
+import { apiUser } from "@/lib/authz";
+import { parseUserInput } from "@/lib/user-input";
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const admin = await apiUser("ADMIN");
+  if (admin instanceof NextResponse) return admin;
 
   try {
-    const { name, email, password, role, partnerId, repId } = await req.json();
+    const parsed = parseUserInput(await req.json(), { requirePassword: true });
+    if ("error" in parsed) return NextResponse.json({ error: parsed.error }, { status: 400 });
+    const { password, ...data } = parsed.data;
 
-    if (!name?.trim() || !email?.trim() || !password?.trim()) {
-      return NextResponse.json({ error: "Imię, e-mail i hasło są wymagane." }, { status: 400 });
-    }
+    const existing = await db.user.findFirst({ where: { email: { equals: data.email, mode: "insensitive" } } });
+    if (existing) return NextResponse.json({ error: "Użytkownik z tym e-mailem już istnieje." }, { status: 409 });
 
-    const existing = await db.user.findUnique({ where: { email: email.trim() } });
-    if (existing) {
-      return NextResponse.json({ error: "Użytkownik z tym e-mailem już istnieje." }, { status: 409 });
-    }
-
-    const hash = await bcrypt.hash(password, 10);
-    const user = await db.user.create({
-      data: {
-        name: name.trim(),
-        email: email.trim(),
-        password: hash,
-        role: role as Role,
-        partnerId: role === "PARTNER" && partnerId ? partnerId : null,
-        repId: role === "STAFF" && repId ? repId : null,
-      },
-    });
-
+    const user = await db.user.create({ data: { ...data, password: await bcrypt.hash(password, 10) } });
     return NextResponse.json({ id: user.id, email: user.email }, { status: 201 });
   } catch (err) {
     console.error("[admin/users POST]", err);

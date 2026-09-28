@@ -1,5 +1,7 @@
 "use server";
 
+import { errMsg } from "@/lib/authz";
+
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -7,7 +9,7 @@ import { ActionResult } from "@/lib/types/actions";
 
 export async function approveOrder(orderId: string): Promise<ActionResult<null>> {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "WAREHOUSE_SPECIALIST") {
+  if (!session?.user || session.user.role !== "WAREHOUSE_SPECIALIST") {
     return { success: false, error: "Brak dostępu" };
   }
 
@@ -20,7 +22,7 @@ export async function approveOrder(orderId: string): Promise<ActionResult<null>>
     await db.serviceOrderHistory.create({
       data: {
         serviceOrderId: orderId,
-        changedBy: (session.user as any).email || "unknown",
+        changedBy: session.user.email || "unknown",
         action: "ZATWIERDZONE",
         notes: "Zatwierdzono przez magazyniera",
       },
@@ -28,13 +30,13 @@ export async function approveOrder(orderId: string): Promise<ActionResult<null>>
 
     return { success: true, data: null };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errMsg(error) };
   }
 }
 
 export async function suspendOrder(orderId: string): Promise<ActionResult<null>> {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "WAREHOUSE_SPECIALIST") {
+  if (!session?.user || session.user.role !== "WAREHOUSE_SPECIALIST") {
     return { success: false, error: "Brak dostępu" };
   }
 
@@ -47,7 +49,7 @@ export async function suspendOrder(orderId: string): Promise<ActionResult<null>>
     await db.serviceOrderHistory.create({
       data: {
         serviceOrderId: orderId,
-        changedBy: (session.user as any).email || "unknown",
+        changedBy: session.user.email || "unknown",
         action: "ZAWIESZONE",
         notes: "Zawieszone przez magazyniera",
       },
@@ -55,7 +57,7 @@ export async function suspendOrder(orderId: string): Promise<ActionResult<null>>
 
     return { success: true, data: null };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errMsg(error) };
   }
 }
 
@@ -64,7 +66,7 @@ export async function rejectOrder(
   rejectionReason: string
 ): Promise<ActionResult<null>> {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "WAREHOUSE_SPECIALIST") {
+  if (!session?.user || session.user.role !== "WAREHOUSE_SPECIALIST") {
     return { success: false, error: "Brak dostępu" };
   }
 
@@ -84,7 +86,7 @@ export async function rejectOrder(
     await db.serviceOrderHistory.create({
       data: {
         serviceOrderId: orderId,
-        changedBy: (session.user as any).email || "unknown",
+        changedBy: session.user.email || "unknown",
         action: "ODRZUCONE",
         notes: `Powód: ${rejectionReason}`,
       },
@@ -92,6 +94,6 @@ export async function rejectOrder(
 
     return { success: true, data: null };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errMsg(error) };
   }
 }

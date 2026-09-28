@@ -74,6 +74,7 @@ model User {
   password  String
   name      String
   role      Role
+  sessionVersion Int  @default(0)   // podbicie = wylogowanie wszystkich sesji użytkownika
   partnerId String?
   repId     String?
   createdAt DateTime @default(now())
@@ -344,11 +345,8 @@ model Product {
   parentProduct    Product?    @relation("ProductHierarchy", fields: [parentProductId], references: [id])
   childProducts    Product[]   @relation("ProductHierarchy")
   location         String?
-  image            String?
-  images           String?       // JSON array of image URLs
   serialNumber     String?
   supplier         String?
-  inStock          Int?
   machineCount     Int?
   costPrice        Decimal?      // Cena zakupu
   sellingPrice     Decimal?      // Cena sprzedaży dla klienta

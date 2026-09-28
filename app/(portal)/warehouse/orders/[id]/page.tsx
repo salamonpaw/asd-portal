@@ -15,7 +15,7 @@ export const revalidate = 0;
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await getServerSession(authOptions);
-  const userRole = (session?.user as any)?.role;
+  const userRole = session?.user?.role;
 
   if (!session || userRole !== "WAREHOUSE_SPECIALIST") {
     redirect("/login");
@@ -166,7 +166,6 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                 name: item.product.name,
                 costPrice: item.product.costPrice ? parseFloat(item.product.costPrice.toString()) : null,
                 sellingPrice: item.product.sellingPrice ? parseFloat(item.product.sellingPrice.toString()) : null,
-                inStock: item.product.inStock,
                 inventory: item.product.inventory,
               },
               quantity: item.quantity,

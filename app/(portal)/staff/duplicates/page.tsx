@@ -1,9 +1,7 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requirePageRole, staffScope } from "@/lib/authz";
 import { db } from "@/lib/db";
-import { redirect } from "next/navigation";
 import Link from "next/link";
-import { PageHead, EmptyState, Badge } from "@/components/ui";
+import { PageHead, EmptyState } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
 
 function fmtDate(d: Date | null) {
@@ -12,14 +10,11 @@ function fmtDate(d: Date | null) {
 }
 
 export default async function StaffDuplicatesPage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
-
-  const repId = session.user.repId;
-  if (!repId) redirect("/login");
+  const user = await requirePageRole("STAFF", "ADMIN");
+  const scope = staffScope(user);
 
   const dups = await db.project.findMany({
-    where: { repId, status: "DUP" },
+    where: { ...scope, status: "DUP" },
     include: { partner: true },
     orderBy: { createdAt: "desc" },
   });

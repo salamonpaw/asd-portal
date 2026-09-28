@@ -1,28 +1,19 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { createPartnerProject } from "@/lib/project-create";
 import { NextResponse } from "next/server";
+import { createPartnerProject } from "@/lib/project-create";
+import { apiUser, PARTNER_ROLES, UserError } from "@/lib/authz";
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "PARTNER") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const user = await apiUser(...PARTNER_ROLES);
+  if (user instanceof NextResponse) return user;
+  if (!user.partnerId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const partnerId = session.user.partnerId;
-  if (!partnerId) {
-    return NextResponse.json({ error: "No partnerId in session" }, { status: 401 });
-  }
-
-  const body = await req.json();
-
+  const body = await req.json().catch(() => ({}));
   try {
-    const project = await createPartnerProject({ partnerId, input: body });
+    const project = await createPartnerProject({ partnerId: user.partnerId, input: body });
     return NextResponse.json(project, { status: 201 });
   } catch (err) {
-    if ((err as Error).message === "Partner not found") {
-      return NextResponse.json({ error: "Partner not found" }, { status: 404 });
-    }
-    throw err;
+    if (err instanceof UserError) return NextResponse.json({ error: err.message }, { status: 400 });
+    console.error("[api/projects POST]", err);
+    return NextResponse.json({ error: "Nie udało się zapisać zgłoszenia." }, { status: 500 });
   }
 }

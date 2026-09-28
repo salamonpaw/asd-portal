@@ -1,10 +1,14 @@
 "use server";
 
+import { errMsg } from "@/lib/authz";
+
+import { safeHttpUrl } from "@/lib/url";
+import { storedName, candidatePaths } from "@/lib/marketing-files";
+
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { unlink } from "fs/promises";
-import path from "path";
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
@@ -20,12 +24,14 @@ export async function createMaterialLink(input: { filename: string; url: string;
   if (!input.filename?.trim() || !input.url?.trim()) {
     return { success: false, error: "Nazwa i link są wymagane" };
   }
+  const url = safeHttpUrl(input.url);
+  if (!url) return { success: false, error: "Link musi zaczynać się od http:// lub https://" };
 
   try {
     const material = await db.marketingMaterial.create({
       data: {
         filename: input.filename.trim(),
-        url: input.url.trim(),
+        url,
         type: input.type || "OTHER",
         createdBy: admin.email ?? "admin",
       },
@@ -33,7 +39,7 @@ export async function createMaterialLink(input: { filename: string; url: string;
     return { success: true, data: material };
   } catch (error) {
     console.error("[createMaterialLink]", error);
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: "Nie udało się zapisać linku." };
   }
 }
 
@@ -45,7 +51,7 @@ export async function toggleMaterialActive(materialId: string, isActive: boolean
     return { success: true };
   } catch (error) {
     console.error("[toggleMaterialActive]", error);
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errMsg(error) };
   }
 }
 
@@ -55,15 +61,15 @@ export async function deleteMaterial(materialId: string) {
   try {
     const material = await db.marketingMaterial.findUnique({ where: { id: materialId } });
     // Usuń plik z dysku jeśli to plik lokalny (nie link zewnętrzny)
-    if (material?.url && material.url.startsWith("/uploads/")) {
-      const abs = path.join(process.cwd(), "public", material.url.replace(/^\//, ""));
-      await unlink(abs).catch(() => {});
+    const name = material ? storedName(material.url) : null;
+    if (name) {
+      for (const abs of candidatePaths(name)) await unlink(abs).catch(() => {});
     }
     await db.marketingMaterial.delete({ where: { id: materialId } });
     return { success: true };
   } catch (error) {
     console.error("[deleteMaterial]", error);
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errMsg(error) };
   }
 }
 
@@ -82,24 +88,7 @@ export async function setMaterialAccess(materialId: string, partnerIds: string[]
     return { success: true };
   } catch (error) {
     console.error("[setMaterialAccess]", error);
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errMsg(error) };
   }
 }
 
-export async function getMaterialsAdmin() {
-  const admin = await requireAdmin();
-  if (!admin) return { success: false, error: "Brak dostępu", data: null };
-  try {
-    const [materials, partners] = await Promise.all([
-      db.marketingMaterial.findMany({
-        orderBy: { createdAt: "desc" },
-        include: { partnerAccess: { select: { partnerId: true } } },
-      }),
-      db.partner.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
-    ]);
-    return { success: true, data: { materials, partners } };
-  } catch (error) {
-    console.error("[getMaterialsAdmin]", error);
-    return { success: false, error: (error as Error).message, data: null };
-  }
-}

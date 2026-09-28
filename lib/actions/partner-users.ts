@@ -1,5 +1,7 @@
 "use server";
 
+import { errMsg } from "@/lib/authz";
+
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -14,19 +16,26 @@ export async function createPartnerUser(
   | { success: false; error: string }
 > {
   const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return { success: false, error: "Nie zalogowany" };
+  if (!session?.user || !["PARTNER", "PARTNER_ADMIN"].includes(session.user.role)) {
+    return { success: false, error: "Brak dostępu" };
   }
+  if (!name?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email?.trim() ?? "")) {
+    return { success: false, error: "Podaj imię i poprawny e-mail." };
+  }
+  if (!password || password.length < 8) {
+    return { success: false, error: "Hasło musi mieć min. 8 znaków." };
+  }
+  email = email.trim().toLowerCase();
 
-  const partnerId = (session.user as any).partnerId;
+  const partnerId = session.user.partnerId;
   if (!partnerId) {
     return { success: false, error: "Nie jesteś przypisany do partnera" };
   }
 
   try {
     // Check if user already exists
-    const existingUser = await db.user.findUnique({
-      where: { email },
+    const existingUser = await db.user.findFirst({
+      where: { email: { equals: email, mode: "insensitive" } },
     });
 
     if (existingUser) {
@@ -57,17 +66,17 @@ export async function createPartnerUser(
       },
     };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errMsg(error) };
   }
 }
 
 export async function getPartnerUsers() {
   const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return { success: false, error: "Nie zalogowany", data: [] };
+  if (!session?.user || !["PARTNER", "PARTNER_ADMIN"].includes(session.user.role)) {
+    return { success: false, error: "Brak dostępu", data: [] };
   }
 
-  const partnerId = (session.user as any).partnerId;
+  const partnerId = session.user.partnerId;
   if (!partnerId) {
     return { success: false, error: "Nie jesteś przypisany do partnera", data: [] };
   }
@@ -89,6 +98,6 @@ export async function getPartnerUsers() {
 
     return { success: true, data: users };
   } catch (error) {
-    return { success: false, error: (error as Error).message, data: [] };
+    return { success: false, error: errMsg(error), data: [] };
   }
 }

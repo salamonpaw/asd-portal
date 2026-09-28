@@ -1,5 +1,9 @@
 "use server";
 
+import { errMsg } from "@/lib/authz";
+
+import { getSessionUser, AuthError } from "@/lib/authz";
+
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -34,7 +38,7 @@ export async function setPartnerProductDiscount(
 
     return { success: true, data: discount };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errMsg(error) };
   }
 }
 
@@ -62,31 +66,13 @@ export async function verifyPartnerDiscount(
 
     return { success: true, data: discount };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
-  }
-}
-
-export async function getPartnerProductDiscount(
-  partnerId: string,
-  productId: string
-) {
-  try {
-    const discount = await db.partnerProductDiscount.findUnique({
-      where: {
-        partnerId_productId: {
-          partnerId,
-          productId,
-        },
-      },
-    });
-
-    return discount?.discountPercent || 0;
-  } catch {
-    return 0;
+    return { success: false, error: errMsg(error) };
   }
 }
 
 export async function getPartnerDiscounts(partnerId: string) {
+  const __u = await getSessionUser();
+  if (!__u || !["ADMIN", "WAREHOUSE_SPECIALIST"].includes(__u.role)) throw new AuthError();
   try {
     const discounts = await db.partnerProductDiscount.findMany({
       where: { partnerId },
@@ -96,11 +82,13 @@ export async function getPartnerDiscounts(partnerId: string) {
 
     return { success: true, data: discounts };
   } catch (error) {
-    return { success: false, error: (error as Error).message, data: [] };
+    return { success: false, error: errMsg(error), data: [] };
   }
 }
 
 export async function checkPartnerOrderStatus(partnerId: string) {
+  const __u = await getSessionUser();
+  if (!__u || !["ADMIN", "WAREHOUSE_SPECIALIST", "STAFF"].includes(__u.role)) throw new AuthError();
   try {
     const lastOrder = await db.serviceOrder.findFirst({
       where: { partnerId },

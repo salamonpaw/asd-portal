@@ -1,12 +1,10 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requirePageRole } from "@/lib/authz";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { NewProjectForm } from "./NewProjectForm";
 
 export default async function NewProjectPage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
+  const session = { user: await requirePageRole("PARTNER", "PARTNER_ADMIN") };
 
   const partnerId = session.user.partnerId;
   if (!partnerId) redirect("/login");

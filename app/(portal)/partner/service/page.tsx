@@ -3,12 +3,12 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { ServiceOrderClient } from "./ServiceOrderClient";
-import { Icon, EmptyState } from "@/components/ui";
+import { Icon } from "@/components/ui";
 
 export default async function ServicePage() {
   const session = await getServerSession(authOptions);
-  const userRole = (session?.user as any)?.role;
-  const partnerId = (session?.user as any)?.partnerId;
+  const userRole = session?.user?.role;
+  const partnerId = session?.user?.partnerId;
 
   if (!session || (userRole !== "SERVICE_TECHNICIAN" && userRole !== "PARTNER_ADMIN")) {
     redirect("/login");
@@ -23,7 +23,7 @@ export default async function ServicePage() {
       machineTypeId: true,
       machineType: true,
       location: true,
-      image: true,
+      productImages: { where: { deletedAt: null }, orderBy: { uploadedAt: "asc" }, take: 1, select: { filePath: true } },
       sellingPrice: true,
     },
     orderBy: { name: "asc" },
@@ -45,10 +45,10 @@ export default async function ServicePage() {
           discountType: true,
           discountValue: true,
           fulfilledQuantity: true,
-          product: true,
+          product: { select: { id: true, sku: true, name: true } }, // bez cen zakupu
         },
       },
-      warehouseSpecialist: true,
+      warehouseSpecialist: { select: { name: true, email: true } },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -136,8 +136,9 @@ export default async function ServicePage() {
       </div>
 
       <ServiceOrderClient
-        products={products.map(p => ({
+        products={products.map(({ productImages, ...p }) => ({
           ...p,
+          image: productImages[0]?.filePath ?? null,
           sellingPrice: p.sellingPrice ? parseFloat(p.sellingPrice.toString()) : null,
         }))}
         machineTypes={machineTypes}

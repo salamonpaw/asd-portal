@@ -8,7 +8,7 @@ import { AdminProductForm } from "./AdminProductForm";
 export default async function AdminProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await getServerSession(authOptions);
-  const userRole = (session?.user as any)?.role;
+  const userRole = session?.user?.role;
 
   if (!session || userRole !== "ADMIN") {
     redirect("/login");
@@ -16,7 +16,11 @@ export default async function AdminProductPage({ params }: { params: Promise<{ i
 
   const product = await db.product.findUnique({
     where: { id },
-    include: { machineType: true },
+    include: {
+      machineType: true,
+      inventory: { select: { currentStock: true } },
+      productImages: { where: { deletedAt: null, filePath: { startsWith: "http" } }, orderBy: { uploadedAt: "asc" }, select: { filePath: true } },
+    },
   });
 
   if (!product) {
@@ -32,7 +36,7 @@ export default async function AdminProductPage({ params }: { params: Promise<{ i
     orderBy: { name: "asc" },
   });
 
-  const images = product.images ? JSON.parse(product.images) : [];
+  const images = product.productImages.map((i) => i.filePath); // zdjęcia-linki; pliki — w Zdjęciach produktów
 
   return (
     <div style={{ padding: "32px" }}>
@@ -54,7 +58,7 @@ export default async function AdminProductPage({ params }: { params: Promise<{ i
           location: product.location || "",
           serialNumber: product.serialNumber || "",
           supplier: product.supplier || "",
-          inStock: product.inStock,
+          stock: product.inventory?.currentStock ?? 0,
           costPrice: product.costPrice ? parseFloat(product.costPrice.toString()) : null,
           sellingPrice: product.sellingPrice ? parseFloat(product.sellingPrice.toString()) : null,
         }}

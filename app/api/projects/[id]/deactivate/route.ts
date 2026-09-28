@@ -1,17 +1,20 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { deactivateProject } from "@/lib/actions/projects";
-import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
+import { deactivateProject } from "@/lib/actions/projects";
+import { apiUser, PARTNER_ROLES } from "@/lib/authz";
+import { loadProjectFor, stripInternal } from "@/lib/project-access";
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = await apiUser(...PARTNER_ROLES);
+  if (user instanceof NextResponse) return user;
 
   const { id } = await params;
-  const project = await db.project.findUnique({ where: { id }, include: { partner: true } });
-  if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const project = await loadProjectFor(user, id, { partnerOnly: true });
+  if (project instanceof NextResponse) return project;
 
-  const updated = await deactivateProject(id, project.partner.short);
-  return NextResponse.json(updated);
+  if (project.status !== "ACTIVE" && project.status !== "NOPROT") {
+    return NextResponse.json({ error: "Dezaktywować można tylko aktywny projekt." }, { status: 409 });
+  }
+
+  const res = await deactivateProject(id, project.partner.short);
+  return NextResponse.json(res.success ? { ...res, data: stripInternal(res.data, user) } : res);
 }

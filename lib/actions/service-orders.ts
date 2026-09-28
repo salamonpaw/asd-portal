@@ -1,5 +1,7 @@
 "use server";
 
+import { errMsg } from "@/lib/authz";
+
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -82,7 +84,7 @@ export async function createServiceOrder(
     revalidatePath("/warehouse");
     return { success: true, data: order };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errMsg(error) };
   }
 }
 
@@ -97,8 +99,8 @@ export async function updateServiceOrder(
 ): Promise<ActionResult<ServiceOrder & { items: any[] }>> {
   try {
     const session = await getServerSession(authOptions);
-    if (!session) {
-      return { success: false, error: "Nie zalogowany" };
+    if (!session || !["WAREHOUSE_SPECIALIST", "ADMIN"].includes(session.user.role)) {
+      return { success: false, error: "Brak dostępu" };
     }
 
     const changedBy = session.user.email;
@@ -147,24 +149,6 @@ export async function updateServiceOrder(
     revalidatePath("/warehouse");
     return { success: true, data: order };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
-  }
-}
-
-export async function getServiceOrders(filter?: { partnerId?: string; status?: ServiceOrderStatus }): Promise<ActionResult<ServiceOrder[]>> {
-  try {
-    const orders = await db.serviceOrder.findMany({
-      where: filter,
-      include: {
-        items: { include: { product: true } },
-        technician: true,
-        partner: true,
-        warehouseSpecialist: true,
-      },
-      orderBy: { createdAt: "desc" },
-    });
-    return { success: true, data: orders };
-  } catch (error) {
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errMsg(error) };
   }
 }

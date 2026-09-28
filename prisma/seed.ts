@@ -614,6 +614,7 @@ async function main() {
 
   // Import products
   for (const productData of seedData) {
+    const image = productData.images?.[0];
     await db.product.upsert({
       where: { sku: productData.sku },
       update: {},
@@ -623,12 +624,16 @@ async function main() {
         description: productData.description || null,
         machineTypeId: machineType.id,
         location: null,
-        image: productData.images?.[0] || null,
         serialNumber: null,
         supplier: null,
-        inStock: null,
         costPrice: null,
         sellingPrice: null,
+        // zdjęcia w tabeli ProductImage (pierwsze = główne)
+        ...(image && {
+          productImages: {
+            create: { filePath: image, fileName: image.replace(/^.*\//, ""), mimeType: "image/jpeg", fileSize: 0, uploadedBy: "seed" },
+          },
+        }),
       },
     });
   }

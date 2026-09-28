@@ -7,8 +7,10 @@ import { PageHead, Field } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
 import type { Partner, Rep, User } from "@prisma/client";
 
+const PARTNER_BOUND: string[] = ["PARTNER", "PARTNER_ADMIN", "SERVICE_TECHNICIAN"];
+
 export function UserForm({ user, partners, reps }: {
-  user?: User;
+  user?: Omit<User, "password">;
   partners: Partner[];
   reps: Rep[];
 }) {
@@ -39,7 +41,7 @@ export function UserForm({ user, partners, reps }: {
       email: f.email.trim(),
       role: f.role,
       ...(f.password ? { password: f.password } : {}),
-      ...(f.role === "PARTNER" && f.partnerId ? { partnerId: f.partnerId } : {}),
+      ...(PARTNER_BOUND.includes(f.role) && f.partnerId ? { partnerId: f.partnerId } : {}),
       ...(f.role === "STAFF" && f.repId ? { repId: f.repId } : {}),
     };
 
@@ -83,18 +85,19 @@ export function UserForm({ user, partners, reps }: {
 
         <Field label="Rola" req>
           <div className="chips">
-            {(["WAREHOUSE_SPECIALIST", "SERVICE_TECHNICIAN", "PARTNER", "STAFF", "ADMIN"] as const).map((r) => (
+            {(["WAREHOUSE_SPECIALIST", "SERVICE_TECHNICIAN", "PARTNER", "PARTNER_ADMIN", "STAFF", "ADMIN"] as const).map((r) => (
               <button key={r} className={`chip box ${f.role === r ? "sel" : ""}`} onClick={() => set("role", r)}>
                 {r === "WAREHOUSE_SPECIALIST" ? "Magazynier" :
                  r === "SERVICE_TECHNICIAN" ? "Serwisant" :
                  r === "PARTNER" ? "Partner" :
+                 r === "PARTNER_ADMIN" ? "Partner (admin)" :
                  r === "STAFF" ? "Handlowiec" : "Admin"}
               </button>
             ))}
           </div>
         </Field>
 
-        {f.role === "PARTNER" && (
+        {PARTNER_BOUND.includes(f.role) && (
           <Field label="Przypisz do Partnera" hint="Wybierz firmę partnera">
             <select className="select" value={f.partnerId} onChange={(e) => set("partnerId", e.target.value)}>
               <option value="">— brak powiązania —</option>

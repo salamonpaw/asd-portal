@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Icon } from "@/components/ui/Icon";
 import { setPartnerProductDiscount, verifyPartnerDiscount } from "@/lib/actions/partner-discounts";
 
 interface Product {

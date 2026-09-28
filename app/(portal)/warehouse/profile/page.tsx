@@ -1,5 +1,4 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requirePageRole } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { PageHead } from "@/components/ui";
@@ -7,8 +6,7 @@ import { ChangePasswordCard } from "@/components/portal/ChangePasswordCard";
 import { UserProfileEditCard } from "@/components/portal/UserProfileEditCard";
 
 export default async function WarehouseProfilePage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
+  const session = { user: await requirePageRole("WAREHOUSE_SPECIALIST", "ADMIN") };
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },

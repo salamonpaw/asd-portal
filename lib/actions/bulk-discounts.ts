@@ -1,5 +1,7 @@
 "use server";
 
+import { errMsg } from "@/lib/authz";
+
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -15,7 +17,7 @@ export async function applyBulkDiscount(
   input: BulkDiscountInput
 ): Promise<ActionResult<{ created: number; updated: number }>> {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "ADMIN") {
+  if (!session?.user || session.user.role !== "ADMIN") {
     return { success: false, error: "Brak dostępu" };
   }
 
@@ -64,7 +66,7 @@ export async function applyBulkDiscount(
 
     return { success: true, data: { created, updated } };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errMsg(error) };
   }
 }
 
@@ -72,7 +74,7 @@ export async function getPartnerDiscounts(
   partnerId: string
 ): Promise<ActionResult<any>> {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "ADMIN") {
+  if (!session?.user || session.user.role !== "ADMIN") {
     return { success: false, error: "Brak dostępu" };
   }
 
@@ -86,13 +88,13 @@ export async function getPartnerDiscounts(
 
     return { success: true, data: discounts };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errMsg(error) };
   }
 }
 
 export async function getAllPartners(): Promise<ActionResult<any>> {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "ADMIN") {
+  if (!session?.user || session.user.role !== "ADMIN") {
     return { success: false, error: "Brak dostępu" };
   }
 
@@ -104,13 +106,13 @@ export async function getAllPartners(): Promise<ActionResult<any>> {
 
     return { success: true, data: partners };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errMsg(error) };
   }
 }
 
 export async function getAllProducts(): Promise<ActionResult<any>> {
   const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "ADMIN") {
+  if (!session?.user || session.user.role !== "ADMIN") {
     return { success: false, error: "Brak dostępu" };
   }
 
@@ -122,26 +124,7 @@ export async function getAllProducts(): Promise<ActionResult<any>> {
 
     return { success: true, data: products };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errMsg(error) };
   }
 }
 
-export async function deleteDiscount(
-  partnerId: string,
-  productId: string
-): Promise<ActionResult<null>> {
-  const session = await getServerSession(authOptions);
-  if (!session?.user || (session.user as any).role !== "ADMIN") {
-    return { success: false, error: "Brak dostępu" };
-  }
-
-  try {
-    await db.partnerProductDiscount.delete({
-      where: { partnerId_productId: { partnerId, productId } },
-    });
-
-    return { success: true, data: null };
-  } catch (error) {
-    return { success: false, error: (error as Error).message };
-  }
-}

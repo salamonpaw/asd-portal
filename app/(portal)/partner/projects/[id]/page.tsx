@@ -1,5 +1,4 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requirePageRole } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { redirect, notFound } from "next/navigation";
 import { ProjectDetailClient } from "@/components/portal/ProjectDetailClient";
@@ -8,8 +7,7 @@ import { DEFAULT_REMINDERS } from "@/lib/reminder-days";
 import { ProjectSalesRepCard } from "@/components/portal/ProjectSalesRepCard";
 
 export default async function PartnerProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
+  const session = { user: await requirePageRole("PARTNER", "PARTNER_ADMIN") };
 
   const partnerId = session.user.partnerId;
   if (!partnerId) redirect("/partner/projects");
@@ -22,16 +20,15 @@ export default async function PartnerProjectDetailPage({ params }: { params: Pro
       partner: { include: { markets: true } },
       rep: true,
       history: { orderBy: { date: "asc" } },
-      comments: { include: { user: true }, orderBy: { createdAt: "asc" } },
+      comments: { where: { internal: false }, include: { user: { select: { id: true, name: true } } }, orderBy: { createdAt: "asc" } },
     },
   });
 
   if (!project) notFound();
   if (project.partnerId !== partnerId) redirect("/partner/projects");
 
-  const conflict = project.conflictsWith
-    ? await db.project.findUnique({ where: { id: project.conflictsWith }, include: { partner: true } })
-    : null;
+  // Dane projektu innego partnera (konflikt NIP) nie trafiają do przeglądarki partnera
+  const conflict = null;
 
   const [partnerActiveDiscount, reps, reminderSettings] = await Promise.all([
     getPartnerEffectiveDiscount(partnerId),

@@ -7,7 +7,7 @@ import { ProductsClient } from "./ProductsClient";
 
 export default async function ProductsPage() {
   const session = await getServerSession(authOptions);
-  const userRole = (session?.user as any)?.role;
+  const userRole = session?.user?.role;
 
   if (!session || (userRole !== "ADMIN" && userRole !== "WAREHOUSE_SPECIALIST")) {
     redirect("/login");

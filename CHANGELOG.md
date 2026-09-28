@@ -5,6 +5,81 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0] - 2026-09-28
+
+Audyt bezpieczeństwa, refaktoryzacja i porządki. Każda poprawka zweryfikowana testem
+ataku (partner innej firmy / serwisant / bez logowania) oraz testem regresji wszystkich ról.
+
+### Bezpieczeństwo — krytyczne
+- Strony `/staff/projects/[id]` i `/staff/partners/[id]` dostępne tylko dla ASD
+  (wcześniej każdy zalogowany widział projekty i dane wszystkich partnerów)
+- API projektów sprawdza właściciela: edycja, przedłużenie, dezaktywacja, komentarze,
+  zamówienia — tylko własne projekty partnera; akcje handlowca tylko dla ASD
+- Akcje serwera z kontrolą uprawnień: typy automatów (usunięcie kasowało produkty —
+  możliwe nawet bez logowania), zamówienia serwisowe (ceny/status), rabaty (handlowiec
+  tylko swoich partnerów), stany i ceny zakupu, zakładanie kont serwisantów
+- Komentarze wewnętrzne ASD i dane konfliktującego projektu nie trafiają do przeglądarki partnera
+- Hash hasła globalnie wykluczony z zapytań do bazy (wcześniej trafiał do przeglądarki
+  m.in. z komentarzami i danymi magazyniera)
+- Ceny zakupu produktów nie są wysyłane do partnera/serwisanta
+
+### Bezpieczeństwo — pozostałe
+- Sesja 8 h bez aktywności (maks. 12 h), dane konta czytane z bazy przy każdym żądaniu:
+  usunięcie konta, zmiana roli lub hasła działa natychmiast (wylogowanie wszystkich sesji)
+- Blokada logowania na 15 min po 5 błędnych hasłach; e-mail bez rozróżniania wielkości liter;
+  stały czas odpowiedzi (brak sprawdzania, czy konto istnieje)
+- Usunięto otwarte przekierowanie po logowaniu (`callbackUrl` na obcą domenę)
+- Upload zdjęć (avatar, produkty): typ rozpoznawany z zawartości pliku — nie da się
+  wgrać HTML/SVG udającego obrazek
+- Materiały marketingowe przeniesione poza `public/` — pobieranie tylko po zalogowaniu,
+  z kontrolą dostępu partnera, zawsze jako załącznik
+- Linki (kalendarz, materiały, zdjęcia) tylko `http(s)` — blokada `javascript:`
+- Nagłówki bezpieczeństwa: CSP, X-Frame-Options, nosniff, Referrer-Policy (link `/r/…`
+  handlowca nie wycieka), Permissions-Policy; usunięto `X-Powered-By`
+- Przekierowania niezależne od nagłówka `Host`; token crona porównywany w stałym czasie
+- Komunikaty błędów bez szczegółów bazy danych
+- Treść maili escapowana (brak wstrzykiwania HTML przez dane z formularzy)
+- Zmiana e-maila w profilu wymaga hasła; hasła min. 8 znaków
+- Losowy (kryptograficznie) token formularza handlowca już przy tworzeniu
+- Walidacja danych wejściowych w API projektów i kont
+- Podpowiedź kont testowych na stronie logowania tylko w trybie deweloperskim
+
+### Naprawione
+- Admin może akceptować/odrzucać/zamykać projekty (wcześniej błąd uprawnień);
+  admin widzi pulpit i projekty wszystkich partnerów
+- Numer projektu z bieżącego roku (był wpisany na sztywno „2026”); brak kolizji przy
+  jednoczesnych zgłoszeniach
+- Partner mógł „przedłużyć” projekt w dowolnym statusie (np. odrzucony) i dostać ochronę
+  bez weryfikacji ASD — teraz tylko wygasły lub wygasający w 30 dni i gdy klient nie ma
+  aktywnego projektu innego partnera
+- Admin tworzący konto `PARTNER_ADMIN`/serwisanta gubił przypisanie do partnera
+- Komunikat „Nieprawidłowy e-mail lub hasło” nie wyświetlał się (strona się przeładowywała)
+- Formularz zgłoszenia: kliknięcie tuż po wpisaniu NIP „nie łapało” (przesunięcie układu)
+- Strona produktu w magazynie wywalała się przy więcej niż zerze zdjęć
+- Martwe linki: `/staff/orders`, `/warehouse/orders`, `/staff`
+- Serwisant nie widzi już projektów partnera (tylko swoje zamówienia części)
+- Mail do handlowca ASD o nowym zgłoszeniu projektu (szablon istniał, nie był wysyłany)
+
+### Zmienione (refaktoryzacja)
+- Jedno źródło stanu magazynowego: `Inventory` (usunięto `Product.inStock`);
+  zmiana stanu z edycji produktu zapisuje historię
+- Jedna tabela zdjęć: `ProductImage` (usunięto `Product.image` i `Product.images`);
+  pierwsze zdjęcie = główne. Migracja danych automatycznie w `deploy.sh`
+  (`prisma/sql/001-product-consolidation.sql`, bezpieczna do wielokrotnego uruchomienia)
+- Jeden system wysyłki maili (stary moduł korzysta z SMTP z panelu admina)
+- Wspólne helpery uprawnień (`lib/authz.ts`), dostępu do projektu, walidacji
+- `middleware.ts` → `proxy.ts` (konwencja Next.js 16)
+- Poprawne typy ról w sesji — usunięto 50 obejść `as any`
+- Usunięto: 27 nieużywanych funkcji, 4 nieużywane komponenty/pliki, zdublowane
+  `checkPartnerOrderStatus` i obliczanie rabatu, paczkę `@auth/prisma-adapter`
+  (alert bezpieczeństwa „critical”)
+
+### Uwaga przy wdrożeniu
+- Po wdrożeniu wszyscy użytkownicy zostaną jednorazowo wylogowani
+- `CRON_SECRET_TOKEN` musi mieć min. 16 znaków
+
+---
+
 ## [0.19.0] - 2026-09-28
 
 ### Dodane

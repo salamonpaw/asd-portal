@@ -6,13 +6,13 @@ import { useRouter } from "next/navigation";
 import { Badge, KV, SectionCard, Modal, Field, Avatar, Timeline } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
 import { fmtDate, daysUntil } from "@/lib/dates";
-import type { Comment, Market, Partner, Project, ProjectHistory, Rep, User } from "@prisma/client";
+import type { Comment, Market, Partner, Project, ProjectHistory, Rep } from "@prisma/client";
 
 type FullProject = Project & {
   partner: Partner & { markets: Market[] };
   rep: Rep;
   history: ProjectHistory[];
-  comments: (Comment & { user: User })[];
+  comments: (Comment & { user: { id: string; name: string } })[];
 };
 
 const PROCUREMENT_LABELS: Record<string, string> = { BIEZACA: "Bieżąca sprzedaż", ZAPYTANIE: "Zapytanie ofertowe", PRZETARG: "Przetarg" };

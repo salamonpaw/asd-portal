@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Icon } from "@/components/ui/Icon";
 import { updateBulkInventory, getInventoryHistory } from "@/lib/actions/inventory";
 import { getInventoryWithOrders } from "@/lib/actions/warehouse-inventory";
 
@@ -22,7 +21,6 @@ interface Inventory {
     id: string;
     sku: string;
     name: string;
-    inStock: number | null;
   };
   audits: InventoryAudit[];
 }

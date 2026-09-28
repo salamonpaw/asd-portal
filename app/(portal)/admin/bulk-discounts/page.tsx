@@ -8,7 +8,7 @@ import { BulkDiscountsClient } from "./BulkDiscountsClient";
 
 export default async function BulkDiscountsPage() {
   const session = await getServerSession(authOptions);
-  const userRole = (session?.user as any)?.role;
+  const userRole = session?.user?.role;
 
   if (!session || userRole !== "ADMIN") {
     redirect("/login");

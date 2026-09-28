@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { createOrderTemplate, updateOrderTemplate, deleteOrderTemplate, getPartnerTemplates } from "@/lib/actions/order-templates";
-import { db } from "@/lib/db";
 
 interface TemplateItem {
   productId: string;

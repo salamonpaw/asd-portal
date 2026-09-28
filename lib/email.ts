@@ -1,16 +1,7 @@
-import nodemailer from "nodemailer";
+import { sendMail } from "@/lib/mailer";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST ?? "smtp.gmail.com",
-  port: parseInt(process.env.SMTP_PORT ?? "587"),
-  secure: process.env.SMTP_SECURE === "true",
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
-
-const FROM = process.env.SMTP_FROM ?? "ASD Partner Portal <portal@asdsystems.eu>";
+export const esc = (s: string | null | undefined) =>
+  String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 
 export function base(content: string) {
   return `<!DOCTYPE html>
@@ -51,18 +42,18 @@ export async function sendOrderCreated(opts: {
   orderId: string; orderCode: string; projectId: string;
   customerName: string; portalUrl: string;
 }) {
-  await transporter.sendMail({
-    from: FROM, to: opts.to,
+  await sendMail({
+    to: opts.to,
     subject: `📦 Nowe zamówienie — ${opts.orderCode}`,
     html: base(`
       <h1>Nowe zamówienie złożone</h1>
-      <p>Partner <b>${opts.partnerName}</b> złożył nowe zamówienie.</p>
+      <p>Partner <b>${esc(opts.partnerName)}</b> złożył nowe zamówienie.</p>
       <div class="meta">
-        <div><b>Kod zamówienia:</b> <span style="font-family:monospace;font-weight:700">${opts.orderCode}</span></div>
-        <div><b>Projekt:</b> ${opts.customerName}</div>
-        <div><b>Nr projektu:</b> ${opts.projectId}</div>
+        <div><b>Kod zamówienia:</b> <span style="font-family:monospace;font-weight:700">${esc(opts.orderCode)}</span></div>
+        <div><b>Projekt:</b> ${esc(opts.customerName)}</div>
+        <div><b>Nr projektu:</b> ${esc(opts.projectId)}</div>
       </div>
-      <a href="${opts.portalUrl}/partner/orders/${opts.orderId}" class="btn">Zobacz szczegóły zamówienia →</a>
+      <a href="${esc(opts.portalUrl)}/partner/orders/${esc(opts.orderId)}" class="btn">Zobacz szczegóły zamówienia →</a>
       <p style="font-size:13px;color:#767B86">Zamówienie czeka na uzupełnienie szczegółów i realizację.</p>
     `),
   });
@@ -72,18 +63,18 @@ export async function sendProjectSubmitted(opts: {
   to: string; repName: string; partnerName: string;
   projectId: string; customerName: string; customerTaxId: string; portalUrl: string;
 }) {
-  await transporter.sendMail({
-    from: FROM, to: opts.to,
+  await sendMail({
+    to: opts.to,
     subject: `Nowe zgłoszenie projektu — ${opts.customerName}`,
     html: base(`
       <h1>Nowe zgłoszenie projektu</h1>
-      <p>Partner <b>${opts.partnerName}</b> przesłał nowe zgłoszenie do weryfikacji.</p>
+      <p>Partner <b>${esc(opts.partnerName)}</b> przesłał nowe zgłoszenie do weryfikacji.</p>
       <div class="meta">
-        <div><b>Klient końcowy:</b> ${opts.customerName}</div>
-        <div><b>NIP / Tax ID:</b> ${opts.customerTaxId}</div>
-        <div><b>Nr projektu:</b> ${opts.projectId}</div>
+        <div><b>Klient końcowy:</b> ${esc(opts.customerName)}</div>
+        <div><b>NIP / Tax ID:</b> ${esc(opts.customerTaxId)}</div>
+        <div><b>Nr projektu:</b> ${esc(opts.projectId)}</div>
       </div>
-      <a href="${opts.portalUrl}/staff/projects/${opts.projectId}" class="btn">Otwórz zgłoszenie →</a>
+      <a href="${esc(opts.portalUrl)}/staff/projects/${esc(opts.projectId)}" class="btn">Otwórz zgłoszenie →</a>
       <p style="font-size:13px;color:#767B86">Zaloguj się do portalu, aby zaakceptować lub odrzucić zgłoszenie.</p>
     `),
   });
@@ -93,20 +84,20 @@ export async function sendProjectAccepted(opts: {
   to: string; partnerContact: string; projectId: string;
   customerName: string; expiresAt: string; portalUrl: string;
 }) {
-  await transporter.sendMail({
-    from: FROM, to: opts.to,
+  await sendMail({
+    to: opts.to,
     subject: `✅ Projekt zaakceptowany — ${opts.customerName}`,
     html: base(`
       <h1>Projekt zaakceptowany</h1>
-      <p>Cześć, <b>${opts.partnerContact}</b>!</p>
-      <p>Twój projekt dla klienta <b>${opts.customerName}</b> został zaakceptowany przez Handlowca ASD Systems.</p>
+      <p>Cześć, <b>${esc(opts.partnerContact)}</b>!</p>
+      <p>Twój projekt dla klienta <b>${esc(opts.customerName)}</b> został zaakceptowany przez Handlowca ASD Systems.</p>
       <div class="meta">
-        <div><b>Nr projektu:</b> ${opts.projectId}</div>
-        <div><b>Ochrona do:</b> <b style="color:#1E8A5A">${opts.expiresAt}</b></div>
+        <div><b>Nr projektu:</b> ${esc(opts.projectId)}</div>
+        <div><b>Ochrona do:</b> <b style="color:#1E8A5A">${esc(opts.expiresAt)}</b></div>
       </div>
       <span class="badge badge-ok">Aktywny – chroniony</span>
       <br><br>
-      <a href="${opts.portalUrl}/partner/projects/${opts.projectId}" class="btn">Zobacz projekt →</a>
+      <a href="${esc(opts.portalUrl)}/partner/projects/${esc(opts.projectId)}" class="btn">Zobacz projekt →</a>
     `),
   });
 }
@@ -115,18 +106,18 @@ export async function sendProjectRejected(opts: {
   to: string; partnerContact: string; projectId: string;
   customerName: string; reason: string; portalUrl: string;
 }) {
-  await transporter.sendMail({
-    from: FROM, to: opts.to,
+  await sendMail({
+    to: opts.to,
     subject: `Projekt odrzucony — ${opts.customerName}`,
     html: base(`
       <h1>Projekt odrzucony</h1>
-      <p>Cześć, <b>${opts.partnerContact}</b>!</p>
-      <p>Zgłoszenie projektu dla klienta <b>${opts.customerName}</b> zostało odrzucone.</p>
+      <p>Cześć, <b>${esc(opts.partnerContact)}</b>!</p>
+      <p>Zgłoszenie projektu dla klienta <b>${esc(opts.customerName)}</b> zostało odrzucone.</p>
       <div class="meta">
-        <div><b>Nr projektu:</b> ${opts.projectId}</div>
-        <div><b>Powód:</b> ${opts.reason}</div>
+        <div><b>Nr projektu:</b> ${esc(opts.projectId)}</div>
+        <div><b>Powód:</b> ${esc(opts.reason)}</div>
       </div>
-      <a href="${opts.portalUrl}/partner/projects/${opts.projectId}" class="btn">Zobacz projekt →</a>
+      <a href="${esc(opts.portalUrl)}/partner/projects/${esc(opts.projectId)}" class="btn">Zobacz projekt →</a>
       <p style="font-size:13px;color:#767B86">Masz pytania? Skontaktuj się ze swoim Handlowcem ASD.</p>
     `),
   });
@@ -136,15 +127,15 @@ export async function sendNeedInfo(opts: {
   to: string; partnerContact: string; projectId: string;
   customerName: string; message: string; portalUrl: string;
 }) {
-  await transporter.sendMail({
-    from: FROM, to: opts.to,
+  await sendMail({
+    to: opts.to,
     subject: `Uzupełnij dane projektu — ${opts.customerName}`,
     html: base(`
       <h1>Prośba o uzupełnienie danych</h1>
-      <p>Cześć, <b>${opts.partnerContact}</b>!</p>
-      <p>Handlowiec ASD Systems prosi o uzupełnienie danych projektu dla klienta <b>${opts.customerName}</b>.</p>
-      <div class="meta"><b>Wiadomość od Handlowca:</b><br><br>${opts.message}</div>
-      <a href="${opts.portalUrl}/partner/projects/${opts.projectId}/edit" class="btn">Uzupełnij dane →</a>
+      <p>Cześć, <b>${esc(opts.partnerContact)}</b>!</p>
+      <p>Handlowiec ASD Systems prosi o uzupełnienie danych projektu dla klienta <b>${esc(opts.customerName)}</b>.</p>
+      <div class="meta"><b>Wiadomość od Handlowca:</b><br><br>${esc(opts.message)}</div>
+      <a href="${esc(opts.portalUrl)}/partner/projects/${esc(opts.projectId)}/edit" class="btn">Uzupełnij dane →</a>
     `),
   });
 }

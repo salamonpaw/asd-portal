@@ -6,7 +6,7 @@ import { WarehouseOrdersClient } from "./WarehouseOrdersClient";
 
 export default async function WarehousePage() {
   const session = await getServerSession(authOptions);
-  const userRole = (session?.user as any)?.role;
+  const userRole = session?.user?.role;
 
   if (!session || userRole !== "WAREHOUSE_SPECIALIST") {
     redirect("/login");

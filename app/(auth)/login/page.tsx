@@ -2,12 +2,10 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { Logo } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -18,18 +16,15 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const res = await signIn("credentials", {
-      email,
-      password,
-      redirect: true,
-      callbackUrl: "/",
-    });
+    const res = await signIn("credentials", { email, password, redirect: false });
 
-    setLoading(false);
-
-    if (res?.error) {
-      setError("Nieprawidłowy e-mail lub hasło.");
+    if (!res || res.error) {
+      setLoading(false);
+      setError(res?.error?.startsWith("Zbyt wiele") ? res.error : "Nieprawidłowy e-mail lub hasło.");
+      return;
     }
+    // "/" → proxy przekieruje na pulpit właściwy dla roli
+    window.location.assign("/");
   }
 
   return (
@@ -92,11 +87,14 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div style={{ marginTop: 28, padding: 16, borderRadius: "var(--r)", background: "var(--surface-3)", fontSize: 13, color: "var(--ink-3)" }}>
-            <strong style={{ color: "var(--ink-2)" }}>Konta testowe:</strong><br />
-            Partner: p.nowak@vendmax.pl / demo1234<br />
-            Handlowiec: m.kowalczyk@asdsystems.pl / demo1234
-          </div>
+          {/* Podpowiedź kont demo — tylko w trybie deweloperskim, nigdy na produkcji */}
+          {process.env.NODE_ENV === "development" && (
+            <div style={{ marginTop: 28, padding: 16, borderRadius: "var(--r)", background: "var(--surface-3)", fontSize: 13, color: "var(--ink-3)" }}>
+              <strong style={{ color: "var(--ink-2)" }}>Konta testowe:</strong><br />
+              Partner: p.nowak@vendmax.pl / demo1234<br />
+              Handlowiec: m.kowalczyk@asdsystems.pl / demo1234
+            </div>
+          )}
         </div>
       </div>
     </div>

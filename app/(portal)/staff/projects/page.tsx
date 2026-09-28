@@ -1,18 +1,13 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requirePageRole, staffScope } from "@/lib/authz";
 import { db } from "@/lib/db";
-import { redirect } from "next/navigation";
 import { StaffProjectsClient } from "./StaffProjectsClient";
 
 export default async function StaffProjectsPage() {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
-
-  const repId = session.user.repId;
-  if (!repId) redirect("/login");
+  const user = await requirePageRole("STAFF", "ADMIN");
+  const scope = staffScope(user);
 
   const projects = await db.project.findMany({
-    where: { repId },
+    where: scope,
     include: { partner: true, rep: true },
     orderBy: { createdAt: "desc" },
   });

@@ -1,33 +1,38 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { Role } from "@prisma/client";
-import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import { db } from "@/lib/db";
+import { apiUser } from "@/lib/authz";
+import { parseUserInput } from "@/lib/user-input";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const admin = await apiUser("ADMIN");
+  if (admin instanceof NextResponse) return admin;
 
   try {
     const { id } = await params;
-    const { name, email, password, role, partnerId, repId } = await req.json();
+    const parsed = parseUserInput(await req.json(), { requirePassword: false });
+    if ("error" in parsed) return NextResponse.json({ error: parsed.error }, { status: 400 });
+    const { password, ...data } = parsed.data;
 
-    const data: Record<string, unknown> = {
-      name: name?.trim(),
-      email: email?.trim(),
-      role: role as Role,
-      partnerId: role === "PARTNER" && partnerId ? partnerId : null,
-      repId: role === "STAFF" && repId ? repId : null,
-    };
-
-    if (password?.trim()) {
-      data.password = await bcrypt.hash(password.trim(), 10);
+    const current = await db.user.findUnique({ where: { id } });
+    if (!current) return NextResponse.json({ error: "Nie znaleziono użytkownika." }, { status: 404 });
+    if (id === admin.id && data.role !== "ADMIN") {
+      return NextResponse.json({ error: "Nie możesz odebrać sobie roli administratora." }, { status: 400 });
     }
+    const dup = await db.user.findFirst({ where: { email: { equals: data.email, mode: "insensitive" }, id: { not: id } } });
+    if (dup) return NextResponse.json({ error: "Ten e-mail ma już inne konto." }, { status: 409 });
 
-    const user = await db.user.update({ where: { id }, data });
+    // Zmiana hasła / roli / przypisania → wylogowanie wszystkich sesji tego użytkownika
+    const revoke = !!password || current.role !== data.role || current.partnerId !== data.partnerId || current.repId !== data.repId;
+
+    const user = await db.user.update({
+      where: { id },
+      data: {
+        ...data,
+        ...(password ? { password: await bcrypt.hash(password, 10) } : {}),
+        ...(revoke ? { sessionVersion: { increment: 1 } } : {}),
+      },
+    });
     return NextResponse.json({ id: user.id, email: user.email });
   } catch (err) {
     console.error("[admin/users PATCH]", err);
@@ -35,18 +40,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await apiUser("ADMIN");
+  if (admin instanceof NextResponse) return admin;
 
   const { id } = await params;
-  const currentUserId = session.user.id as string;
-  if (id === currentUserId) {
-    return NextResponse.json({ error: "Nie możesz usunąć własnego konta." }, { status: 400 });
-  }
+  if (id === admin.id) return NextResponse.json({ error: "Nie możesz usunąć własnego konta." }, { status: 400 });
 
+  // Usunięcie konta = sesje tracą ważność przy najbliższym żądaniu (callback jwt)
   await db.user.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

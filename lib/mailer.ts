@@ -27,7 +27,7 @@ function fromEnv(): Resolved {
 }
 
 /** Kolejność: SMTP partnera (jeśli włączony) → globalny SMTP ASD z panelu admina → zmienne .env */
-export async function resolveTransport(partnerId?: string | null): Promise<Resolved> {
+async function resolveTransport(partnerId?: string | null): Promise<Resolved> {
   if (partnerId) {
     const own = await db.mailSettings.findUnique({ where: { partnerId } });
     if (own?.enabled) return fromSettings(own, "partner");

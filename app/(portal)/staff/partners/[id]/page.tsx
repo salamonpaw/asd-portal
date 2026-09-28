@@ -1,7 +1,6 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requirePageRole } from "@/lib/authz";
 import { db } from "@/lib/db";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Avatar, SectionCard, KV, EmptyState } from "@/components/ui";
 import { ProjectsTable } from "@/components/portal/ProjectsTable";
@@ -17,8 +16,7 @@ function fmtMonth(s: string) {
 }
 
 export default async function StaffPartnerDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
+  await requirePageRole("STAFF", "ADMIN");
 
   const { id } = await params;
   const partner = await db.partner.findUnique({

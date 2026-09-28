@@ -3,7 +3,7 @@ import type { ContentItem } from "@prisma/client";
 
 let redisClient: ReturnType<typeof createClient> | null = null;
 
-export async function getRedisClient() {
+async function getRedisClient() {
   if (!process.env.REDIS_URL) return null;
 
   if (redisClient) return redisClient;

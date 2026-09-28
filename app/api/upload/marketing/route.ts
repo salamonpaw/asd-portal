@@ -4,8 +4,10 @@ import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { randomBytes } from "crypto";
+import { MARKETING_DIR } from "@/lib/marketing-files";
 
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "marketing");
+const UPLOAD_DIR = MARKETING_DIR;
 const MAX_SIZE = 100 * 1024 * 1024; // 100 MB
 
 export async function POST(req: Request) {
@@ -29,13 +31,13 @@ export async function POST(req: Request) {
 
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "bin";
     const safeExt = ext.replace(/[^a-z0-9]/g, "");
-    const stored = `mat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt}`;
+    const stored = `mat-${Date.now()}-${randomBytes(6).toString("hex")}.${safeExt || "bin"}`;
     const filepath = path.join(UPLOAD_DIR, stored);
 
     const buffer = Buffer.from(await file.arrayBuffer());
     await writeFile(filepath, buffer);
 
-    const url = `/uploads/marketing/${stored}`;
+    const url = `file:${stored}`; // plik poza public/ — pobieranie przez /api/marketing/[id]/download
 
     const material = await db.marketingMaterial.create({
       data: {

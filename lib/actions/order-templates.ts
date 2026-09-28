@@ -1,5 +1,7 @@
 "use server";
 
+import { errMsg } from "@/lib/authz";
+
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -19,8 +21,8 @@ export async function createOrderTemplate(
     return { success: false, error: "Nie zalogowany" };
   }
 
-  const userRole = (session.user as any).role;
-  const userPartnerId = (session.user as any).partnerId;
+  const userRole = session.user.role;
+  const userPartnerId = session.user.partnerId;
 
   // Only partner admins or service technicians of that partner can create
   if (userRole !== "PARTNER_ADMIN" && userRole !== "SERVICE_TECHNICIAN") {
@@ -49,7 +51,7 @@ export async function createOrderTemplate(
 
     return { success: true, data: template };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errMsg(error) };
   }
 }
 
@@ -59,8 +61,7 @@ export async function getPartnerTemplates(partnerId: string): Promise<ActionResu
     return { success: false, error: "Nie zalogowany" };
   }
 
-  const userRole = (session.user as any).role;
-  const userPartnerId = (session.user as any).partnerId;
+  const userPartnerId = session.user.partnerId;
 
   if (userPartnerId !== partnerId) {
     return { success: false, error: "Brak uprawnień" };
@@ -79,39 +80,7 @@ export async function getPartnerTemplates(partnerId: string): Promise<ActionResu
 
     return { success: true, data: templates };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
-  }
-}
-
-export async function getOrderTemplate(templateId: string): Promise<ActionResult<any>> {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return { success: false, error: "Nie zalogowany" };
-  }
-
-  try {
-    const template = await db.orderTemplate.findUnique({
-      where: { id: templateId },
-      include: {
-        items: {
-          include: { product: { select: { id: true, name: true, sku: true } } },
-        },
-      },
-    });
-
-    if (!template) {
-      return { success: false, error: "Template nie znaleziony" };
-    }
-
-    // Verify user belongs to this partner
-    const userPartnerId = (session.user as any).partnerId;
-    if (userPartnerId !== template.partnerId) {
-      return { success: false, error: "Brak uprawnień" };
-    }
-
-    return { success: true, data: template };
-  } catch (error) {
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errMsg(error) };
   }
 }
 
@@ -133,7 +102,7 @@ export async function updateOrderTemplate(
       return { success: false, error: "Template nie znaleziony" };
     }
 
-    const userPartnerId = (session.user as any).partnerId;
+    const userPartnerId = session.user.partnerId;
     if (userPartnerId !== template.partnerId) {
       return { success: false, error: "Brak uprawnień" };
     }
@@ -159,7 +128,7 @@ export async function updateOrderTemplate(
 
     return { success: true, data: updated };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errMsg(error) };
   }
 }
 
@@ -178,7 +147,7 @@ export async function deleteOrderTemplate(templateId: string): Promise<ActionRes
       return { success: false, error: "Template nie znaleziony" };
     }
 
-    const userPartnerId = (session.user as any).partnerId;
+    const userPartnerId = session.user.partnerId;
     if (userPartnerId !== template.partnerId) {
       return { success: false, error: "Brak uprawnień" };
     }
@@ -189,56 +158,7 @@ export async function deleteOrderTemplate(templateId: string): Promise<ActionRes
 
     return { success: true, data: null };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: errMsg(error) };
   }
 }
 
-export async function createOrderFromTemplate(
-  templateId: string,
-  deliveryAddress: string
-): Promise<ActionResult<any>> {
-  const session = await getServerSession(authOptions);
-  const userRole = (session?.user as any)?.role;
-
-  if (!session?.user || userRole !== "SERVICE_TECHNICIAN") {
-    return { success: false, error: "Brak dostępu" };
-  }
-
-  try {
-    const template = await db.orderTemplate.findUnique({
-      where: { id: templateId },
-      include: { items: true },
-    });
-
-    if (!template) {
-      return { success: false, error: "Template nie znaleziony" };
-    }
-
-    const userId = (session.user as any).id;
-    const partnerId = template.partnerId;
-
-    // Generate order code
-    const orderCode = `SRV-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000) + 1000}`;
-
-    // Create service order with items from template
-    const order = await db.serviceOrder.create({
-      data: {
-        code: orderCode,
-        partnerId,
-        technicianId: userId,
-        deliveryAddress: deliveryAddress || "",
-        items: {
-          create: template.items.map((item) => ({
-            productId: item.productId,
-            quantity: item.quantity,
-          })),
-        },
-      },
-      include: { items: { include: { product: true } } },
-    });
-
-    return { success: true, data: order };
-  } catch (error) {
-    return { success: false, error: (error as Error).message };
-  }
-}

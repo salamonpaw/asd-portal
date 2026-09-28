@@ -8,8 +8,7 @@ import { OrderFormClient } from "./OrderFormClient";
 
 export default async function ServiceTechnicianProductsPage() {
   const session = await getServerSession(authOptions);
-  const userRole = (session?.user as any)?.role;
-  const userId = (session?.user as any)?.id;
+  const userRole = session?.user?.role;
 
   if (!session || userRole !== "SERVICE_TECHNICIAN") {
     redirect("/login");
@@ -22,12 +21,11 @@ export default async function ServiceTechnicianProductsPage() {
       sku: true,
       name: true,
       description: true,
-      image: true,
       productImages: {
         where: { deletedAt: null },
         select: { filePath: true },
         take: 1,
-        orderBy: { uploadedAt: "desc" },
+        orderBy: { uploadedAt: "asc" }, // pierwsze = główne
       },
       inventory: { select: { currentStock: true } },
     },
@@ -65,7 +63,7 @@ export default async function ServiceTechnicianProductsPage() {
           sku: p.sku,
           name: p.name,
           description: p.description || "",
-          image: p.productImages.length > 0 ? p.productImages[0].filePath : (p.image || ""),
+          image: p.productImages[0]?.filePath ?? "",
           warehouseStock: p.inventory?.currentStock || 0,
         }))}
       />

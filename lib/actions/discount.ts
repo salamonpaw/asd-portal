@@ -1,232 +1,99 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireRole, errMsg, UserError, type SessionUser } from "@/lib/authz";
 
-interface CreateDiscountInput {
-  partnerId: string;
+type DiscountInput = {
   percentage: number;
   expirationDate: Date;
   fallbackPercentage: number;
   machineCountRequired?: number;
+};
+
+/** Handlowiec — tylko swoi partnerzy (Partner.repId); admin — wszyscy. */
+async function assertPartnerInScope(user: SessionUser, partnerId: string) {
+  const partner = await db.partner.findUnique({ where: { id: partnerId }, select: { repId: true } });
+  if (!partner) throw new UserError("Nie znaleziono partnera.");
+  if (user.role !== "ADMIN" && partner.repId !== user.repId) throw new UserError("To nie jest Twój partner.");
 }
 
-interface UpdateDiscountInput {
-  discountId: string;
-  percentage: number;
-  expirationDate: Date;
-  fallbackPercentage: number;
-  machineCountRequired?: number;
-}
-
-export async function createPartnerDiscount(input: CreateDiscountInput) {
-  const session = await getServerSession(authOptions);
-  const repId = (session?.user as any)?.repId;
-
-  if (!session?.user || !repId) {
-    return { success: false, error: "Brak dostępu" };
+function validate(input: DiscountInput) {
+  const pct = (n: number) => Number.isFinite(n) && n >= 0 && n <= 100;
+  if (!pct(input.percentage)) throw new UserError("Rabat musi być w zakresie 0–100%.");
+  if (!pct(input.fallbackPercentage)) throw new UserError("Rabat rezerwowy musi być w zakresie 0–100%.");
+  const date = new Date(input.expirationDate);
+  if (Number.isNaN(date.getTime())) throw new UserError("Nieprawidłowa data wygaśnięcia.");
+  const machines = input.machineCountRequired;
+  if (machines !== undefined && machines !== null && !(Number.isInteger(machines) && machines >= 0)) {
+    throw new UserError("Liczba maszyn musi być liczbą całkowitą ≥ 0.");
   }
+  return {
+    percentage: input.percentage,
+    expirationDate: date,
+    fallbackPercentage: input.fallbackPercentage,
+    machineCountRequired: machines ?? null,
+  };
+}
 
+export async function createPartnerDiscount(input: DiscountInput & { partnerId: string }) {
   try {
-    const discount = await db.partnerDiscount.create({
-      data: {
-        partnerId: input.partnerId,
-        percentage: input.percentage,
-        expirationDate: input.expirationDate,
-        fallbackPercentage: input.fallbackPercentage,
-        machineCountRequired: input.machineCountRequired,
-        status: "ACTIVE",
-        createdByRepId: repId,
-      },
-      include: {
-        partner: true,
-        createdBy: true,
-      },
+    const user = await requireRole("STAFF");
+    if (!user.repId) throw new UserError("Konto nie jest przypisane do handlowca.");
+    await assertPartnerInScope(user, input.partnerId);
+    const data = await db.partnerDiscount.create({
+      data: { ...validate(input), partnerId: input.partnerId, status: "ACTIVE", createdByRepId: user.repId },
+      include: { partner: true, createdBy: true },
     });
-
-    return {
-      success: true,
-      data: discount,
-    };
-  } catch (error) {
-    console.error("[createPartnerDiscount]", error);
-    return {
-      success: false,
-      error: (error as Error).message,
-    };
+    revalidatePath("/staff/discounts");
+    return { success: true as const, data };
+  } catch (e) {
+    return { success: false as const, error: errMsg(e) };
   }
 }
 
-export async function updatePartnerDiscount(input: UpdateDiscountInput) {
-  const session = await getServerSession(authOptions);
-  const repId = (session?.user as any)?.repId;
-
-  if (!session?.user || !repId) {
-    return { success: false, error: "Brak dostępu" };
-  }
-
+export async function updatePartnerDiscount(input: DiscountInput & { discountId: string }) {
   try {
-    const discount = await db.partnerDiscount.update({
+    const user = await requireRole("STAFF", "ADMIN");
+    const existing = await db.partnerDiscount.findUnique({ where: { id: input.discountId }, select: { partnerId: true } });
+    if (!existing) throw new UserError("Nie znaleziono rabatu.");
+    await assertPartnerInScope(user, existing.partnerId);
+    const data = await db.partnerDiscount.update({
       where: { id: input.discountId },
-      data: {
-        percentage: input.percentage,
-        expirationDate: input.expirationDate,
-        fallbackPercentage: input.fallbackPercentage,
-        machineCountRequired: input.machineCountRequired,
-      },
-      include: {
-        partner: true,
-        createdBy: true,
-      },
+      data: validate(input),
+      include: { partner: true, createdBy: true },
     });
-
-    return {
-      success: true,
-      data: discount,
-    };
-  } catch (error) {
-    console.error("[updatePartnerDiscount]", error);
-    return {
-      success: false,
-      error: (error as Error).message,
-    };
+    revalidatePath("/staff/discounts");
+    return { success: true as const, data };
+  } catch (e) {
+    return { success: false as const, error: errMsg(e) };
   }
 }
 
 export async function deletePartnerDiscount(discountId: string) {
-  const session = await getServerSession(authOptions);
-  const repId = (session?.user as any)?.repId;
-
-  if (!session?.user || !repId) {
-    return { success: false, error: "Brak dostępu" };
-  }
-
   try {
-    await db.partnerDiscount.delete({
-      where: { id: discountId },
-    });
-
-    return { success: true };
-  } catch (error) {
-    console.error("[deletePartnerDiscount]", error);
-    return {
-      success: false,
-      error: (error as Error).message,
-    };
+    const user = await requireRole("STAFF", "ADMIN");
+    const existing = await db.partnerDiscount.findUnique({ where: { id: discountId }, select: { partnerId: true } });
+    if (!existing) throw new UserError("Nie znaleziono rabatu.");
+    await assertPartnerInScope(user, existing.partnerId);
+    await db.partnerDiscount.delete({ where: { id: discountId } });
+    revalidatePath("/staff/discounts");
+    return { success: true as const };
+  } catch (e) {
+    return { success: false as const, error: errMsg(e) };
   }
 }
 
 export async function getRepPartnerDiscounts() {
-  const session = await getServerSession(authOptions);
-  const repId = (session?.user as any)?.repId;
-
-  if (!session?.user || !repId) {
-    return { success: false, error: "Brak dostępu", data: null };
-  }
-
   try {
-    const partners = await db.partner.findMany({
-      where: {
-        repId: repId,
-      },
-      include: {
-        discounts: {
-          orderBy: { expirationDate: "asc" },
-        },
-      },
+    const user = await requireRole("STAFF", "ADMIN");
+    const data = await db.partner.findMany({
+      where: user.role === "ADMIN" ? {} : { repId: user.repId ?? "__none__" },
+      include: { discounts: { orderBy: { expirationDate: "asc" } } },
+      orderBy: { name: "asc" },
     });
-
-    return {
-      success: true,
-      data: partners,
-    };
-  } catch (error) {
-    console.error("[getRepPartnerDiscounts]", error);
-    return {
-      success: false,
-      error: (error as Error).message,
-      data: null,
-    };
-  }
-}
-
-export async function getPartnerById(partnerId: string) {
-  const session = await getServerSession(authOptions);
-  const repId = (session?.user as any)?.repId;
-
-  if (!session?.user || !repId) {
-    return { success: false, error: "Brak dostępu", data: null };
-  }
-
-  try {
-    const partner = await db.partner.findUnique({
-      where: { id: partnerId },
-      include: {
-        discounts: {
-          orderBy: { expirationDate: "asc" },
-        },
-      },
-    });
-
-    if (!partner || partner.repId !== repId) {
-      return { success: false, error: "Partner nie znaleziony", data: null };
-    }
-
-    return {
-      success: true,
-      data: partner,
-    };
-  } catch (error) {
-    console.error("[getPartnerById]", error);
-    return {
-      success: false,
-      error: (error as Error).message,
-      data: null,
-    };
-  }
-}
-
-export async function getPartnerActiveDiscount(partnerId: string) {
-  try {
-    const partner = await db.partner.findUnique({
-      where: { id: partnerId },
-      include: {
-        discounts: {
-          where: {
-            status: "ACTIVE",
-            expirationDate: {
-              gte: new Date(),
-            },
-          },
-          orderBy: { expirationDate: "asc" },
-          take: 1,
-        },
-      },
-    });
-
-    if (!partner) return null;
-
-    if (partner.discounts.length > 0) {
-      const activeTier = partner.discounts[0];
-      return {
-        percentage: parseFloat(activeTier.percentage.toString()),
-        expirationDate: activeTier.expirationDate,
-        fallbackPercentage: parseFloat(activeTier.fallbackPercentage.toString()),
-        machineCountRequired: activeTier.machineCountRequired,
-        source: "tier",
-      };
-    }
-
-    return {
-      percentage: partner.discount,
-      expirationDate: null,
-      fallbackPercentage: null,
-      machineCountRequired: null,
-      source: "default",
-    };
-  } catch (error) {
-    console.error("[getPartnerActiveDiscount]", error);
-    return null;
+    return { success: true as const, data };
+  } catch (e) {
+    return { success: false as const, error: errMsg(e), data: null };
   }
 }

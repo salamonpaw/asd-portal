@@ -1,9 +1,13 @@
 "use server";
 
+import { errMsg } from "@/lib/authz";
+
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { writeFile, unlink } from "fs/promises";
+import { randomBytes } from "crypto";
+import { detectImage } from "@/lib/file-type";
 import { join } from "path";
 
 export async function uploadProductImage(
@@ -11,9 +15,9 @@ export async function uploadProductImage(
   formData: FormData
 ) {
   const session = await getServerSession(authOptions);
-  const role = (session?.user as any)?.role;
+  const role = session?.user?.role;
 
-  if (!session?.user || !["WAREHOUSE_SPECIALIST", "ADMIN"].includes(role)) {
+  if (!session?.user || !["WAREHOUSE_SPECIALIST", "ADMIN"].includes(role ?? "")) {
     return { success: false, error: "Brak dostępu" };
   }
 
@@ -23,28 +27,20 @@ export async function uploadProductImage(
       return { success: false, error: "Nie wybrano pliku" };
     }
 
-    // Validate file type
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (!allowedTypes.includes(file.type)) {
-      return { success: false, error: "Obsługiwane formaty: JPEG, PNG, WebP, GIF" };
-    }
-
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       return { success: false, error: "Maksymalny rozmiar pliku: 5MB" };
     }
 
-    // Generate unique filename
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 8);
-    const extension = file.name.split(".").pop();
-    const fileName = `${timestamp}-${random}.${extension}`;
-    const filePath = `/images/${fileName}`;
-    const absolutePath = join(process.cwd(), "public", filePath);
+    // Typ z zawartości pliku, rozszerzenie nadajemy sami (nie z nazwy od użytkownika)
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const type = detectImage(buffer);
+    if (!type) {
+      return { success: false, error: "Obsługiwane formaty: JPEG, PNG, WebP, GIF" };
+    }
 
-    // Save file
-    const bytes = await file.arrayBuffer();
-    await writeFile(absolutePath, Buffer.from(bytes));
+    const fileName = `${Date.now()}-${randomBytes(6).toString("hex")}.${type.ext}`;
+    const filePath = `/images/${fileName}`;
+    await writeFile(join(process.cwd(), "public", "images", fileName), buffer);
 
     // Create database record
     const image = await db.productImage.create({
@@ -52,24 +48,24 @@ export async function uploadProductImage(
         productId,
         filePath,
         fileName,
-        mimeType: file.type,
-        fileSize: file.size,
-        uploadedBy: (session.user as any).email || "unknown",
+        mimeType: type.mime,
+        fileSize: buffer.length,
+        uploadedBy: session.user.email || "unknown",
       },
     });
 
     return { success: true, data: image };
   } catch (error) {
     console.error("[uploadProductImage] Error:", error);
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: "Nie udało się zapisać zdjęcia." };
   }
 }
 
 export async function deleteProductImage(imageId: string) {
   const session = await getServerSession(authOptions);
-  const role = (session?.user as any)?.role;
+  const role = session?.user?.role;
 
-  if (!session?.user || !["WAREHOUSE_SPECIALIST", "ADMIN"].includes(role)) {
+  if (!session?.user || !["WAREHOUSE_SPECIALIST", "ADMIN"].includes(role ?? "")) {
     return { success: false, error: "Brak dostępu" };
   }
 
@@ -93,28 +89,15 @@ export async function deleteProductImage(imageId: string) {
     return { success: true };
   } catch (error) {
     console.error("[deleteProductImage] Error:", error);
-    return { success: false, error: (error as Error).message };
-  }
-}
-
-export async function getProductImages(productId: string) {
-  try {
-    const images = await db.productImage.findMany({
-      where: { productId, deletedAt: null },
-      orderBy: { uploadedAt: "desc" },
-    });
-    return { success: true, data: images };
-  } catch (error) {
-    console.error("[getProductImages] Error:", error);
-    return { success: false, error: (error as Error).message, data: null };
+    return { success: false, error: errMsg(error) };
   }
 }
 
 export async function getAllImages() {
   const session = await getServerSession(authOptions);
-  const role = (session?.user as any)?.role;
+  const role = session?.user?.role;
 
-  if (!session?.user || !["WAREHOUSE_SPECIALIST", "ADMIN"].includes(role)) {
+  if (!session?.user || !["WAREHOUSE_SPECIALIST", "ADMIN"].includes(role ?? "")) {
     return { success: false, error: "Brak dostępu", data: null };
   }
 
@@ -127,6 +110,6 @@ export async function getAllImages() {
     return { success: true, data: images };
   } catch (error) {
     console.error("[getAllImages] Error:", error);
-    return { success: false, error: (error as Error).message, data: null };
+    return { success: false, error: errMsg(error), data: null };
   }
 }

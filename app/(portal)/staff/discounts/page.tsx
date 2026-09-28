@@ -11,7 +11,7 @@ export const metadata = {
 
 export default async function DiscountsPage() {
   const session = await getServerSession(authOptions);
-  const role = (session?.user as any)?.role;
+  const role = session?.user?.role;
 
   if (!session || role !== "STAFF") {
     redirect("/login");
@@ -21,7 +21,7 @@ export default async function DiscountsPage() {
     <div style={{ padding: "32px", maxWidth: "1400px" }}>
       {/* Breadcrumbs */}
       <div style={{ marginBottom: 24, display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--ink-3)" }}>
-        <Link href="/staff" style={{ color: "var(--brand)", textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
+        <Link href="/staff/dashboard" style={{ color: "var(--brand)", textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
           <Icon name="home" size={14} />
           Panel Handlowca
         </Link>
