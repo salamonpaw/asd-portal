@@ -4,20 +4,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { PageHead, Field } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
-
-const RANGES = ["1", "2–3", "4–6", "8–10", "10–15", "16+", "Nie wiem / do ustalenia"];
-const STAGES = ["Rozpoznanie potrzeb", "Prezentacja / demo", "Oferta", "Negocjacje", "Decyzja klienta"];
-const COUNTRIES = ["Polska", "Czechy", "Słowacja", "Niemcy", "Austria", "Litwa", "Kanada"];
-const PROCUREMENT = [
-  { id: "BIEZACA",   label: "Bieżąca sprzedaż",   desc: "Standardowy proces zakupowy klienta.", icon: "shieldCheck" },
-  { id: "ZAPYTANIE", label: "Zapytanie ofertowe",  desc: "Klient zbiera oferty, brak formalnego przetargu.", icon: "fileText" },
-  { id: "PRZETARG",  label: "Przetarg",            desc: "Oficjalne postępowanie – bez ochrony partnerskiej.", icon: "shieldOff" },
-];
-const SUPPORT = [
-  "Przygotowanie oferty", "Udział w spotkaniu z klientem", "Wsparcie techniczne",
-  "Wsparcie produktowe", "Dobór automatów", "Analiza opłacalności",
-  "Materiały marketingowe", "Prezentacja dla klienta", "Indywidualne warunki handlowe",
-];
+import { RANGES, STAGES, COUNTRIES, PROCUREMENT, SUPPORT } from "@/lib/constants/project-form";
 
 const blank = {
   name: "", taxId: "", country: "Polska", location: "", branch: "",

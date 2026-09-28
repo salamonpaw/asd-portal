@@ -5,6 +5,49 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0] - 2026-09-28
+
+### Dodane
+
+**Handlowcy partnera**
+- Partner tworzy swoich handlowców (imię, e-mail, telefon) — `/partner/sales-reps`
+- Każdy handlowiec ma osobisty link do formularza zgłoszeń (bez logowania);
+  partner wysyła go mailem jednym kliknięciem, może skopiować lub unieważnić (nowy link)
+- Handlowca można dezaktywować (link przestaje działać, brak przypomnień)
+
+**Formularz zapotrzebowania dla handlowców**
+- Publiczna strona `/r/<link>` — działa na telefonie, te same pola co zgłoszenie projektu
+- Zgłoszenie trafia do partnera (e-mail + „Wymaga Twojej uwagi" na pulpicie)
+- `/partner/requests`: partner zatwierdza → powstaje projekt i trafia do weryfikacji ASD
+  (z zamrożonym rabatem i przypisanym handlowcem) albo odrzuca z powodem
+- Handlowiec dostaje e-mail z decyzją; blokada zatwierdzenia duplikatu (ten sam NIP)
+- Ochrona: limit 20 zgłoszeń na handlowca na dobę, treść maili escapowana
+
+**Przypomnienia e-mail o terminach**
+- Typy: wygaśnięcie ochrony projektu, planowany termin decyzji klienta,
+  prośba ASD o uzupełnienie, niezatwierdzone zgłoszenia handlowców
+- Rytm per partner (`/partner/settings`: dni przed terminem, np. 30,14,7,1 + powtarzanie
+  co N dni) z nadpisaniem lub wyciszeniem w konkretnym projekcie
+- Odbiorca: przypisany handlowiec partnera; bez handlowca — konto partnera
+- Każdy próg wysyłany raz (dziennik ReminderLog); przedłużenie ochrony liczy progi od nowa
+- `/api/cron/reminders` (z trybem `?dryRun=1`), odpalany codziennie o 07:00 tym samym
+  timerem co cykl życia rabatów
+
+**Serwer poczty wychodzącej (SMTP)**
+- Admin `/admin/mail-settings`: serwer poczty ASD konfigurowany z panelu
+  (gotowe ustawienia Microsoft 365 / Gmail), przycisk „Wyślij test"
+- Partner może opcjonalnie podpiąć własny serwer (wysyłka z adresu jego firmy)
+- Kolejność: SMTP partnera → SMTP ASD z panelu → zmienne `SMTP_*` z `.env`
+- Hasła SMTP szyfrowane w bazie (AES-256-GCM), nigdy nie wracają do przeglądarki
+
+### Zmienione
+- Szczegóły projektu: partner przypisuje handlowca i ustawia rytm przypomnień;
+  ASD widzi dane handlowca partnera
+- Menu partnera: Handlowcy, Zgłoszenia handlowców, Ustawienia; menu admina: Poczta (SMTP)
+- Tworzenie projektu wydzielone do wspólnej funkcji (formularz partnera + zatwierdzanie)
+
+---
+
 ## [0.18.0] - 2026-07-09
 
 ### Dodane

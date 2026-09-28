@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
 
 const FROM = process.env.SMTP_FROM ?? "ASD Partner Portal <portal@asdsystems.eu>";
 
-function base(content: string) {
+export function base(content: string) {
   return `<!DOCTYPE html>
 <html lang="pl">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">

@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { redirect, notFound } from "next/navigation";
 import { ProjectDetailClient } from "@/components/portal/ProjectDetailClient";
 import { getPartnerEffectiveDiscount } from "@/lib/discount";
+import { DEFAULT_REMINDERS } from "@/lib/reminder-days";
+import { ProjectSalesRepCard } from "@/components/portal/ProjectSalesRepCard";
 
 export default async function PartnerProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -31,7 +33,31 @@ export default async function PartnerProjectDetailPage({ params }: { params: Pro
     ? await db.project.findUnique({ where: { id: project.conflictsWith }, include: { partner: true } })
     : null;
 
-  const partnerActiveDiscount = await getPartnerEffectiveDiscount(partnerId);
+  const [partnerActiveDiscount, reps, reminderSettings] = await Promise.all([
+    getPartnerEffectiveDiscount(partnerId),
+    db.partnerSalesRep.findMany({
+      where: { partnerId },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, email: true, phone: true, active: true },
+    }),
+    db.reminderSettings.findUnique({ where: { partnerId }, select: { daysBefore: true } }),
+  ]);
 
-  return <ProjectDetailClient project={project} conflict={conflict} isStaff={false} backHref="/partner/projects" partnerActiveDiscount={partnerActiveDiscount} />;
+  return (
+    <ProjectDetailClient
+      project={project}
+      conflict={conflict}
+      isStaff={false}
+      backHref="/partner/projects"
+      partnerActiveDiscount={partnerActiveDiscount}
+      extraSidebar={
+        <ProjectSalesRepCard
+          projectId={project.id}
+          reps={reps}
+          initial={{ salesRepId: project.salesRepId, reminderDaysBefore: project.reminderDaysBefore, remindersMuted: project.remindersMuted }}
+          defaultDays={reminderSettings?.daysBefore ?? DEFAULT_REMINDERS.daysBefore}
+        />
+      }
+    />
+  );
 }

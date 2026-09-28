@@ -24,13 +24,14 @@ type ActiveDiscount = {
 };
 
 export function PartnerDashboardClient({
-  partner, projects, rep, openOrders = 0, activeDiscount,
+  partner, projects, rep, openOrders = 0, activeDiscount, pendingRequests = 0,
 }: {
   partner: Partner & { markets: Market[] };
   projects: ProjectWithHistory[];
   rep: Rep | null;
   openOrders?: number;
   activeDiscount?: ActiveDiscount;
+  pendingRequests?: number;
 }) {
   const discountPercent = activeDiscount?.percentage ?? partner.discount;
   const discountExpiry = activeDiscount?.expirationDate ?? null;
@@ -64,9 +65,21 @@ export function PartnerDashboardClient({
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 20, marginTop: 20, alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {attention.length > 0 && (
+          {(attention.length > 0 || pendingRequests > 0) && (
             <SectionCard title="Wymaga Twojej uwagi" pad={false}>
               <div>
+                {pendingRequests > 0 && (
+                  <div onClick={() => router.push("/partner/requests")} className="attn-row">
+                    <div style={{ width: 36, height: 36, borderRadius: 9, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--brand-soft)", color: "var(--brand)" }}>
+                      <Icon name="send" size={18} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>Zgłoszenia od handlowców: {pendingRequests}</div>
+                      <div style={{ fontSize: 12.5, color: "var(--ink-3)" }}>Czekają na Twoje zatwierdzenie i przekazanie do ASD</div>
+                    </div>
+                    <Icon name="chevronRight" size={17} style={{ color: "var(--ink-4)" }} />
+                  </div>
+                )}
                 {attention.map((p) => (
                   <div key={p.id} onClick={() => router.push(`/partner/projects/${p.id}`)} className="attn-row">
                     <div style={{ width: 36, height: 36, borderRadius: 9, flex: "none", display: "flex", alignItems: "center", justifyContent: "center",

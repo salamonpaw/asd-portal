@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { redirect, notFound } from "next/navigation";
 import { ProjectDetailClient } from "@/components/portal/ProjectDetailClient";
 import { getPartnerEffectiveDiscount } from "@/lib/discount";
+import { ProjectSalesRepInfo } from "@/components/portal/ProjectSalesRepCard";
 
 export default async function StaffProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -16,6 +17,7 @@ export default async function StaffProjectDetailPage({ params }: { params: Promi
     include: {
       partner: { include: { markets: true } },
       rep: true,
+      salesRep: { select: { id: true, name: true, email: true, phone: true, active: true } },
       history: { orderBy: { date: "asc" } },
       comments: { include: { user: true }, orderBy: { createdAt: "asc" } },
     },
@@ -29,5 +31,14 @@ export default async function StaffProjectDetailPage({ params }: { params: Promi
 
   const partnerActiveDiscount = await getPartnerEffectiveDiscount(project.partnerId);
 
-  return <ProjectDetailClient project={project} conflict={conflict} isStaff={true} backHref="/staff/projects" partnerActiveDiscount={partnerActiveDiscount} />;
+  return (
+    <ProjectDetailClient
+      project={project}
+      conflict={conflict}
+      isStaff={true}
+      backHref="/staff/projects"
+      partnerActiveDiscount={partnerActiveDiscount}
+      extraSidebar={<ProjectSalesRepInfo rep={project.salesRep} />}
+    />
+  );
 }

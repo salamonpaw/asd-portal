@@ -17,12 +17,13 @@ type FullProject = Project & {
 
 const PROCUREMENT_LABELS: Record<string, string> = { BIEZACA: "Bieżąca sprzedaż", ZAPYTANIE: "Zapytanie ofertowe", PRZETARG: "Przetarg" };
 
-export function ProjectDetailClient({ project: initial, conflict, isStaff, backHref, partnerActiveDiscount }: {
+export function ProjectDetailClient({ project: initial, conflict, isStaff, backHref, partnerActiveDiscount, extraSidebar }: {
   project: FullProject;
   conflict: (Project & { partner: Partner }) | null;
   isStaff: boolean;
   backHref: string;
   partnerActiveDiscount?: { percentage: number; expirationDate: Date | null; source: "tier" | "default" } | null;
+  extraSidebar?: React.ReactNode;
 }) {
   const router = useRouter();
   const [project, setProject] = useState(initial);
@@ -236,6 +237,7 @@ export function ProjectDetailClient({ project: initial, conflict, isStaff, backH
               </KV>
             ) : null}
           </div>
+          {extraSidebar}
         </div>
       </div>
 

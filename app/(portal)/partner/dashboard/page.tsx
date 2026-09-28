@@ -11,7 +11,7 @@ export default async function PartnerDashboardPage() {
   const partnerId = session.user.partnerId;
   if (!partnerId) redirect("/login");
 
-  const [partner, projects, rep, orders] = await Promise.all([
+  const [partner, projects, rep, orders, pendingRequests] = await Promise.all([
     db.partner.findUnique({
       where: { id: partnerId },
       include: {
@@ -33,6 +33,7 @@ export default async function PartnerDashboardPage() {
       where: { project: { partnerId } },
       orderBy: { createdAt: "desc" },
     }),
+    db.projectRequest.count({ where: { partnerId, status: "PENDING" } }),
   ]);
 
   if (!partner) redirect("/login");
@@ -60,6 +61,7 @@ export default async function PartnerDashboardPage() {
       rep={rep}
       openOrders={openOrders}
       activeDiscount={activeDiscount}
+      pendingRequests={pendingRequests}
     />
   );
 }

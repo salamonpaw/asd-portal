@@ -156,6 +156,10 @@ model Partner {
   discountNotifications    PartnerDiscountNotification[]
   marketingMaterialAccess  MarketingMaterialAccess[]
   calendarClicks           CalendarClick[]
+  salesReps                PartnerSalesRep[]
+  projectRequests          ProjectRequest[]
+  mailSettings             MailSettings?
+  reminderSettings         ReminderSettings?
 }
 
 model Market {
@@ -187,6 +191,9 @@ model Project {
   notes           String?
   discount        Int?
   lockedDiscountPercentage Int?
+  salesRepId      String?
+  reminderDaysBefore String?   // nadpisanie rytmu (np. "30,14,7"); null = domyślny partnera
+  remindersMuted  Boolean       @default(false)
   status          ProjectStatus @default(VERIFY)
   protected       Boolean       @default(false)
   conflictsWith   String?
@@ -200,6 +207,7 @@ model Project {
   history  ProjectHistory[]
   comments Comment[]
   orders   Order[]
+  salesRep PartnerSalesRep? @relation(fields: [salesRepId], references: [id], onDelete: SetNull)
 
   @@index([customerTaxId])
 }
@@ -599,4 +607,96 @@ model OrderTemplateItem {
 
   @@index([templateId])
   @@index([productId])
+}
+
+// ─── Handlowcy partnera, zgłoszenia, poczta, przypomnienia ───────────────────
+
+model PartnerSalesRep {
+  id        String   @id @default(cuid())
+  partnerId String
+  partner   Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  name      String
+  email     String
+  phone     String?
+  active    Boolean  @default(true)
+  formToken String   @unique @default(cuid())   // osobisty link do formularza zapotrzebowania
+  createdAt DateTime @default(now())
+
+  projects  Project[]
+  requests  ProjectRequest[]
+
+  @@index([partnerId])
+}
+
+model ProjectRequest {
+  id              String          @id @default(cuid())
+  partnerId       String
+  partner         Partner         @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  salesRepId      String
+  salesRep        PartnerSalesRep @relation(fields: [salesRepId], references: [id], onDelete: Cascade)
+  customerName    String
+  customerTaxId   String
+  customerCountry String          @default("Polska")
+  location        String?
+  branch          String?
+  machines        String
+  procurement     Procurement
+  stage           String
+  description     String
+  decisionDate    String?
+  interested      Boolean
+  wantsSupport    Boolean
+  support         String[]        @default([])
+  notes           String?
+  status          String          @default("PENDING")   // PENDING | APPROVED | REJECTED
+  partnerNote     String?
+  projectId       String?
+  createdAt       DateTime        @default(now())
+  decidedAt       DateTime?
+
+  @@index([partnerId, status])
+  @@index([salesRepId])
+}
+
+model MailSettings {
+  id          String   @id @default(cuid())
+  partnerId   String?  @unique   // null = globalny serwer ASD
+  partner     Partner? @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  enabled     Boolean  @default(true)
+  host        String
+  port        Int      @default(587)
+  secure      Boolean  @default(false)
+  username    String?
+  passwordEnc String?  // AES-256-GCM, klucz z MAIL_SECRET_KEY / NEXTAUTH_SECRET
+  fromName    String?
+  fromEmail   String
+  replyTo     String?
+  updatedAt   DateTime @updatedAt
+}
+
+model ReminderSettings {
+  id                    String   @id @default(cuid())
+  partnerId             String   @unique
+  partner               Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  expiryEnabled         Boolean  @default(true)   // wygaśnięcie ochrony projektu
+  decisionEnabled       Boolean  @default(true)   // planowana data decyzji klienta
+  needInfoEnabled       Boolean  @default(true)   // ASD prosi o uzupełnienie
+  pendingRequestEnabled Boolean  @default(true)   // zgłoszenie handlowca czeka na partnera
+  daysBefore            String   @default("30,14,7,1")
+  repeatEveryDays       Int      @default(3)
+  updatedAt             DateTime @updatedAt
+}
+
+model ReminderLog {
+  id        String   @id @default(cuid())
+  type      String   // EXPIRY | DECISION | NEEDINFO | PENDING_REQUEST
+  key       String
+  projectId String?
+  requestId String?
+  recipient String
+  sentAt    DateTime @default(now())
+
+  @@index([key])
+  @@index([type, projectId])
+  @@index([type, requestId])
 }

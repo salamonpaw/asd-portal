@@ -14,7 +14,10 @@ const NAV_PARTNER = [
   { key: "projects",   href: "/partner/projects",    label: "Moje projekty",    icon: "layers" },
   { key: "orders",     href: "/partner/orders",      label: "Moje zamówienia",  icon: "shoppingCart" },
   { key: "materials",  href: "/partner/marketing-materials", label: "Materiały",  icon: "fileText" },
+  { key: "salesreps",  href: "/partner/sales-reps",  label: "Handlowcy",        icon: "briefcase" },
+  { key: "requests",   href: "/partner/requests",    label: "Zgłoszenia handlowców", icon: "send" },
   { key: "users",      href: "/partner/users",       label: "Serwisanci",       icon: "users" },
+  { key: "settings",   href: "/partner/settings",    label: "Ustawienia",       icon: "settings" },
   { key: "profile",    href: "/partner/profile",     label: "Mój profil",       icon: "user" },
 ];
 
@@ -58,6 +61,7 @@ const NAV_ADMIN = [
   { key: "ausers",     href: "/admin/users",         label: "Użytkownicy",      icon: "user" },
   { key: "amanagepartners", href: "/admin/partners", label: "Zarządzaj Partnerami", icon: "briefcase" },
   { key: "content",    href: "/admin/content",       label: "Treść portalu",    icon: "edit" },
+  { key: "mail",       href: "/admin/mail-settings", label: "Poczta (SMTP)",    icon: "mail" },
 ];
 
 export function PortalShell({ session, children, version }: { session: Session; children: React.ReactNode; version: string }) {
