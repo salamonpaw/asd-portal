@@ -53,6 +53,7 @@ enum ServiceOrderStatus {
   ZREALIZOWANE
   ODRZUCONE
   ZAWIESZONE
+  OCZEKUJE_NA_CZESCI   // brak części na stanie — czeka do expectedDate
 }
 
 enum Currency {
@@ -300,8 +301,15 @@ model ServiceOrder {
   warehouseSpecialist    User?                 @relation("WarehouseSpecialist", fields: [warehouseSpecialistId], references: [id])
   rejectionReason        String?
   trackingNumber         String?
+  // Wycena — wspólna dla całego zamówienia: ceny pozycji są w tej walucie
+  currency               Currency              @default(PLN)
+  exchangeRate           Decimal               @default(1)   // ile PLN za 1 jednostkę waluty (PLN = 1)
+  pricedAt               DateTime?
+  expectedDate           DateTime?             // przewidywana dostępność części (status OCZEKUJE_NA_CZESCI)
+  parentOrderId          String?               // zamówienie, z którego wydzielono brakujące części
+  parentOrder            ServiceOrder?         @relation("OrderSplit", fields: [parentOrderId], references: [id], onDelete: SetNull)
+  childOrders            ServiceOrder[]        @relation("OrderSplit")
   history                ServiceOrderHistory[]
-  pendingItems        PendingOrderItem[]
   createdAt              DateTime              @default(now())
   updatedAt              DateTime              @updatedAt
 
@@ -316,22 +324,17 @@ model ServiceOrderItem {
   productId          String
   product            Product      @relation(fields: [productId], references: [id])
   quantity           Int
-  fulfilledQuantity  Int?
-  unitPrice          Decimal?
-  currency           Currency     @default(PLN)
-  exchangeRate       Decimal      @default(1)
+  // Wszystkie kwoty: za 1 szt., w walucie zamówienia, zapamiętane w chwili wyceny
+  unitPrice          Decimal?     // cena katalogowa (Product.sellingPrice przeliczona)
+  costPrice          Decimal?     // cena zakupu (Product.costPrice przeliczona) — do marży
   discountType       DiscountType?
-  discountValue      Decimal?
-  finalPrice         Decimal?
-  costPrice          Decimal?
+  discountValue      Decimal?     // PERCENT: %; AMOUNT: kwota na 1 szt.
+  finalPrice         Decimal?     // cena po rabacie za 1 szt.
   notes              String?
   createdAt          DateTime     @default(now())
 
   @@index([serviceOrderId])
   @@index([productId])
-
-  pendingItems  PendingOrderItem[]
-
 }
 
 model Product {
@@ -469,28 +472,6 @@ model InventoryAudit {
   createdAt    DateTime  @default(now())
 
   @@index([inventoryId])
-}
-
-// ─── Pending Orders (Partial Order Management) ────────────────────────────────
-
-model PendingOrderItem {
-  id                 String    @id @default(cuid())
-  serviceOrderId     String
-  serviceOrder       ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
-  serviceOrderItemId String?
-  serviceOrderItem   ServiceOrderItem? @relation(fields: [serviceOrderItemId], references: [id], onDelete: SetNull)
-
-  subOrderSuffix     String    // "/A", "/B", itd
-  expectedDate       DateTime  // Przewidywana dostępność
-  status             String    @default("PENDING") // PENDING, FULFILLED
-
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  reminderSentAt     DateTime?
-
-  @@index([serviceOrderId])
-  @@index([expectedDate])
-  @@index([status])
 }
 
 // ─── Staff Discount & Rebate System ───────────────────────────────────────

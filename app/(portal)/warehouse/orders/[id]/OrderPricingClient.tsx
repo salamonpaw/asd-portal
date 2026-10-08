@@ -1,657 +1,236 @@
 "use client";
 
-import { useState } from "react";
-import { updateOrderItemPricing, getExchangeRates } from "@/lib/actions/warehouse-pricing";
-import { checkPartnerOrderStatus } from "@/lib/actions/partner-discounts";
-import { createPendingOrderItem } from "@/lib/actions/partial-orders";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { SectionCard } from "@/components/ui";
+import { Icon } from "@/components/ui/Icon";
+import { priceServiceOrder } from "@/lib/actions/service-orders";
+import { finalUnitPrice, lineView, orderView, fmtMoney, fmtPct, round2, type Currency, type DiscountType } from "@/lib/pricing";
 
-interface Product {
+type Item = {
   id: string;
   sku: string;
   name: string;
-  costPrice: number | null;
-  sellingPrice: number | null;
-  inventory?: { currentStock: number } | null;
-}
-
-interface OrderItem {
-  id: string;
-  productId: string;
-  product: Product;
   quantity: number;
-  unitPrice: number | null;
-  currency: string;
-  exchangeRate: number;
-  discountType: string | null;
+  stock: number;
+  catalogPrice: number | null; // PLN, bieżący katalog
+  catalogCost: number | null;  // PLN
+  unitPrice: number | null;    // zapisana wycena (waluta zamówienia)
+  costPrice: number | null;
+  discountType: DiscountType | null;
   discountValue: number | null;
   finalPrice: number | null;
-  costPrice: number | null;
-  notes: string | null;
-}
+  suggested: { value: number; source: string } | null;
+};
 
-interface OrderPricingClientProps {
+const CURRENCIES: Currency[] = ["PLN", "EUR", "USD"];
+const th: React.CSSProperties = { textAlign: "left", fontSize: 11.5, textTransform: "uppercase", letterSpacing: ".04em", color: "var(--ink-3)", padding: "10px 8px", whiteSpace: "nowrap" };
+const td: React.CSSProperties = { padding: "10px 8px", borderTop: "1px solid var(--line)", fontSize: 13.5, verticalAlign: "top" };
+const right: React.CSSProperties = { ...td, textAlign: "right", whiteSpace: "nowrap" };
+
+export function OrderPricingClient({
+  orderId, editable, isAdmin, currency: savedCurrency, partnerCurrency, minMargin, pricedAt, rates, items,
+}: {
   orderId: string;
-  items: OrderItem[];
-  partner: { id: string; name: string; currency: string; minProfitMargin: number };
-}
+  editable: boolean;
+  isAdmin: boolean;
+  currency: Currency;
+  partnerCurrency: Currency;
+  minMargin: number;
+  pricedAt: string | null;
+  rates: Record<string, { rate: number; label: string } | null>;
+  items: Item[];
+}) {
+  const router = useRouter();
+  const [busy, start] = useTransition();
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [acceptLow, setAcceptLow] = useState(false);
+  const [currency, setCurrency] = useState<Currency>(pricedAt ? savedCurrency : partnerCurrency);
+  const [lines, setLines] = useState<Record<string, { type: DiscountType | null; value: string }>>(() =>
+    Object.fromEntries(items.map((i) => [i.id,
+      i.finalPrice !== null
+        ? { type: i.discountType, value: i.discountValue ? String(i.discountValue) : "" }
+        : { type: i.suggested && i.suggested.value > 0 ? "PERCENT" : null, value: i.suggested && i.suggested.value > 0 ? String(i.suggested.value) : "" },
+    ]))
+  );
 
-export function OrderPricingClient({ orderId, items, partner }: OrderPricingClientProps) {
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
-  const [warning12m, setWarning12m] = useState<string | null>(null);
+  // Podgląd: bieżący katalog przeliczony kursem wybranej waluty
+  const rate = rates[currency];
+  const preview = useMemo(() => items.map((i) => {
+    const l = lines[i.id];
+    const unitPrice = i.catalogPrice !== null && rate ? round2(i.catalogPrice / rate.rate) : null;
+    const costPrice = i.catalogCost !== null && rate ? round2(i.catalogCost / rate.rate) : null;
+    const value = l.value === "" ? null : Number(l.value);
+    const finalPrice = unitPrice === null ? null : finalUnitPrice(unitPrice, l.type, value);
+    return { item: i, input: { quantity: i.quantity, unitPrice, costPrice, discountType: l.type, discountValue: value, finalPrice } };
+  }), [items, lines, rate]);
 
-  const [formData, setFormData] = useState<Record<string, any>>({});
+  // Tryb tylko do odczytu (zamówienie zamknięte) — wyłącznie zapisane wartości
+  const rows = editable
+    ? preview
+    : items.map((i) => ({ item: i, input: { quantity: i.quantity, unitPrice: i.unitPrice, costPrice: i.costPrice, discountType: i.discountType, discountValue: i.discountValue, finalPrice: i.finalPrice } }));
+  const shownCurrency = editable ? currency : savedCurrency;
+  const totals = orderView(rows.map((r) => r.input));
+  const lowMargin = rows.filter((r) => { const m = lineView(r.input).margin; return m !== null && m < minMargin; });
+  const catalogChanged = editable && pricedAt && currency === savedCurrency &&
+    preview.some((p) => p.item.unitPrice !== null && p.input.unitPrice !== null && p.item.unitPrice !== p.input.unitPrice);
+  const missingPrice = items.filter((i) => i.catalogPrice === null);
 
-  // Realizuj Później state
-  const [pendingItemId, setPendingItemId] = useState<string | null>(null);
-  const [pendingDate, setPendingDate] = useState<string>("");
-  const [pendingSuffix, setPendingSuffix] = useState<string>("/A");
-
-  const handleEdit = async (item: OrderItem) => {
-    setEditingItemId(item.id);
-
-    // Get saved discount from localStorage (per partner)
-    const savedDiscount = localStorage.getItem(`partner_discount_${partner.id}`);
-    let discountValue = item.discountValue || 0;
-    let discountType = item.discountType || "PERCENT";
-
-    if (savedDiscount) {
-      try {
-        const saved = JSON.parse(savedDiscount);
-        discountValue = saved.value || 0;
-        discountType = saved.type || "PERCENT";
-      } catch (e) {
-        // Ignore parse errors
-      }
-    }
-
-    setFormData({
-      [item.id]: {
-        currency: item.currency || partner.currency,
-        exchangeRate: item.exchangeRate || 1,
-        discountType,
-        discountValue,
-        notes: item.notes || "",
-      },
-    });
-
-    // Fetch exchange rates
-    const ratesResult = await getExchangeRates(partner.id, partner.currency);
-    if (ratesResult.success) {
-      setExchangeRates(ratesResult.data);
-    }
-
-    // Check if partner hasn't ordered in 12m
-    const statusResult = await checkPartnerOrderStatus(partner.id);
-    if (statusResult.needsVerification) {
-      setWarning12m("Partner nie zamawiał w ciągu 12 miesięcy — zweryfikuj rabat");
-    }
-  };
-
-  const handleSave = async (item: OrderItem) => {
-    setError("");
-    setSuccess("");
-
-    const data = formData[item.id];
-    if (!data) {
-      setError("Brak danych formularza");
-      return;
-    }
-
-    const sellingPrice = parseFloat(item.unitPrice?.toString() || item.product.sellingPrice?.toString() || "0");
-    let finalPrice = sellingPrice;
-
-    if (data.discountValue && data.discountType) {
-      if (data.discountType === "PERCENT") {
-        finalPrice = sellingPrice - (sellingPrice * data.discountValue) / 100;
-      } else if (data.discountType === "AMOUNT") {
-        finalPrice = sellingPrice - data.discountValue;
-      }
-    }
-
-    setLoading(true);
-    try {
-      const result = await updateOrderItemPricing(item.id, {
-        currency: data.currency,
-        exchangeRate: data.exchangeRate,
-        discountType: data.discountType,
-        discountValue: data.discountValue ?? undefined,
-        notes: data.notes,
+  function save() {
+    setMsg(null);
+    start(async () => {
+      const res = await priceServiceOrder(orderId, {
+        currency,
+        lines: items.map((i) => ({ itemId: i.id, discountType: lines[i.id].type, discountValue: lines[i.id].value === "" ? null : Number(lines[i.id].value) })),
+        acceptLowMargin: acceptLow,
       });
+      setMsg(res.success ? { ok: true, text: `Zapisano wycenę: ${res.data?.total}` } : { ok: false, text: res.error });
+      if (res.success) router.refresh();
+    });
+  }
 
-      setLoading(false);
-
-      if (result?.success) {
-        localStorage.setItem(
-          `partner_discount_${partner.id}`,
-          JSON.stringify({
-            type: data.discountType,
-            value: data.discountValue,
-            savedAt: new Date().toISOString(),
-          })
-        );
-
-        setSuccess("✓ Zapisano!");
-        setEditingItemId(null);
-        setFormData({});
-        setTimeout(() => {
-          window.location.reload();
-        }, 800);
-      } else {
-        setError(result?.error || "Nie udało się zapisać");
-      }
-    } catch (err) {
-      setLoading(false);
-      setError(`Błąd: ${err instanceof Error ? err.message : "nieznany błąd"}`);
-    }
-  };
-
-  const handleCreatePending = async (item: OrderItem) => {
-    if (!pendingDate) {
-      setError("Wybierz datę dostępności");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-    setSuccess("");
-
-    const result = await createPendingOrderItem(
-      item.id,
-      new Date(pendingDate),
-      pendingSuffix
-    );
-
-    setLoading(false);
-
-    if (result.success) {
-      setSuccess("✓ Dodano do \"Realizuj Później\"");
-      setPendingItemId(null);
-      setPendingDate("");
-      setPendingSuffix("/A");
-      setEditingItemId(null);
-      setFormData({});
-      setTimeout(() => setSuccess(""), 3000);
-      // window.location.reload();  // Usunięty agresywny reload
-    } else {
-      setError(result.error || "Błąd");
-    }
-  };
+  const set = (id: string, patch: Partial<{ type: DiscountType | null; value: string }>) =>
+    setLines((p) => ({ ...p, [id]: { ...p[id], ...patch } }));
 
   return (
-    <div>
-      {warning12m && (
-        <div
-          style={{
-            padding: 12,
-            background: "var(--warn-soft)",
-            color: "var(--warn)",
-            borderRadius: "var(--r-sm)",
-            marginBottom: 16,
-            fontSize: 13,
-          }}
-        >
-          ⚠️ {warning12m}
+    <SectionCard
+      title="Wycena"
+      action={
+        <span style={{ fontSize: 12.5, color: totals.priced ? "#14633f" : "var(--ink-3)", fontWeight: 600 }}>
+          {pricedAt ? `Wyceniono ${new Date(pricedAt).toLocaleDateString("pl-PL")}` : "Niewycenione"}
+        </span>
+      }
+    >
+      {editable && (
+        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 14 }}>
+          <label style={{ fontSize: 13, fontWeight: 600 }}>Waluta</label>
+          <select className="select" style={{ width: 190 }} value={currency} onChange={(e) => setCurrency(e.target.value as Currency)}>
+            {CURRENCIES.map((c) => <option key={c} value={c} disabled={!rates[c]}>{c}{c === partnerCurrency ? " (partnera)" : ""}{!rates[c] ? " — brak kursu" : ""}</option>)}
+          </select>
+          <span style={{ fontSize: 12.5, color: rate ? "var(--ink-3)" : "#97271b" }}>
+            {rate ? rate.label : `Brak kursu ${currency}↔PLN — dodaj go w Admin → Kursy walut.`}
+          </span>
         </div>
       )}
 
-      {error && (
-        <div
-          style={{
-            padding: 12,
-            background: "var(--danger-soft)",
-            color: "var(--danger)",
-            borderRadius: "var(--r-sm)",
-            marginBottom: 16,
-            fontSize: 13,
-          }}
-        >
-          {error}
+      {missingPrice.length > 0 && editable && (
+        <div className="nip-note" style={{ marginTop: 0, marginBottom: 12, background: "var(--danger-soft)", color: "#97271b" }}>
+          <Icon name="alert" size={18} />Brak ceny sprzedaży w katalogu: {missingPrice.map((i) => i.sku).join(", ")}. Uzupełnij ją w produkcie, aby wycenić.
+        </div>
+      )}
+      {catalogChanged && (
+        <div className="nip-note" style={{ marginTop: 0, marginBottom: 12, background: "var(--warn-soft)", color: "#845509" }}>
+          <Icon name="info" size={18} />Ceny katalogowe zmieniły się od ostatniej wyceny — zapis przeliczy wycenę według bieżącego cennika.
         </div>
       )}
 
-      {success && (
-        <div
-          style={{
-            padding: 12,
-            background: "var(--success-soft)",
-            color: "var(--success)",
-            borderRadius: "var(--r-sm)",
-            marginBottom: 16,
-            fontSize: 13,
-          }}
-        >
-          ✓ {success}
-        </div>
-      )}
-
-      {/* Modal "Realizuj Później" */}
-      {pendingItemId && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-          }}
-          onClick={() => setPendingItemId(null)}
-        >
-          <div
-            style={{
-              background: "var(--paper)",
-              border: "1px solid var(--ink-2)",
-              borderRadius: "var(--r)",
-              padding: 24,
-              maxWidth: 400,
-              width: "90%",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={{ marginBottom: 16, fontSize: 16, fontWeight: 600 }}>Realizuj Później</h3>
-
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 8 }}>
-                Przewidywana dostępność *
-              </label>
-              <input
-                type="date"
-                value={pendingDate}
-                onChange={(e) => setPendingDate(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "8px 12px",
-                  border: "1px solid var(--ink-2)",
-                  borderRadius: "var(--r-sm)",
-                  fontSize: 13,
-                }}
-              />
-            </div>
-
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 8 }}>
-                Sufiks zamówienia
-              </label>
-              <select
-                value={pendingSuffix}
-                onChange={(e) => setPendingSuffix(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "8px 12px",
-                  border: "1px solid var(--ink-2)",
-                  borderRadius: "var(--r-sm)",
-                  fontSize: 13,
-                }}
-              >
-                <option value="/A">/A (Część 1)</option>
-                <option value="/B">/B (Część 2)</option>
-                <option value="/C">/C (Część 3)</option>
-                <option value="/D">/D (Część 4)</option>
-                <option value="/E">/E (Część 5)</option>
-              </select>
-            </div>
-
-            <div style={{ display: "flex", gap: 8 }}>
-              <button
-                onClick={() => handleCreatePending(items.find((i) => i.id === pendingItemId)!)}
-                disabled={loading}
-                style={{
-                  flex: 1,
-                  padding: "8px 12px",
-                  background: "var(--warn)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "var(--r-sm)",
-                  cursor: loading ? "not-allowed" : "pointer",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  opacity: loading ? 0.6 : 1,
-                }}
-              >
-                {loading ? "Zapisuję..." : "Dodaj"}
-              </button>
-              <button
-                onClick={() => setPendingItemId(null)}
-                style={{
-                  flex: 1,
-                  padding: "8px 12px",
-                  background: "var(--ink-2)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "var(--r-sm)",
-                  cursor: "pointer",
-                  fontSize: 12,
-                }}
-              >
-                Anuluj
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div style={{ background: "var(--paper)", border: "1px solid var(--ink-2)", borderRadius: "var(--r)", overflow: "hidden" }}>
-        {items.map((item, idx) => {
-          const isEditing = editingItemId === item.id;
-          const data = formData[item.id];
-          const sellingPrice = parseFloat(item.unitPrice?.toString() || item.product.sellingPrice?.toString() || "0");
-
-          let finalPrice = sellingPrice;
-          if (isEditing && data?.discountValue && data?.discountType) {
-            if (data.discountType === "PERCENT") {
-              finalPrice = sellingPrice - (sellingPrice * data.discountValue) / 100;
-            } else if (data.discountType === "AMOUNT") {
-              finalPrice = sellingPrice - data.discountValue;
-            }
-          }
-
-          return (
-            <div
-              key={item.id}
-              style={{
-                padding: 16,
-                borderBottom: idx < items.length - 1 ? "1px solid var(--ink-2)" : "none",
-              }}
-            >
-              {!isEditing ? (
-                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr auto", gap: 16, alignItems: "center" }}>
-                  <div>
-                    <div style={{ fontWeight: 600, marginBottom: 4 }}>{item.product.name}</div>
-                    <div style={{ fontSize: 11, color: "var(--ink-3)" }}>SKU: {item.product.sku}</div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>Ilość</div>
-                    <div style={{ fontWeight: 600 }}>{item.quantity} szt.</div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>📦 Magazyn</div>
-                    <div style={{ fontWeight: 600, color: (item.product.inventory?.currentStock || 0) >= item.quantity ? "var(--success)" : "var(--warn)" }}>
-                      {item.product.inventory?.currentStock || 0} szt.
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>Cena jedn.</div>
-                    <div style={{ fontWeight: 600 }}>{sellingPrice.toFixed(2)} {item.currency}</div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>Rabat</div>
-                    {item.discountValue ? (
-                      <div style={{ fontWeight: 600, color: "var(--warn)" }}>
-                        {item.discountType === "PERCENT" ? `${item.discountValue}%` : `${item.discountValue} ${item.currency}`}
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr>
+              <th style={th}>Część</th>
+              <th style={{ ...th, textAlign: "right" }}>Ilość</th>
+              <th style={{ ...th, textAlign: "right" }}>Stan</th>
+              <th style={{ ...th, textAlign: "right" }}>Cena kat./szt.</th>
+              <th style={th}>Rabat</th>
+              <th style={{ ...th, textAlign: "right" }}>Po rabacie/szt.</th>
+              <th style={{ ...th, textAlign: "right" }}>Wartość</th>
+              <th style={{ ...th, textAlign: "right" }}>Marża</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(({ item: i, input }) => {
+              const v = lineView(input);
+              const l = lines[i.id];
+              const low = v.margin !== null && v.margin < minMargin;
+              return (
+                <tr key={i.id}>
+                  <td style={{ ...td, minWidth: 190 }}>
+                    <div style={{ fontWeight: 600 }}>{i.name}</div>
+                    <div className="mono" style={{ fontSize: 12, color: "var(--ink-3)" }}>{i.sku}</div>
+                  </td>
+                  <td style={right}>{i.quantity}</td>
+                  <td style={{ ...right, color: i.stock >= i.quantity ? "#14633f" : "#97271b" }}>{i.stock}</td>
+                  <td style={right}>{fmtMoney(input.unitPrice, shownCurrency)}</td>
+                  <td style={td}>
+                    {editable ? (
+                      <div>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <select className="select" style={{ width: 92, padding: "6px 8px" }} value={l.type ?? ""}
+                            onChange={(e) => set(i.id, { type: (e.target.value || null) as DiscountType | null, value: e.target.value ? l.value : "" })}>
+                            <option value="">brak</option>
+                            <option value="PERCENT">%</option>
+                            <option value="AMOUNT">{currency}/szt.</option>
+                          </select>
+                          {l.type && (
+                            <input className="input" style={{ width: 80, padding: "6px 8px" }} type="number" min={0} step="0.01"
+                              value={l.value} onChange={(e) => set(i.id, { value: e.target.value })} />
+                          )}
+                        </div>
+                        {i.suggested && (
+                          <div style={{ fontSize: 11.5, color: "var(--ink-3)", marginTop: 4 }}>
+                            podpowiedź: {i.suggested.value}% · {i.suggested.source}
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div style={{ color: "var(--ink-3)" }}>—</div>
-                    )}
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>Razem</div>
-                    <div style={{ fontWeight: 600, color: "var(--brand)" }}>{(item.finalPrice || 0).toFixed(2)} {item.currency}</div>
-                  </div>
-                  <div style={{ display: "flex", gap: 4 }}>
-                    <button
-                      onClick={() => handleEdit(item)}
-                      style={{
-                        padding: "4px 8px",
-                        background: "var(--brand)",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "var(--r-sm)",
-                        cursor: "pointer",
-                        fontSize: 12,
-                        flex: 1,
-                      }}
-                    >
-                      Edytuj
-                    </button>
-                    <button
-                      onClick={() => setPendingItemId(item.id)}
-                      style={{
-                        padding: "4px 8px",
-                        background: "var(--warn-soft)",
-                        color: "var(--warn)",
-                        border: "1px solid var(--warn)",
-                        borderRadius: "var(--r-sm)",
-                        cursor: "pointer",
-                        fontSize: 12,
-                        flex: 1,
-                      }}
-                    >
-                      ⏳ Później
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
-                    <div>
-                      <div style={{ fontWeight: 600, marginBottom: 4 }}>{item.product.name}</div>
-                      <div style={{ fontSize: 11, color: "var(--ink-3)" }}>SKU: {item.product.sku}</div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>Cena sprzedaży</div>
-                      <div style={{ fontSize: 14, fontWeight: 600 }}>{sellingPrice.toFixed(2)} zł</div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>📦 Na magazynie</div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: (item.product.inventory?.currentStock || 0) >= item.quantity ? "var(--success)" : "var(--warn)" }}>
-                        {item.product.inventory?.currentStock || 0} szt.
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 600, marginBottom: 4 }}>
-                        Waluta
-                      </label>
-                      <select
-                        value={data?.currency || partner.currency}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            [item.id]: { ...data, currency: e.target.value },
-                          })
-                        }
-                        style={{
-                          width: "100%",
-                          padding: "6px 8px",
-                          border: "1px solid var(--ink-2)",
-                          borderRadius: "var(--r-sm)",
-                          fontSize: 12,
-                        }}
-                      >
-                        <option value="PLN">PLN</option>
-                        <option value="EUR">EUR</option>
-                        <option value="USD">USD</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 600, marginBottom: 4 }}>
-                        Kurs wymiany
-                      </label>
-                      <input
-                        type="number"
-                        step="0.0001"
-                        value={data?.exchangeRate || 1}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            [item.id]: { ...data, exchangeRate: parseFloat(e.target.value) },
-                          })
-                        }
-                        style={{
-                          width: "100%",
-                          padding: "6px 8px",
-                          border: "1px solid var(--ink-2)",
-                          borderRadius: "var(--r-sm)",
-                          fontSize: 12,
-                        }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 600, marginBottom: 4 }}>
-                        Typ rabatu
-                      </label>
-                      <select
-                        value={data?.discountType || "PERCENT"}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            [item.id]: { ...data, discountType: e.target.value },
-                          })
-                        }
-                        style={{
-                          width: "100%",
-                          padding: "6px 8px",
-                          border: "1px solid var(--ink-2)",
-                          borderRadius: "var(--r-sm)",
-                          fontSize: 12,
-                        }}
-                      >
-                        <option value="PERCENT">%</option>
-                        <option value="AMOUNT">zł</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 600, marginBottom: 4 }}>
-                        Wysokość rabatu
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        value={data?.discountValue ?? ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            [item.id]: { ...data, discountValue: e.target.value === "" ? null : parseFloat(e.target.value) },
-                          })
-                        }
-                        style={{
-                          width: "100%",
-                          padding: "6px 8px",
-                          border: "1px solid var(--ink-2)",
-                          borderRadius: "var(--r-sm)",
-                          fontSize: 12,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 600, marginBottom: 4 }}>
-                      Notatka (WZ numer, itp.)
-                    </label>
-                    <input
-                      type="text"
-                      value={data?.notes || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          [item.id]: { ...data, notes: e.target.value },
-                        })
-                      }
-                      placeholder="np. WZ/2024/001"
-                      style={{
-                        width: "100%",
-                        padding: "6px 8px",
-                        border: "1px solid var(--ink-2)",
-                        borderRadius: "var(--r-sm)",
-                        fontSize: 12,
-                      }}
-                    />
-                  </div>
-
-                  <div
-                    style={{
-                      background: "var(--surface-2)",
-                      padding: 12,
-                      borderRadius: "var(--r-sm)",
-                      marginBottom: 16,
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr 1fr",
-                      gap: 16,
-                      fontSize: 12,
-                    }}
-                  >
-                    <div>
-                      <div style={{ color: "var(--ink-3)", marginBottom: 2 }}>Cena sprzedaży</div>
-                      <div style={{ fontWeight: 600 }}>{sellingPrice.toFixed(2)} {data?.currency || partner.currency}</div>
-                    </div>
-                    <div>
-                      <div style={{ color: "var(--ink-3)", marginBottom: 2 }}>Rabat</div>
-                      <div style={{ fontWeight: 600, color: "var(--warn)" }}>
-                        {data?.discountType === "PERCENT" && data?.discountValue
-                          ? `${((sellingPrice * data.discountValue) / 100).toFixed(2)} ${data.currency || partner.currency}`
-                          : data?.discountValue
-                          ? `${data.discountValue} ${data.currency || partner.currency}`
-                          : "0"}
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ color: "var(--ink-3)", marginBottom: 2 }}>Finalna cena</div>
-                      <div
-                        style={{
-                          fontWeight: 600,
-                          color: false ? "var(--danger)" : "var(--brand)",
-                        }}
-                      >
-                        {finalPrice.toFixed(2)} {data?.currency || partner.currency}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      onClick={() => handleSave(item)}
-                      disabled={loading}
-                      style={{
-                        padding: "6px 12px",
-                        background: "var(--brand)",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "var(--r-sm)",
-                        cursor: loading ? "not-allowed" : "pointer",
-                        fontSize: 12,
-                        fontWeight: 600,
-                        opacity: loading ? 0.6 : 1,
-                      }}
-                    >
-                      {loading ? "Zapisuję..." : "Zapisz"}
-                    </button>
-                    <button
-                      onClick={() => setEditingItemId(null)}
-                      style={{
-                        padding: "6px 12px",
-                        background: "var(--ink-2)",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "var(--r-sm)",
-                        cursor: "pointer",
-                        fontSize: 12,
-                      }}
-                    >
-                      Anuluj
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
+                    ) : input.discountType ? (
+                      input.discountType === "PERCENT" ? `${input.discountValue}%` : `${fmtMoney(input.discountValue, shownCurrency)}/szt.`
+                    ) : "—"}
+                  </td>
+                  <td style={right}>{fmtMoney(v.finalUnit ?? input.finalPrice, shownCurrency)}</td>
+                  <td style={{ ...right, fontWeight: 600 }}>{v.priced ? fmtMoney(v.total, shownCurrency) : "—"}</td>
+                  <td style={{ ...right, color: low ? "#97271b" : "var(--ink-2)", fontWeight: low ? 700 : 400 }}>
+                    {fmtPct(v.margin)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
-    </div>
+
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 20, flexWrap: "wrap", marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--line)" }}>
+        <div style={{ fontSize: 12.5, color: "var(--ink-3)", maxWidth: 420 }}>
+          Ceny katalogowe w PLN przeliczane kursem z panelu admina. Rabat kwotowy dotyczy 1 szt.
+          Minimalna marża partnera: <b>{minMargin}%</b>.
+        </div>
+        <div style={{ minWidth: 260, fontSize: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between" }}><span>Wartość katalogowa</span><span>{fmtMoney(totals.gross, shownCurrency)}</span></div>
+          <div style={{ display: "flex", justifyContent: "space-between", color: "#845509" }}><span>Rabaty</span><span>−{fmtMoney(totals.discount, shownCurrency)}</span></div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 16, marginTop: 6, color: "var(--brand)" }}>
+            <span>Do zapłaty</span><span>{fmtMoney(totals.total, shownCurrency)}</span>
+          </div>
+          {totals.margin !== null && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "var(--ink-3)" }}><span>Marża zamówienia</span><span>{fmtPct(totals.margin)}</span></div>}
+        </div>
+      </div>
+
+      {editable && (
+        <>
+          {lowMargin.length > 0 && (
+            <div className="nip-note" style={{ background: "var(--danger-soft)", color: "#97271b" }}>
+              <Icon name="alert" size={18} />
+              <span>
+                Marża poniżej minimum ({minMargin}%): {lowMargin.map((r) => r.item.sku).join(", ")}.{" "}
+                {isAdmin ? (
+                  <label style={{ display: "inline-flex", gap: 6, alignItems: "center", fontWeight: 700 }}>
+                    <input type="checkbox" checked={acceptLow} onChange={(e) => setAcceptLow(e.target.checked)} />Zatwierdzam niską marżę
+                  </label>
+                ) : "Zmniejsz rabat albo poproś administratora o zatwierdzenie."}
+              </span>
+            </div>
+          )}
+          {msg && (
+            <div className="nip-note" style={{ background: msg.ok ? "var(--ok-soft)" : "var(--danger-soft)", color: msg.ok ? "#14633f" : "#97271b" }}>
+              <Icon name={msg.ok ? "checkCircle" : "alert"} size={18} />{msg.text}
+            </div>
+          )}
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
+            <button className="btn btn-primary" onClick={save} disabled={busy || !rate || missingPrice.length > 0 || (lowMargin.length > 0 && !(isAdmin && acceptLow))}>
+              {busy ? "Zapisywanie…" : pricedAt ? "Zapisz zmiany wyceny" : "Zapisz wycenę"}
+            </button>
+          </div>
+        </>
+      )}
+    </SectionCard>
   );
 }

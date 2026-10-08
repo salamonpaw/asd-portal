@@ -52,7 +52,7 @@ mkdir -p public/uploads public/images
 # prisma/schema.prisma without requiring migration history.
 # Migracje danych (idempotentne SQL, w kolejności nazw) — PRZED db push,
 # żeby db push nie musiał usuwać kolumn z danymi
-for SQL in prisma/sql/*.sql; do
+for SQL in prisma/sql/*.sql; do   # tylko pliki w katalogu głównym (post/ osobno)
   [ -e "$SQL" ] || continue
   log "Running data migration $SQL..."
   npx prisma db execute --file "$SQL"
@@ -60,6 +60,13 @@ done
 
 log "Syncing database schema (prisma db push)..."
 npx prisma db push
+
+# Migracje wymagające nowego schematu (np. nowe wartości enumów) — PO db push
+for SQL in prisma/sql/post/*.sql; do
+  [ -e "$SQL" ] || continue
+  log "Running post-migration $SQL..."
+  npx prisma db execute --file "$SQL"
+done
 
 # 4. Generate Prisma Client
 log "Generating Prisma Client..."

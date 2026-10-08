@@ -1,18 +1,11 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { requirePageRole } from "@/lib/authz";
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { OrderFormClient } from "./OrderFormClient";
 
 export default async function ServiceTechnicianProductsPage() {
-  const session = await getServerSession(authOptions);
-  const userRole = session?.user?.role;
-
-  if (!session || userRole !== "SERVICE_TECHNICIAN") {
-    redirect("/login");
-  }
+  const user = await requirePageRole("SERVICE_TECHNICIAN");
 
   // Get all products with their images
   const products = await db.product.findMany({
@@ -27,10 +20,15 @@ export default async function ServiceTechnicianProductsPage() {
         take: 1,
         orderBy: { uploadedAt: "asc" }, // pierwsze = główne
       },
-      inventory: { select: { currentStock: true } },
     },
     orderBy: { name: "asc" },
   });
+
+  // Szablony firmy + ostatni adres dostawy (podpowiedź)
+  const [templates, last] = await Promise.all([
+    db.orderTemplate.findMany({ where: { partnerId: user.partnerId ?? "__none__" }, include: { items: { select: { productId: true, quantity: true } } }, orderBy: { name: "asc" } }),
+    db.serviceOrder.findFirst({ where: { technicianId: user.id }, orderBy: { createdAt: "desc" }, select: { deliveryAddress: true } }),
+  ]);
 
   return (
     <div style={{ padding: "32px", maxWidth: "1400px" }}>
@@ -64,8 +62,9 @@ export default async function ServiceTechnicianProductsPage() {
           name: p.name,
           description: p.description || "",
           image: p.productImages[0]?.filePath ?? "",
-          warehouseStock: p.inventory?.currentStock || 0,
         }))}
+        templates={templates.map((t) => ({ id: t.id, name: t.name, items: t.items }))}
+        lastAddress={last?.deliveryAddress ?? ""}
       />
     </div>
   );

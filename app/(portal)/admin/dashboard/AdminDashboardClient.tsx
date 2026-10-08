@@ -1,5 +1,7 @@
 "use client";
 
+import { STATUS_META } from "@/lib/service-orders/status";
+
 import { DashboardStats } from "@/lib/actions/admin-dashboard";
 
 interface AdminDashboardClientProps {
@@ -117,7 +119,7 @@ export function AdminDashboardClient({ stats }: AdminDashboardClientProps) {
                 borderRadius: "var(--r-sm)",
               }}
             >
-              <div style={{ fontSize: 12, color: "var(--ink-3)" }}>{status}</div>
+              <div style={{ fontSize: 12, color: "var(--ink-3)" }}>{STATUS_META[status as keyof typeof STATUS_META]?.label ?? status}</div>
               <div style={{ fontSize: 18, fontWeight: 700 }}>{count}</div>
             </div>
           ))}
@@ -268,7 +270,7 @@ export function AdminDashboardClient({ stats }: AdminDashboardClientProps) {
                         fontWeight: 600,
                       }}
                     >
-                      {order.status}
+                      {STATUS_META[order.status as keyof typeof STATUS_META]?.label ?? order.status}
                     </span>
                   </td>
                   <td
@@ -294,18 +296,5 @@ export function AdminDashboardClient({ stats }: AdminDashboardClientProps) {
 }
 
 function getStatusColor(status: string): string {
-  switch (status) {
-    case "NOWE":
-      return "var(--primary-soft)";
-    case "PRZYJĘTE":
-      return "var(--success-soft)";
-    case "ZREALIZOWANE":
-      return "var(--success-soft)";
-    case "ODRZUCONE":
-      return "var(--danger-soft)";
-    case "ZAWIESZONE":
-      return "var(--warning-soft)";
-    default:
-      return "var(--surface-2)";
-  }
+  return STATUS_META[status as keyof typeof STATUS_META]?.bg ?? "var(--surface-2)";
 }

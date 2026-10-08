@@ -5,6 +5,67 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.0] - 2026-10-08
+
+Przebudowa zamówień części serwisowych: jedno źródło danych i jedna logika
+dla magazynu, serwisanta, partnera i pulpitów.
+
+### Naprawione — pieniądze
+- Ta sama pozycja była liczona 5 różnymi wzorami (różne kwoty na różnych ekranach,
+  rabat kwotowy raz na pozycję albo na sztukę) — teraz jedna funkcja `lib/pricing.ts`
+  używana na serwerze i wszystkich ekranach
+- Wycena w szczegółach zamówienia nie zapisywała ceny jednostkowej → serwisant widział
+  „oczekuje wyceny” mimo wyceny; ceny brane z bieżącego cennika zmieniały stare zamówienia.
+  Teraz wycena zapamiętuje komplet: cena katalogowa, cena zakupu, rabat, cena końcowa
+- Rabat domyślny brał się z pamięci przeglądarki magazyniera — teraz z bazy: najpierw
+  rabat produktowy partnera (Rabaty hurtowe), potem ogólny rabat partnera; źródło widoczne
+- Waluta była tylko etykietą (kwoty PLN opisane jako EUR) — pełna obsługa walut: wycena
+  w walucie partnera, przeliczenie kursem z Admin → Kursy walut (kurs partnera ma
+  pierwszeństwo, oba kierunki zapisu kursu), kurs zapamiętany na zamówieniu
+- Minimalna marża partnera jest pilnowana (wcześniej nie działała); cenę poniżej marży
+  może zatwierdzić tylko administrator
+- Obroty na pulpicie admina: tylko zamówienia zrealizowane, w PLN
+
+### Naprawione — magazyn i realizacja
+- Trzy różne ścieżki zmiany statusu (tylko jedna zdejmowała towar) → jedna, z dozwolonymi
+  przejściami; nie da się cofnąć zrealizowanego zamówienia ani zrealizować go drugi raz
+- Realizacja w transakcji z blokadą: ta sama sztuka nie zejdzie ze stanu dwa razy,
+  także przy równoczesnych kliknięciach
+- Zamówienie bez żadnej części na stanie było oznaczane jako „Zrealizowane”
+- Korekta stanów odrzuca zapis, gdy stan zmienił się w międzyczasie (zamiast nadpisać)
+- Numery SRV bez kolizji przy jednoczesnym zapisie
+- Serwer waliduje zamówienie (ilości 1–999, adres, istniejące części, scalanie duplikatów)
+
+### Bezpieczeństwo
+- Szczegóły zamówienia serwisanta były dostępne dla dowolnego zamówienia po ID (także innej
+  firmy) — teraz tylko zamówienia własnej firmy
+- Serwisant i partner nie widzą cen zakupu ani marży (także w historii)
+
+### Dodane
+- Status „Oczekuje na części” z przewidywaną datą dostawy, widoczny u serwisanta i partnera
+  (zastępuje martwy mechanizm „Realizuj później”, którego nikt nie widział)
+- Częściowa realizacja ilości: wysyłka tego, co jest (np. 3 z 5), brakujące sztuki trafiają
+  do powiązanego zamówienia z datą dostępności; po dostawie „Części dotarły — wyślij”
+- Podgląd realizacji przed potwierdzeniem: co wysyłamy, co czeka
+- Szablony zamówień podpięte do koszyka serwisanta (zestaw jednym kliknięciem)
+- Partner: „Zamówienia części” w menu — zamówienia wszystkich serwisantów firmy
+- Koszyk podpowiada ostatni adres dostawy
+- Pulpit magazynu: do obsługi / do wyceny / czeka na części (w tym po terminie)
+
+### Zmienione / usunięte
+- Jeden ekran wyceny (szczegóły zamówienia); lista magazynu to przegląd z zakładkami
+- Jeden formularz zamawiania (koszyk serwisanta) — usunięto zdublowany formularz z `/partner/service`
+- Usunięto: `PendingOrderItem` (dane → data dostępności zamówienia), cron „pending-reminders”,
+  pola pozycji `currency`/`exchangeRate`/`fulfilledQuantity`, 4 stare pliki akcji, 3 komponenty
+- Koszyk nie ogranicza już ilości do stanu magazynu (zgodnie z wcześniejszym ustaleniem)
+
+### Migracja danych (automatycznie w deploy.sh)
+- `prisma/sql/002-service-orders.sql` + `prisma/sql/post/002-waiting-status.sql`:
+  odtwarza brakujące ceny z zapisanych pól (co do grosza), przenosi daty „Realizuj później”,
+  łączy wydzielone zamówienia z oryginałem; istniejące zamówienia zostają w PLN
+
+---
+
 ## [0.20.1] - 2026-09-28
 
 ### Bezpieczeństwo — aktualizacje zależności

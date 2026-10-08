@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { ActionResult } from "@/lib/types/actions";
+import { orderView, toPln, num, round2 } from "@/lib/pricing";
+import { itemNumbers } from "@/lib/service-orders/server";
 
 export interface DashboardStats {
   totalOrders: number;
@@ -41,89 +43,40 @@ export async function getAdminDashboardStats(): Promise<ActionResult<DashboardSt
     // Total partners
     const totalPartners = await db.partner.count();
 
-    // Get all service orders with items and partner info
+    // Obroty: tylko zamówienia zrealizowane, w PLN (kurs zapisany przy wycenie) — wspólne liczenie z lib/pricing
     const orders = await db.serviceOrder.findMany({
-      include: {
-        partner: true,
-        items: true,
-      },
+      include: { partner: { select: { name: true } }, items: true },
+      orderBy: { createdAt: "desc" },
     });
+    const REALIZED = ["ZREALIZOWANE", "CZĘŚCIOWO_ZREALIZOWANE"];
+    const plnTotal = (o: (typeof orders)[number]) => toPln(orderView(o.items.map(itemNumbers)).total, num(o.exchangeRate) ?? 1);
 
-    // Calculate revenue from orders
     let totalRevenue = 0;
-    const partnerMap = new Map<
-      string,
-      { name: string; revenue: number; orderCount: number }
-    >();
+    const partnerMap = new Map<string, { name: string; revenue: number; orderCount: number }>();
     const statusMap: Record<string, number> = {};
 
-    orders.forEach((order) => {
-      // Count by status
+    for (const order of orders) {
       statusMap[order.status] = (statusMap[order.status] || 0) + 1;
+      const revenue = REALIZED.includes(order.status) ? plnTotal(order) : 0;
+      totalRevenue += revenue;
+      const p = partnerMap.get(order.partnerId) ?? { name: order.partner.name, revenue: 0, orderCount: 0 };
+      partnerMap.set(order.partnerId, { name: p.name, revenue: p.revenue + revenue, orderCount: p.orderCount + 1 });
+    }
 
-      // Calculate revenue from items
-      const orderRevenue = order.items.reduce((sum, item) => {
-        if (item.finalPrice) {
-          return sum + Number(item.finalPrice) * item.quantity;
-        }
-        return sum;
-      }, 0);
-
-      totalRevenue += orderRevenue;
-
-      // Track per partner
-      const partnerId = order.partnerId;
-      const existing = partnerMap.get(partnerId) || {
-        name: order.partner.name,
-        revenue: 0,
-        orderCount: 0,
-      };
-
-      partnerMap.set(partnerId, {
-        name: existing.name,
-        revenue: existing.revenue + orderRevenue,
-        orderCount: existing.orderCount + 1,
-      });
-    });
-
-    // Top partners by revenue
-    const topPartners = Array.from(partnerMap.entries())
-      .map(([id, data]) => ({
-        id,
-        name: data.name,
-        orderCount: data.orderCount,
-        revenue: data.revenue,
-      }))
+    const topPartners = [...partnerMap.entries()]
+      .map(([id, d]) => ({ id, name: d.name, orderCount: d.orderCount, revenue: round2(d.revenue) }))
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
 
-    // Recent orders
-    const recentOrders = await db.serviceOrder.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 10,
-      include: {
-        partner: true,
-        items: true,
-      },
-    });
-
-    const recentOrdersFormatted = recentOrders.map((order) => {
-      const totalPrice = order.items.reduce((sum, item) => {
-        if (item.finalPrice) {
-          return sum + Number(item.finalPrice) * item.quantity;
-        }
-        return sum;
-      }, 0);
-
-      return {
-        id: order.id,
-        code: order.code,
-        status: order.status,
-        partnerName: order.partner.name,
-        createdAt: order.createdAt,
-        totalPrice,
-      };
-    });
+    const recentOrdersFormatted = orders.slice(0, 10).map((order) => ({
+      id: order.id,
+      code: order.code,
+      status: order.status,
+      partnerName: order.partner.name,
+      createdAt: order.createdAt,
+      totalPrice: plnTotal(order),
+    }));
+    totalRevenue = round2(totalRevenue);
 
     return {
       success: true,

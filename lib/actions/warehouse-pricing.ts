@@ -1,142 +1,24 @@
 "use server";
 
-import { errMsg } from "@/lib/authz";
-
-import { getSessionUser, AuthError } from "@/lib/authz";
-
+// Kursy walut (Admin → Kursy walut). Wycena zamówień korzysta z nich przez lib/service-orders/server.ts.
 import { db } from "@/lib/db";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireRole, errMsg, UserError } from "@/lib/authz";
+import type { Currency } from "@prisma/client";
 
-export async function updateOrderItemPricing(
-  itemId: string,
-  data: {
-    currency?: string;
-    exchangeRate?: number;
-    discountType?: string;
-    discountValue?: number;
-    notes?: string;
-  }
-) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user || session.user.role !== "WAREHOUSE_SPECIALIST") {
-    return { success: false, error: "Brak dostępu - nie jesteś magazynierem" };
-  }
+const CURRENCIES: Currency[] = ["PLN", "EUR", "USD"];
 
+export async function addExchangeRate(fromCurrency: string, toCurrency: string, rate: number, effectiveDate: Date, partnerId?: string) {
   try {
-    const item = await db.serviceOrderItem.findUnique({
-      where: { id: itemId },
-      include: {
-        serviceOrder: { include: { partner: true } },
-        product: true,
-      },
-    });
-
-    if (!item) {
-      return { success: false, error: "Pozycja nie znaleziona" };
-    }
-
-    // Calculate final price based on unit price
-    let finalPrice = item.unitPrice ? parseFloat(item.unitPrice.toString()) : parseFloat(item.product.sellingPrice?.toString() || "0");
-
-    // Apply discount if provided
-    if (data.discountValue && data.discountType) {
-      const discountVal = typeof data.discountValue === "string" ? parseFloat(data.discountValue) : data.discountValue;
-      if (data.discountType === "PERCENT") {
-        finalPrice = finalPrice - (finalPrice * discountVal) / 100;
-      } else if (data.discountType === "AMOUNT") {
-        finalPrice = finalPrice - discountVal;
-      }
-    }
-
-    // Ensure finalPrice is not negative
-    finalPrice = Math.max(0, finalPrice);
-
-    // Convert discount value to number if it's a string
-    const discountValue = data.discountValue === undefined || data.discountValue === null
-      ? null
-      : typeof data.discountValue === "string" ? parseFloat(data.discountValue) : data.discountValue;
-
-    // Update item
-    const updateData: any = {
-      discountType: data.discountType as any,
-      discountValue: discountValue,
-      finalPrice,
-    };
-
-    if (data.currency) updateData.currency = data.currency as any;
-    if (data.exchangeRate !== undefined) updateData.exchangeRate = data.exchangeRate;
-    if (data.notes !== undefined) updateData.notes = data.notes;
-
-    const result = await db.serviceOrderItem.update({
-      where: { id: itemId },
-      data: updateData,
-    });
-
-    return { success: true, data: result };
-  } catch (error) {
-    console.error("[updateOrderItemPricing] Error:", error);
-    return { success: false, error: errMsg(error) };
-  }
-}
-
-export async function getExchangeRates(
-  partnerId: string,
-  baseCurrency: string
-) {
-  const __u = await getSessionUser();
-  if (!__u || !["WAREHOUSE_SPECIALIST", "ADMIN"].includes(__u.role)) throw new AuthError();
-  try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const rates = await db.currencyExchangeRate.findMany({
-      where: {
-        OR: [{ partnerId }, { partnerId: null }],
-        fromCurrency: baseCurrency as any,
-        effectiveDate: { lte: today },
-      },
-      orderBy: { effectiveDate: "desc" },
-      take: 100,
-    });
-
-    // Group by currency and take latest
-    const latestRates: Record<string, number> = {};
-    rates.forEach((r) => {
-      if (!latestRates[r.toCurrency]) {
-        latestRates[r.toCurrency] = parseFloat(r.rate.toString());
-      }
-    });
-
-    return { success: true, data: latestRates };
-  } catch (error) {
-    return { success: false, error: errMsg(error), data: {} };
-  }
-}
-
-export async function addExchangeRate(
-  fromCurrency: string,
-  toCurrency: string,
-  rate: number,
-  effectiveDate: Date,
-  partnerId?: string
-) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return { success: false, error: "Brak dostępu" };
-  }
-
-  try {
+    await requireRole("ADMIN");
+    if (!CURRENCIES.includes(fromCurrency as Currency) || !CURRENCIES.includes(toCurrency as Currency)) throw new UserError("Nieprawidłowa waluta.");
+    if (fromCurrency === toCurrency) throw new UserError("Waluty muszą się różnić.");
+    if (fromCurrency !== "PLN" && toCurrency !== "PLN") throw new UserError("Jedna z walut musi być PLN (wycena przelicza ceny katalogowe z PLN).");
+    if (!(rate > 0 && rate < 10000)) throw new UserError("Nieprawidłowy kurs.");
+    const date = new Date(effectiveDate);
+    if (Number.isNaN(date.getTime())) throw new UserError("Nieprawidłowa data.");
     await db.currencyExchangeRate.create({
-      data: {
-        fromCurrency: fromCurrency as any,
-        toCurrency: toCurrency as any,
-        rate,
-        effectiveDate,
-        partnerId,
-      },
+      data: { fromCurrency: fromCurrency as Currency, toCurrency: toCurrency as Currency, rate, effectiveDate: date, partnerId: partnerId || null },
     });
-
     return { success: true };
   } catch (error) {
     return { success: false, error: errMsg(error) };

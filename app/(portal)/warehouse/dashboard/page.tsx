@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import Link from "next/link";
+import { OrderStatusBadge } from "@/components/portal/OrderStatusBadge";
 import { Icon, EmptyState } from "@/components/ui";
 
 export default async function WarehouseDashboard() {
@@ -14,11 +15,14 @@ export default async function WarehouseDashboard() {
   }
 
   // Stats
-  const totalOrders = await db.serviceOrder.count();
-  const totalProducts = await db.product.count();
-  const pricedItems = await db.serviceOrderItem.count({
-    where: { unitPrice: { not: null } },
-  });
+  // Statystyki liczone z tych samych reguł co wszędzie (status + pricedAt)
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const [toHandle, toPrice, waiting, overdue] = await Promise.all([
+    db.serviceOrder.count({ where: { status: { in: ["NOWE", "PRZYJĘTE"] } } }),
+    db.serviceOrder.count({ where: { status: { in: ["NOWE", "PRZYJĘTE", "ZAWIESZONE", "OCZEKUJE_NA_CZESCI"] }, pricedAt: null } }),
+    db.serviceOrder.count({ where: { status: "OCZEKUJE_NA_CZESCI" } }),
+    db.serviceOrder.count({ where: { status: "OCZEKUJE_NA_CZESCI", expectedDate: { lt: today } } }),
+  ]);
   const productsInStock = await db.inventory.count({
     where: { currentStock: { gt: 0 } },
   });
@@ -38,10 +42,10 @@ export default async function WarehouseDashboard() {
   });
 
   const stats = [
-    { label: "Zamówienia", value: totalOrders, icon: "clipboard" },
-    { label: "Produkty w magazynie", value: productsInStock, icon: "box" },
-    { label: "Wycenione pozycje", value: pricedItems, icon: "check-circle" },
-    { label: "Wszystkie produkty", value: totalProducts, icon: "grid" },
+    { label: "Do obsługi", value: toHandle, icon: "clipboard" },
+    { label: "Do wyceny", value: toPrice, icon: "check-circle" },
+    { label: overdue ? `Czeka na części (${overdue} po terminie)` : "Czeka na części", value: waiting, icon: "clock" },
+    { label: "Produkty na stanie", value: productsInStock, icon: "box" },
   ];
 
   return (
@@ -143,8 +147,8 @@ export default async function WarehouseDashboard() {
                   >
                     {order.code}
                   </Link>
-                  <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }}>
-                    {order.items.length} pozycji
+                  <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4, display: "flex", gap: 8, alignItems: "center" }}>
+                    {order.items.length} pozycji <OrderStatusBadge status={order.status} expectedDate={order.expectedDate} />
                   </div>
                 </div>
                 <div

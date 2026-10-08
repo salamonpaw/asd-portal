@@ -1,235 +1,61 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
 import Link from "next/link";
+import { db } from "@/lib/db";
+import { requirePageRole } from "@/lib/authz";
+import { orderView, fmtMoney } from "@/lib/pricing";
+import { itemNumbers } from "@/lib/service-orders/server";
+import { PageHead, StatCard, EmptyState } from "@/components/ui";
+import { Icon } from "@/components/ui/Icon";
+import { OrderStatusBadge } from "@/components/portal/OrderStatusBadge";
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  NOWE: { label: "Nowe — oczekuje potwierdzenia", color: "#0066ff", bg: "#e6f2ff" },
-  PRZYJĘTE: { label: "Przyjęte", color: "#00aa00", bg: "#e6ffe6" },
-  CZĘŚCIOWO_ZREALIZOWANE: { label: "Częściowo zrealizowane", color: "#ff9900", bg: "#fff4e6" },
-  ZREALIZOWANE: { label: "Zrealizowane", color: "#6633cc", bg: "#f3e6ff" },
-  ODRZUCONE: { label: "Odrzucone", color: "#cc0000", bg: "#ffe6e6" },
-  ZAWIESZONE: { label: "Zawieszone", color: "#666666", bg: "#f0f0f0" },
-};
+export const revalidate = 0;
 
 export default async function ServiceTechnicianDashboard() {
-  const session = await getServerSession(authOptions);
-  const userRole = session?.user?.role;
-  const userId = session?.user?.id;
+  const user = await requirePageRole("SERVICE_TECHNICIAN");
 
-  if (!session || userRole !== "SERVICE_TECHNICIAN") {
-    redirect("/login");
-  }
-
-  // Get user's orders (only SERVICE_TECHNICIAN created them)
   const orders = await db.serviceOrder.findMany({
-    where: { technicianId: userId },
-    include: {
-      items: {
-        select: {
-          id: true,
-          quantity: true,
-          unitPrice: true,
-          product: { select: { name: true, sku: true } },
-        },
-      },
-      partner: { select: { name: true } },
-    },
+    where: { technicianId: user.id },
+    include: { items: { include: { product: { select: { name: true, sku: true } } } } },
     orderBy: { createdAt: "desc" },
   });
 
-  // Stats
-  const totalOrders = orders.length;
-  const newOrders = orders.filter((o) => o.status === "NOWE").length;
-  const acceptedOrders = orders.filter((o) => o.status === "PRZYJĘTE").length;
-  const completedOrders = orders.filter((o) => o.status === "ZREALIZOWANE").length;
-
-  const stats = [
-    { label: "Wszystkie zamówienia", value: totalOrders, icon: "clipboard" },
-    { label: "Oczekujące potwierdzenia", value: newOrders, icon: "alert-circle" },
-    { label: "Przyjęte", value: acceptedOrders, icon: "check-circle" },
-    { label: "Ukończone", value: completedOrders, icon: "flag" },
-  ];
+  const rows = orders.map((o) => ({ ...o, view: orderView(o.items.map(itemNumbers)) }));
+  const open = rows.filter((o) => ["NOWE", "PRZYJĘTE", "ZAWIESZONE"].includes(o.status)).length;
+  const waiting = rows.filter((o) => o.status === "OCZEKUJE_NA_CZESCI").length;
+  const done = rows.filter((o) => o.status === "ZREALIZOWANE" || o.status === "CZĘŚCIOWO_ZREALIZOWANE").length;
 
   return (
-    <div style={{ padding: "32px", maxWidth: "1200px" }}>
-      {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ marginBottom: 8 }}>Moje Zamówienia</h1>
-        <p style={{ color: "var(--ink-3)" }}>
-          Przegląd swoich zamówień na części — status i szczegóły
-        </p>
+    <div className="fadeup">
+      <PageHead title="Moje zamówienia części" sub="Status, wycena i termin dostawy Twoich zamówień.">
+        <Link href="/service-technician/products" className="btn btn-primary"><Icon name="plus" size={16} />Zamów części</Link>
+      </PageHead>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 20 }}>
+        <StatCard icon="layers" label="Wszystkie" value={rows.length} />
+        <StatCard icon="clock" label="W realizacji" value={open} tone="var(--brand)" />
+        <StatCard icon="alert" label="Czeka na części" value={waiting} tone="var(--warn)" soft="var(--warn-soft)" />
+        <StatCard icon="checkCircle" label="Zrealizowane" value={done} tone="var(--ok)" soft="var(--ok-soft)" />
       </div>
 
-      {/* Navigation */}
-      <div style={{ marginBottom: 24, display: "flex", gap: 8 }}>
-        <Link
-          href="/service-technician/products"
-          style={{
-            padding: "8px 16px",
-            background: "var(--brand)",
-            color: "white",
-            textDecoration: "none",
-            borderRadius: "var(--r-sm)",
-            fontSize: 13,
-            fontWeight: 600,
-          }}
-        >
-          + Nowe zamówienie
-        </Link>
-      </div>
-
-      {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 32 }}>
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            style={{
-              background: "var(--paper)",
-              border: "1px solid var(--ink-2)",
-              borderRadius: "var(--r)",
-              padding: 20,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              textAlign: "center",
-              gap: 12,
-            }}
-          >
-            <div
-              style={{
-                width: 64,
-                height: 64,
-                background: "var(--brand)",
-                borderRadius: "var(--r-sm)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-                position: "relative",
-              }}
-            >
-              <div style={{ fontSize: 32, fontWeight: 700, color: "white" }}>{stat.value}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 12, color: "var(--ink-3)", fontWeight: 500 }}>
-                {stat.label}
+      <div className="card">
+        {rows.length === 0 ? (
+          <EmptyState icon="layers" title="Brak zamówień" sub="Zamów pierwsze części w zakładce Zamów części." />
+        ) : rows.map((o) => (
+          <Link key={o.id} href={`/service-technician/orders/${o.id}`} className="attn-row" style={{ alignItems: "flex-start", textDecoration: "none", color: "inherit" }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                <span className="mono" style={{ fontWeight: 700 }}>{o.code}</span>
+                <OrderStatusBadge status={o.status} expectedDate={o.expectedDate} />
               </div>
+              <div style={{ fontSize: 12.5, color: "var(--ink-3)", marginTop: 6 }}>
+                {o.items.slice(0, 3).map((i) => `${i.product.name} × ${i.quantity}`).join(" · ")}{o.items.length > 3 ? ` · +${o.items.length - 3}` : ""}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }}>{o.createdAt.toLocaleDateString("pl-PL")}{o.trackingNumber ? ` · przesyłka ${o.trackingNumber}` : ""}</div>
             </div>
-          </div>
+            <div style={{ textAlign: "right", whiteSpace: "nowrap", fontWeight: 700 }}>
+              {o.view.priced ? fmtMoney(o.view.total, o.currency) : <span style={{ fontSize: 12.5, fontWeight: 600, color: "#845509" }}>oczekuje na wycenę</span>}
+            </div>
+          </Link>
         ))}
-      </div>
-
-      {/* Orders List */}
-      <div style={{ background: "var(--paper)", border: "1px solid var(--ink-2)", borderRadius: "var(--r)", overflow: "hidden" }}>
-        {orders.length > 0 ? (
-          orders.map((order, idx) => {
-            const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.NOWE;
-            const itemsCount = order.items.length;
-            const pricedItems = order.items.filter((i) => i.unitPrice).length;
-
-            return (
-              <div
-                key={order.id}
-                style={{
-                  padding: 16,
-                  borderBottom: idx < orders.length - 1 ? "1px solid var(--ink-2)" : "none",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 12 }}>
-                  <div>
-                    <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>{order.code}</h3>
-                    <div style={{ fontSize: 12, color: "var(--ink-3)" }}>
-                      Partner: {order.partner.name} • {itemsCount} pozycji
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      padding: "6px 12px",
-                      background: statusConfig.bg,
-                      color: statusConfig.color,
-                      borderRadius: "var(--r-sm)",
-                      fontSize: 12,
-                      fontWeight: 600,
-                      textAlign: "center",
-                    }}
-                  >
-                    {statusConfig.label}
-                  </div>
-                </div>
-
-                {/* Items Preview */}
-                <div style={{ marginBottom: 12, fontSize: 12, color: "var(--ink-2)" }}>
-                  {order.items.map((item, i) => (
-                    <div key={item.id} style={{ marginBottom: 4 }}>
-                      {item.product.sku} — {item.product.name} ({item.quantity} szt.)
-                      {item.unitPrice && (
-                        <span style={{ color: "var(--brand)", fontWeight: 600, marginLeft: 8 }}>
-                          {(item.unitPrice as any).toFixed(2)} zł
-                        </span>
-                      )}
-                      {!item.unitPrice && <span style={{ color: "var(--warn)" }}> — oczekuje wyceny</span>}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Status indicator */}
-                <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 11 }}>
-                  {order.status === "NOWE" && (
-                    <span style={{ color: "#0066ff" }}>⏳ Czeka na potwierdzenie przez magazyniera</span>
-                  )}
-                  {order.status === "PRZYJĘTE" && pricedItems < itemsCount && (
-                    <span style={{ color: "#ff9900" }}>💰 {itemsCount - pricedItems} pozycji czeka na wycenę</span>
-                  )}
-                  {order.status === "PRZYJĘTE" && pricedItems === itemsCount && (
-                    <span style={{ color: "#00aa00" }}>✓ Wszystko wycenione — do pobrania</span>
-                  )}
-                  {order.status === "ZREALIZOWANE" && (
-                    <span style={{ color: "#6633cc" }}>✓ Zamówienie ukończone</span>
-                  )}
-                  {order.status === "ODRZUCONE" && (
-                    <span style={{ color: "#cc0000" }}>✗ Zamówienie odrzucone</span>
-                  )}
-                </div>
-
-                {/* Link to details */}
-                <Link
-                  href={`/service-technician/orders/${order.id}`}
-                  style={{
-                    display: "inline-block",
-                    marginTop: 8,
-                    fontSize: 12,
-                    color: "var(--brand)",
-                    textDecoration: "none",
-                    fontWeight: 600,
-                  }}
-                >
-                  Szczegóły →
-                </Link>
-              </div>
-            );
-          })
-        ) : (
-          <div style={{ padding: 32, textAlign: "center", color: "var(--ink-3)" }}>
-            <p>Brak zamówień</p>
-            <Link
-              href="/service-technician/products"
-              style={{
-                display: "inline-block",
-                marginTop: 12,
-                padding: "8px 16px",
-                background: "var(--brand)",
-                color: "white",
-                textDecoration: "none",
-                borderRadius: "var(--r-sm)",
-                fontSize: 13,
-              }}
-            >
-              Stwórz pierwsze zamówienie
-            </Link>
-          </div>
-        )}
       </div>
     </div>
   );

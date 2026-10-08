@@ -9,7 +9,12 @@ interface Product {
   name: string;
   description: string;
   image: string;
-  warehouseStock: number;
+}
+
+export interface Template {
+  id: string;
+  name: string;
+  items: { productId: string; quantity: number }[];
 }
 
 interface CartItem {
@@ -19,9 +24,11 @@ interface CartItem {
 
 interface OrderFormClientProps {
   products: Product[];
+  templates: Template[];
+  lastAddress: string;
 }
 
-export function OrderFormClient({ products }: OrderFormClientProps) {
+export function OrderFormClient({ products, templates, lastAddress }: OrderFormClientProps) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,10 +37,29 @@ export function OrderFormClient({ products }: OrderFormClientProps) {
   const [showForm, setShowForm] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState({
-    deliveryAddress: "",
+    deliveryAddress: lastAddress,
     notes: "",
     neededDate: "",
   });
+
+  // Szablon: dodaje cały zestaw do koszyka (ilości sumują się z tym, co już jest)
+  const applyTemplate = (templateId: string) => {
+    const t = templates.find((x) => x.id === templateId);
+    if (!t) return;
+    const byId = new Map(products.map((p) => [p.id, p]));
+    let next = [...cart];
+    let added = 0;
+    for (const ti of t.items) {
+      const product = byId.get(ti.productId);
+      if (!product) continue;
+      added++;
+      const ex = next.find((c) => c.product.id === product.id);
+      next = ex ? next.map((c) => (c.product.id === product.id ? { ...c, quantity: c.quantity + ti.quantity } : c)) : [...next, { product, quantity: ti.quantity }];
+    }
+    setCart(next);
+    setSuccess(`Dodano szablon „${t.name}” (${added} części)`);
+    setTimeout(() => setSuccess(""), 2500);
+  };
 
   const filteredProducts = products.filter(
     (p) =>
@@ -98,17 +124,12 @@ export function OrderFormClient({ products }: OrderFormClientProps) {
     setLoading(true);
 
     try {
-      const result = await createServiceOrder(
-        "", // partnerId - pobierany z sesji w action
-        "", // technicianId - pobierany z sesji w action
-        cart.map((item) => ({
-          productId: item.product.id,
-          quantity: item.quantity,
-        })),
-        formData.deliveryAddress,
-        formData.neededDate || undefined,
-        formData.notes || undefined
-      );
+      const result = await createServiceOrder({
+        items: cart.map((item) => ({ productId: item.product.id, quantity: item.quantity })),
+        deliveryAddress: formData.deliveryAddress,
+        neededDate: formData.neededDate || undefined,
+        notes: formData.notes || undefined,
+      });
 
       if (result.success) {
         setSuccess(`✓ Zamówienie ${result.data?.code} utworzone!`);
@@ -382,6 +403,16 @@ export function OrderFormClient({ products }: OrderFormClientProps) {
             Koszyk ({cart.length} części)
           </h2>
 
+          {templates.length > 0 && (
+            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 14 }}>
+              <select className="select" value="" onChange={(e) => applyTemplate(e.target.value)} style={{ flex: 1 }}>
+                <option value="">+ Dodaj zestaw z szablonu…</option>
+                {templates.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.items.length} części)</option>)}
+              </select>
+              <a href="/partner/templates" style={{ fontSize: 12.5, color: "var(--brand)", whiteSpace: "nowrap" }}>Zarządzaj</a>
+            </div>
+          )}
+
           {cart.length === 0 ? (
             <div
               style={{
@@ -425,7 +456,7 @@ export function OrderFormClient({ products }: OrderFormClientProps) {
                     <input
                       type="number"
                       min="1"
-                      max={item.product.warehouseStock}
+                      max={999}
                       value={item.quantity}
                       onChange={(e) =>
                         updateQuantity(item.product.id, parseInt(e.target.value) || 1)

@@ -1,270 +1,122 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
 import Link from "next/link";
-import { Icon } from "@/components/ui/Icon";
+import { notFound } from "next/navigation";
+import { db } from "@/lib/db";
+import { requirePageRole } from "@/lib/authz";
+import { num, orderView, fmtMoney } from "@/lib/pricing";
+import { canDo } from "@/lib/service-orders/status";
+import { defaultDiscounts, ratesFor, itemNumbers } from "@/lib/service-orders/server";
+import { KV, SectionCard } from "@/components/ui";
+import { OrderStatusBadge } from "@/components/portal/OrderStatusBadge";
 import { OrderPricingClient } from "./OrderPricingClient";
-import { OrderActionsClient } from "./OrderActionsClient";
-import { OrderStatusChanger } from "./OrderStatusChanger";
-import { OrderTrackingClient } from "./OrderTrackingClient";
+import { OrderWorkflowClient } from "./OrderWorkflowClient";
 
-// Wyłącz caching dla dynamic order pages - zawsze swieże dane
 export const revalidate = 0;
 
-export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function WarehouseOrderPage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await requirePageRole("WAREHOUSE_SPECIALIST", "ADMIN");
   const { id } = await params;
-  const session = await getServerSession(authOptions);
-  const userRole = session?.user?.role;
-
-  if (!session || userRole !== "WAREHOUSE_SPECIALIST") {
-    redirect("/login");
-  }
 
   const order = await db.serviceOrder.findUnique({
     where: { id },
     include: {
-      items: {
-        include: {
-          product: {
-            include: {
-              inventory: { select: { currentStock: true } },
-            },
-          },
-        },
-      },
-      partner: true,
-      technician: true,
-      warehouseSpecialist: true,
+      items: { include: { product: { include: { inventory: { select: { currentStock: true } } } } }, orderBy: { createdAt: "asc" } },
+      partner: { select: { id: true, name: true, currency: true, minProfitMargin: true } },
+      technician: { select: { name: true, email: true } },
+      warehouseSpecialist: { select: { name: true, email: true } },
+      parentOrder: { select: { id: true, code: true } },
+      childOrders: { select: { id: true, code: true, status: true, expectedDate: true } },
       history: { orderBy: { createdAt: "desc" } },
     },
   });
+  if (!order) notFound();
 
-  if (!order) {
-    return (
-      <div style={{ padding: "32px", textAlign: "center" }}>
-        <h1>Zamówienie nie znalezione</h1>
-        <Link href="/warehouse" style={{ color: "var(--brand)", textDecoration: "none" }}>
-          ← Wróć do listy
-        </Link>
-      </div>
-    );
-  }
-
-  // Calculate totals: Wartość pozycji (gross) - Rabaty (discounts) = Do zapłaty (final)
-  let itemsTotal = 0; // Gross before discounts
-  let discountsTotal = 0; // Total discounts
-
-  order.items.forEach((item) => {
-    const quantity = item.quantity || 1;
-    const unitPrice = item.unitPrice
-      ? parseFloat(item.unitPrice.toString())
-      : parseFloat(item.product?.sellingPrice?.toString() || "0");
-    const discountValue = item.discountValue ? parseFloat(item.discountValue.toString()) : 0;
-
-    const grossPrice = unitPrice * quantity;
-    itemsTotal += grossPrice; // Always add gross price
-
-    // Calculate discount amount
-    if (discountValue > 0 && item.discountType) {
-      if (item.discountType === "PERCENT") {
-        discountsTotal += (grossPrice * discountValue) / 100;
-      } else if (item.discountType === "AMOUNT") {
-        discountsTotal += discountValue * quantity;
-      }
-    }
-  });
-
-  const finalTotal = itemsTotal - discountsTotal;
-
-  const statusColor: Record<string, string> = {
-    NOWE: "var(--ink-3)",
-    PRZYJĘTE: "var(--brand)",
-    CZĘŚCIOWO_ZREALIZOWANE: "var(--info)",
-    ZREALIZOWANE: "var(--ok)",
-    ODRZUCONE: "var(--danger)",
-    ZAWIESZONE: "var(--warn)",
-  };
+  const items = order.items.map(itemNumbers);
+  const view = orderView(items);
+  const editable = canDo(order.status, "price");
+  const [defaults, rates] = editable
+    ? await Promise.all([defaultDiscounts(order.partnerId, items.map((i) => i.productId)), ratesFor(order.partnerId)])
+    : [{}, {}];
 
   return (
-    <div style={{ padding: "32px", maxWidth: "1000px" }}>
-      {/* Breadcrumbs */}
-      <div style={{ marginBottom: 24, display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--ink-3)" }}>
-        <Link href="/warehouse" style={{ color: "var(--brand)", textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
-          <Icon name="clipboard" size={14} />
-          Zamówienia
-        </Link>
-        <span>→</span>
-        <span style={{ color: "var(--ink)", fontWeight: 500 }}>{order.code}</span>
+    <div className="fadeup" style={{ maxWidth: 1180 }}>
+      <Link href="/warehouse" className="backlink">← Zamówienia</Link>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", margin: "12px 0 22px" }}>
+        <h1 style={{ fontSize: 26, fontFamily: "var(--font-mono)" }}>{order.code}</h1>
+        <OrderStatusBadge status={order.status} expectedDate={order.expectedDate} />
+        {view.priced && <span style={{ fontSize: 15, fontWeight: 700, color: "var(--brand)" }}>{fmtMoney(view.total, order.currency)}</span>}
       </div>
 
-      <Link href="/warehouse" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, color: "var(--brand)", textDecoration: "none" }}>
-        <Icon name="arrow-left" size={16} />
-        Wróć do listy
-      </Link>
-
-      {/* Header */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 32 }}>
-        <div>
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 4, fontWeight: 600 }}>Kod zamówienia</div>
-            <div style={{ fontSize: 18, fontWeight: 600, fontFamily: "monospace" }}>{order.code}</div>
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 4, fontWeight: 600 }}>Status</div>
-            <OrderStatusChanger orderId={order.id} currentStatus={order.status} />
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 4, fontWeight: 600 }}>Data utworzenia</div>
-            <div style={{ fontSize: 14 }}>{new Date(order.createdAt).toLocaleDateString("pl")}</div>
-          </div>
-
-          <div>
-            <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 4, fontWeight: 600 }}>Wymagana data dostawy</div>
-            <div style={{ fontSize: 14 }}>
-              {order.neededDate ? new Date(order.neededDate).toLocaleDateString("pl") : "—"}
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 320px", gap: 20, alignItems: "start" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
+          <SectionCard title="Zamówienie">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 16 }}>
+              <KV label="Partner">{order.partner.name}</KV>
+              <KV label="Serwisant">{order.technician.name}<div style={{ fontSize: 12.5, color: "var(--ink-3)", fontWeight: 400 }}>{order.technician.email}</div></KV>
+              <KV label="Utworzone">{order.createdAt.toLocaleDateString("pl-PL")}</KV>
+              <KV label="Potrzebne do">{order.neededDate ? order.neededDate.toLocaleDateString("pl-PL") : "—"}</KV>
+              <KV label="Adres dostawy"><span style={{ fontWeight: 400, whiteSpace: "pre-wrap" }}>{order.deliveryAddress}</span></KV>
+              <KV label="Magazynier">{order.warehouseSpecialist?.name ?? "—"}</KV>
             </div>
-          </div>
-        </div>
+            {order.notes && <div style={{ marginTop: 16 }}><KV label="Uwagi serwisanta"><span style={{ fontWeight: 400, whiteSpace: "pre-wrap" }}>{order.notes}</span></KV></div>}
+            {order.rejectionReason && <div style={{ marginTop: 16 }}><KV label="Powód odrzucenia"><span style={{ fontWeight: 400, color: "#97271b" }}>{order.rejectionReason}</span></KV></div>}
+            {(order.parentOrder || order.childOrders.length > 0) && (
+              <div className="nip-note" style={{ background: "var(--surface-2)", color: "var(--ink-2)" }}>
+                {order.parentOrder && <span>Brakujące części z zamówienia <Link href={`/warehouse/orders/${order.parentOrder.id}`} style={{ fontWeight: 700 }}>{order.parentOrder.code}</Link>.</span>}
+                {order.childOrders.map((c) => (
+                  <span key={c.id}>Brakujące części przeniesiono do <Link href={`/warehouse/orders/${c.id}`} style={{ fontWeight: 700 }}>{c.code}</Link> <OrderStatusBadge status={c.status} expectedDate={c.expectedDate} /></span>
+                ))}
+              </div>
+            )}
+          </SectionCard>
 
-        <div>
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 4, fontWeight: 600 }}>Partner</div>
-            <div style={{ fontSize: 14 }}>{order.partner?.name || "—"}</div>
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 4, fontWeight: 600 }}>Technik serwisowy</div>
-            <div style={{ fontSize: 14 }}>{order.technician?.email || "—"}</div>
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 4, fontWeight: 600 }}>Magazynier</div>
-            <div style={{ fontSize: 14 }}>{order.warehouseSpecialist?.email || "—"}</div>
-          </div>
-
-          <div>
-            <OrderTrackingClient orderId={order.id} initialTrackingNumber={order.trackingNumber} />
-          </div>
-        </div>
-      </div>
-
-      {/* Items with Pricing */}
-      <div style={{ marginBottom: 32 }}>
-        <h2 style={{ marginBottom: 16, fontSize: 16, fontWeight: 600 }}>Pozycje zamówienia — Wycena</h2>
-        {order.items.length > 0 ? (
           <OrderPricingClient
             orderId={order.id}
-            items={order.items.map((item) => ({
-              id: item.id,
-              productId: item.productId,
-              product: {
-                id: item.product.id,
-                sku: item.product.sku,
-                name: item.product.name,
-                costPrice: item.product.costPrice ? parseFloat(item.product.costPrice.toString()) : null,
-                sellingPrice: item.product.sellingPrice ? parseFloat(item.product.sellingPrice.toString()) : null,
-                inventory: item.product.inventory,
-              },
-              quantity: item.quantity,
-              unitPrice: item.unitPrice ? parseFloat(item.unitPrice.toString()) : null,
-              currency: item.currency,
-              exchangeRate: parseFloat(item.exchangeRate.toString()),
-              discountType: item.discountType,
-              discountValue: item.discountValue ? parseFloat(item.discountValue.toString()) : null,
-              finalPrice: item.finalPrice ? parseFloat(item.finalPrice.toString()) : null,
-              costPrice: item.costPrice ? parseFloat(item.costPrice.toString()) : null,
-              notes: item.notes,
+            editable={editable}
+            isAdmin={user.role === "ADMIN"}
+            currency={order.currency}
+            partnerCurrency={order.partner.currency}
+            minMargin={num(order.partner.minProfitMargin) ?? 0}
+            pricedAt={order.pricedAt?.toISOString() ?? null}
+            rates={rates}
+            items={items.map((i) => ({
+              id: i.id,
+              sku: i.product.sku,
+              name: i.product.name,
+              quantity: i.quantity,
+              stock: i.product.inventory?.currentStock ?? 0,
+              catalogPrice: num(i.product.sellingPrice),
+              catalogCost: num(i.product.costPrice),
+              unitPrice: i.unitPrice,
+              costPrice: i.costPrice,
+              discountType: i.discountType,
+              discountValue: i.discountValue,
+              finalPrice: i.finalPrice,
+              suggested: (defaults as Record<string, { value: number; source: string }>)[i.productId] ?? null,
             }))}
-            partner={{
-              id: order.partner.id,
-              name: order.partner.name,
-              currency: order.partner.currency,
-              minProfitMargin: order.partner.minProfitMargin ? parseFloat(order.partner.minProfitMargin.toString()) : 10,
-            }}
           />
-        ) : (
-          <div style={{ padding: 32, textAlign: "center", background: "var(--surface-2)", borderRadius: "var(--r)", color: "var(--ink-3)" }}>
-            Brak pozycji
-          </div>
-        )}
-      </div>
 
-      {/* Summary */}
-      <div style={{ background: "var(--paper)", border: "1px solid var(--ink-2)", borderRadius: "var(--r)", padding: 24, marginBottom: 32 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
-          <div>
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                <span style={{ color: "var(--ink-3)" }}>Wartość pozycji:</span>
-                <span style={{ fontWeight: 600 }}>{itemsTotal.toFixed(2)} zł</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                <span style={{ color: "var(--ink-3)" }}>Rabaty:</span>
-                <span style={{ fontWeight: 600, color: "var(--warn)" }}>-{discountsTotal.toFixed(2)} zł</span>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  paddingTop: 8,
-                  borderTop: "1px solid var(--ink-2)",
-                }}
-              >
-                <span style={{ fontWeight: 600 }}>Do zapłaty:</span>
-                <span style={{ fontSize: 16, fontWeight: 600, color: "var(--brand)" }}>{finalTotal.toFixed(2)} zł</span>
-              </div>
-            </div>
-          </div>
-
-          {order.notes && (
-            <div>
-              <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 8, fontWeight: 600 }}>Uwagi</div>
-              <div style={{ fontSize: 13, color: "var(--ink-2)", whiteSpace: "pre-wrap" }}>{order.notes}</div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Order Actions */}
-      <OrderActionsClient orderId={order.id} currentStatus={order.status} />
-
-      {/* History */}
-      <div style={{ marginTop: 32 }}>
-      {order.history.length > 0 && (
-        <div>
-          <h2 style={{ marginBottom: 16, fontSize: 16, fontWeight: 600 }}>Historia zmian</h2>
-          <div style={{ background: "var(--paper)", border: "1px solid var(--ink-2)", borderRadius: "var(--r)", overflow: "hidden" }}>
-            {order.history.map((hist, idx) => (
-              <div
-                key={hist.id}
-                style={{
-                  padding: 16,
-                  borderBottom: idx < order.history.length - 1 ? "1px solid var(--ink-2)" : "none",
-                  fontSize: 13,
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                  <div>
-                    <div style={{ fontWeight: 600, marginBottom: 4 }}>{hist.action}</div>
-                    <div style={{ fontSize: 11, color: "var(--ink-3)" }}>
-                      Autor: {hist.changedBy} • {new Date(hist.createdAt).toLocaleDateString("pl")} o{" "}
-                      {new Date(hist.createdAt).toLocaleTimeString("pl")}
-                    </div>
+          <SectionCard title="Historia">
+            {order.history.length === 0 ? <div style={{ color: "var(--ink-3)", fontSize: 14 }}>Brak wpisów.</div> : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {order.history.map((h) => (
+                  <div key={h.id} style={{ fontSize: 13.5, borderBottom: "1px solid var(--line)", paddingBottom: 10 }}>
+                    <div><b>{h.action.replaceAll("_", " ").toLowerCase()}</b>{h.notes ? ` — ${h.notes}` : ""}</div>
+                    <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2 }}>{h.changedBy} · {h.createdAt.toLocaleString("pl-PL")}</div>
                   </div>
-                </div>
-                {hist.notes && (
-                  <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-2)", fontStyle: "italic" }}>
-                    {hist.notes}
-                  </div>
-                )}
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+          </SectionCard>
         </div>
-      )}
+
+        <OrderWorkflowClient
+          orderId={order.id}
+          status={order.status}
+          trackingNumber={order.trackingNumber}
+          expectedDate={order.expectedDate?.toISOString().slice(0, 10) ?? null}
+          priced={view.priced}
+        />
       </div>
     </div>
   );

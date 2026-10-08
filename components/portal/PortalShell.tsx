@@ -13,6 +13,7 @@ const NAV_PARTNER = [
   { key: "new",        href: "/partner/projects/new",label: "Nowe zgłoszenie", icon: "plus" },
   { key: "projects",   href: "/partner/projects",    label: "Moje projekty",    icon: "layers" },
   { key: "orders",     href: "/partner/orders",      label: "Moje zamówienia",  icon: "shoppingCart" },
+  { key: "service",    href: "/partner/service",     label: "Zamówienia części", icon: "grid" },
   { key: "materials",  href: "/partner/marketing-materials", label: "Materiały",  icon: "fileText" },
   { key: "salesreps",  href: "/partner/sales-reps",  label: "Handlowcy",        icon: "briefcase" },
   { key: "requests",   href: "/partner/requests",    label: "Zgłoszenia handlowców", icon: "send" },

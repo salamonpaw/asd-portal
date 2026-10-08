@@ -1,150 +1,19 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requirePageRole } from "@/lib/authz";
+import { serviceOrderRows } from "@/lib/service-orders/rows";
+import { PageHead } from "@/components/ui";
+import { ServiceOrdersTable } from "@/components/portal/ServiceOrdersTable";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { ServiceOrderClient } from "./ServiceOrderClient";
-import { Icon } from "@/components/ui";
 
-export default async function ServicePage() {
-  const session = await getServerSession(authOptions);
-  const userRole = session?.user?.role;
-  const partnerId = session?.user?.partnerId;
+export const revalidate = 0;
 
-  if (!session || (userRole !== "SERVICE_TECHNICIAN" && userRole !== "PARTNER_ADMIN")) {
-    redirect("/login");
-  }
-
-  // Get products + machine types for form
-  const products = await db.product.findMany({
-    select: {
-      id: true,
-      sku: true,
-      name: true,
-      machineTypeId: true,
-      machineType: true,
-      location: true,
-      productImages: { where: { deletedAt: null }, orderBy: { uploadedAt: "asc" }, take: 1, select: { filePath: true } },
-      sellingPrice: true,
-    },
-    orderBy: { name: "asc" },
-  });
-
-  const machineTypes = await db.machineType.findMany({
-    orderBy: { name: "asc" },
-  });
-
-  // Get user's service orders
-  const orders = await db.serviceOrder.findMany({
-    where: { partnerId },
-    include: {
-      items: {
-        select: {
-          id: true,
-          quantity: true,
-          unitPrice: true,
-          discountType: true,
-          discountValue: true,
-          fulfilledQuantity: true,
-          product: { select: { id: true, sku: true, name: true } }, // bez cen zakupu
-        },
-      },
-      warehouseSpecialist: { select: { name: true, email: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
-
-  // Calculate stats
-  const totalOrders = orders.length;
-  const activeOrders = orders.filter(
-    (o) => o.status === "NOWE" || o.status === "PRZYJĘTE"
-  ).length;
-  const pricedOrders = orders.filter((o) =>
-    o.items?.some((item: any) => item.unitPrice)
-  ).length;
-  const completedOrders = orders.filter((o) => o.status === "ZREALIZOWANE").length;
-
-  const stats = [
-    { label: "Wszystkie zamówienia", value: totalOrders, icon: "clipboard" },
-    { label: "Aktywne", value: activeOrders, icon: "play-circle" },
-    { label: "Wycenione", value: pricedOrders, icon: "check-circle" },
-    { label: "Ukończone", value: completedOrders, icon: "flag" },
-  ];
-
+/** Zamówienia części całej firmy partnera (składają je serwisanci w swoim koszyku). */
+export default async function PartnerServiceOrdersPage() {
+  const user = await requirePageRole("PARTNER", "PARTNER_ADMIN");
+  if (!user.partnerId) redirect("/login");
   return (
-    <div style={{ padding: "32px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 24 }}>
-        <div>
-          <h1>Serwis — Zamówienia na części</h1>
-          <p style={{ color: "var(--ink-3)", marginTop: 8 }}>Twórz i zarządzaj zamówieniami na części zamienne</p>
-        </div>
-        <a
-          href="/changelog"
-          style={{
-            fontSize: 12,
-            color: "var(--brand)",
-            textDecoration: "none",
-            padding: "8px 12px",
-            background: "var(--brand-soft)",
-            borderRadius: "var(--r-sm)",
-            cursor: "pointer",
-          }}
-        >
-          📋 Changelog & Wersja
-        </a>
-      </div>
-
-      {/* Quick Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 32 }}>
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            style={{
-              background: "var(--surface)",
-              border: "1px solid var(--ink-2)",
-              borderRadius: "var(--r-sm)",
-              padding: 16,
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 12,
-              boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-            }}
-          >
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                background: "var(--brand)",
-                borderRadius: "var(--r-sm)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <Icon name={stat.icon as any} size={22} style={{ color: "white" }} />
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 11, color: "var(--ink-3)", marginBottom: 2 }}>
-                {stat.label}
-              </div>
-              <div style={{ fontSize: 20, fontWeight: 600, color: "var(--ink)" }}>
-                {stat.value}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <ServiceOrderClient
-        products={products.map(({ productImages, ...p }) => ({
-          ...p,
-          image: productImages[0]?.filePath ?? null,
-          sellingPrice: p.sellingPrice ? parseFloat(p.sellingPrice.toString()) : null,
-        }))}
-        machineTypes={machineTypes}
-        initialOrders={orders as any}
-        userEmail={session.user?.email || ""}
-      />
+    <div className="fadeup">
+      <PageHead title="Zamówienia części" sub="Zamówienia części złożone przez serwisantów Twojej firmy — statusy, wyceny i terminy dostaw." />
+      <ServiceOrdersTable orders={await serviceOrderRows({ partnerId: user.partnerId })} basePath="/partner/service" showPartner={false} defaultTab="all" />
     </div>
   );
 }
