@@ -100,6 +100,7 @@ export function OrderPricingClient({
   }
 
   return (
+    <div id="wycena" style={{ scrollMarginTop: 90 }}>
     <SectionCard
       title="Wycena"
       action={<span style={tag(pricedAt ? "var(--ok-soft)" : "var(--surface-3)", pricedAt ? "#14633f" : "var(--ink-3)")}>{pricedAt ? `Wyceniono ${new Date(pricedAt).toLocaleDateString("pl-PL")}` : "Niewycenione"}</span>}
@@ -233,7 +234,12 @@ export function OrderPricingClient({
               <Icon name={msg.ok ? "checkCircle" : "alert"} size={18} />{msg.text}
             </div>
           )}
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
+          <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 14 }}>
+            {!busy && (needsConfirm && !confirm ? (
+              <span style={{ fontSize: 13, color: "#845509", fontWeight: 600 }}>↑ Zaznacz potwierdzenie powyżej, aby zapisać</span>
+            ) : !pricedAt && rate && missing.length === 0 ? (
+              <span style={{ fontSize: 13, color: "var(--ink-3)" }}>Wycena nie jest jeszcze zapisana</span>
+            ) : null)}
             <button className="btn btn-primary" onClick={save} disabled={busy || !rate || missing.length > 0 || (needsConfirm && !confirm)}>
               {busy ? "Zapisywanie…" : pricedAt ? "Zapisz zmiany wyceny" : "Zapisz wycenę"}
             </button>
@@ -243,6 +249,7 @@ export function OrderPricingClient({
 
       <CatalogPriceModal item={catalogFor} onClose={() => setCatalogFor(null)} onSaved={(id) => { set(id, { manual: null }); setCatalogFor(null); router.refresh(); }} />
     </SectionCard>
+    </div>
   );
 }
 

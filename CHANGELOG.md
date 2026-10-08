@@ -5,6 +5,13 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.1] - 2026-10-08
+
+### Poprawione
+- Gdy wycena nie jest zapisana, okno realizacji mówi wprost, co zrobić, i ma przycisk
+  „Przejdź do wyceny”; w panelu obsługi jest link do wyceny
+- Przy nieaktywnym „Zapisz wycenę” widać powód („Zaznacz potwierdzenie powyżej, aby zapisać”)
+
 ## [0.22.0] - 2026-10-08
 
 Wycena bez wychodzenia z zamówienia i nowy sklep części dla serwisanta.

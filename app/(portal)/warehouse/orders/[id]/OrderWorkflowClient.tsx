@@ -44,6 +44,8 @@ export function OrderWorkflowClient({ orderId, status, trackingNumber, expectedD
     setPlan(r.data!);
   }
 
+  const goPricing = () => { setPlan(null); document.getElementById("wycena")?.scrollIntoView({ behavior: "smooth", block: "start" }); };
+
   const waiting = plan ? plan.lines.reduce((s, l) => s + l.wait, 0) : 0;
   const shipping = plan ? plan.lines.reduce((s, l) => s + l.ship, 0) : 0;
 
@@ -58,7 +60,10 @@ export function OrderWorkflowClient({ orderId, status, trackingNumber, expectedD
         </button>
       )}
       {!priced && canDo(status, "fulfill") && (
-        <div style={{ fontSize: 12.5, color: "#845509" }}>Najpierw zapisz wycenę — wysyłane części muszą mieć cenę.</div>
+        <div style={{ fontSize: 12.5, color: "#845509" }}>
+          Wycena nie jest zapisana — wysyłane części muszą mieć zapisaną cenę.{" "}
+          <button type="button" onClick={goPricing} style={{ background: "none", border: "none", padding: 0, color: "var(--brand)", fontWeight: 600, cursor: "pointer", fontSize: 12.5 }}>Przejdź do wyceny ↓</button>
+        </div>
       )}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {canDo(status, "approve") && <button className="btn btn-soft btn-sm" disabled={busy} onClick={() => run(() => changeServiceOrderStatus(orderId, "approve"), "Przyjęto zamówienie.")}>Przyjmij</button>}
@@ -144,7 +149,11 @@ export function OrderWorkflowClient({ orderId, status, trackingNumber, expectedD
             )}
             {shipping > 0 && !plan.priced && (
               <div className="nip-note" style={{ marginTop: 0, background: "var(--danger-soft)", color: "#97271b" }}>
-                <Icon name="alert" size={18} />Najpierw zapisz wycenę wszystkich pozycji.
+                <Icon name="alert" size={18} />
+                <span>
+                  Wycena nie jest zapisana. W sekcji „Wycena” kliknij <b>Zapisz wycenę</b> (przy cenie ręcznej lub niskiej marży najpierw zaznacz potwierdzenie „na własną odpowiedzialność”).{" "}
+                  <button type="button" onClick={goPricing} style={{ background: "none", border: "none", padding: 0, color: "inherit", fontWeight: 700, textDecoration: "underline", cursor: "pointer" }}>Przejdź do wyceny</button>
+                </span>
               </div>
             )}
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
