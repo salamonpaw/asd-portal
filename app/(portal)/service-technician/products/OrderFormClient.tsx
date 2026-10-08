@@ -1,629 +1,322 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import Link from "next/link";
+import { Modal, Field, EmptyState } from "@/components/ui";
+import { Icon } from "@/components/ui/Icon";
+import { SafeImg } from "@/components/ui/SafeImg";
 import { createServiceOrder } from "@/lib/actions/service-orders";
 
-interface Product {
+export interface Product {
   id: string;
   sku: string;
   name: string;
   description: string;
-  image: string;
+  machineType: string;
+  location: string | null;
+  images: string[];
 }
-
 export interface Template {
   id: string;
   name: string;
   items: { productId: string; quantity: number }[];
 }
 
-interface CartItem {
-  product: Product;
-  quantity: number;
-}
+type Cart = Record<string, number>; // productId → ilość
+const CART_KEY = "asd_parts_cart_v1";
+const MAX = 999;
+const clamp = (n: number) => Math.max(0, Math.min(MAX, Math.floor(Number.isFinite(n) ? n : 0)));
 
-interface OrderFormClientProps {
-  products: Product[];
-  templates: Template[];
-  lastAddress: string;
-}
-
-export function OrderFormClient({ products, templates, lastAddress }: OrderFormClientProps) {
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [showForm, setShowForm] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [formData, setFormData] = useState({
-    deliveryAddress: lastAddress,
-    notes: "",
-    neededDate: "",
-  });
-
-  // Szablon: dodaje cały zestaw do koszyka (ilości sumują się z tym, co już jest)
-  const applyTemplate = (templateId: string) => {
-    const t = templates.find((x) => x.id === templateId);
-    if (!t) return;
-    const byId = new Map(products.map((p) => [p.id, p]));
-    let next = [...cart];
-    let added = 0;
-    for (const ti of t.items) {
-      const product = byId.get(ti.productId);
-      if (!product) continue;
-      added++;
-      const ex = next.find((c) => c.product.id === product.id);
-      next = ex ? next.map((c) => (c.product.id === product.id ? { ...c, quantity: c.quantity + ti.quantity } : c)) : [...next, { product, quantity: ti.quantity }];
-    }
-    setCart(next);
-    setSuccess(`Dodano szablon „${t.name}” (${added} części)`);
-    setTimeout(() => setSuccess(""), 2500);
-  };
-
-  const filteredProducts = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.sku.toLowerCase().includes(searchTerm.toLowerCase())
+function Stepper({ value, onChange, size = "md" }: { value: number; onChange: (n: number) => void; size?: "md" | "sm" }) {
+  const h = size === "sm" ? 28 : 32;
+  return (
+    <div className="stepper" onClick={(e) => e.stopPropagation()}>
+      <button type="button" style={{ height: h, width: h }} aria-label="mniej" onClick={() => onChange(value - 1)}>−</button>
+      <input type="number" inputMode="numeric" min={0} max={MAX} value={value} aria-label="ilość"
+        onChange={(e) => onChange(clamp(parseInt(e.target.value || "0", 10)))} />
+      <button type="button" style={{ height: h, width: h }} aria-label="więcej" onClick={() => onChange(value + 1)}>+</button>
+    </div>
   );
+}
 
-  const addToCart = (product: Product, quantity: number = 1) => {
-    setError("");
-    if (quantity < 1) {
-      setError("Ilość musi być co najmniej 1");
-      return;
-    }
+function Thumb({ src, size }: { src?: string; size: number }) {
+  return (
+    <div style={{ width: size, height: size, borderRadius: 8, background: "var(--surface-2)", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+      <SafeImg src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} fallback={<Icon name="grid" size={size * 0.4} style={{ color: "var(--ink-4)" }} />} />
+    </div>
+  );
+}
 
-    const existingItem = cart.find((item) => item.product.id === product.id);
-    if (existingItem) {
-      const newQuantity = existingItem.quantity + quantity;
-      setCart(
-        cart.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: newQuantity }
-            : item
-        )
-      );
-    } else {
-      setCart([...cart, { product, quantity }]);
-    }
-    setSuccess(`Dodano ${product.name}`);
-    setTimeout(() => setSuccess(""), 2000);
-  };
+export function OrderFormClient({ products, templates, lastAddress }: { products: Product[]; templates: Template[]; lastAddress: string }) {
+  const [cart, setCart] = useState<Cart>({});
+  const [q, setQ] = useState("");
+  const [type, setType] = useState<string | null>(null);
+  const [loc, setLoc] = useState<string | null>(null);
+  const [details, setDetails] = useState<Product | null>(null);
+  const [img, setImg] = useState(0);
+  const [step, setStep] = useState<"cart" | "delivery" | "done">("cart");
+  const [address, setAddress] = useState(lastAddress);
+  const [neededDate, setNeededDate] = useState("");
+  const [notes, setNotes] = useState("");
+  const [error, setError] = useState("");
+  const [toast, setToast] = useState("");
+  const [created, setCreated] = useState<{ id: string; code: string } | null>(null);
+  const [busy, start] = useTransition();
+  const byId = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
 
-  const removeFromCart = (productId: string) => {
-    setCart(cart.filter((item) => item.product.id !== productId));
-  };
-
-  const updateQuantity = (productId: string, quantity: number) => {
-    if (quantity < 1) {
-      removeFromCart(productId);
-      return;
-    }
-    setCart(
-      cart.map((item) =>
-        item.product.id === productId ? { ...item, quantity } : item
-      )
-    );
-  };
-
-  const handleSubmit = async () => {
-    setError("");
-    setSuccess("");
-
-    if (!formData.deliveryAddress.trim()) {
-      setError("Adres dostawy jest wymagany");
-      return;
-    }
-
-    if (cart.length === 0) {
-      setError("Dodaj co najmniej jeden produkt");
-      return;
-    }
-
-    setLoading(true);
-
+  // koszyk przeżywa odświeżenie strony (tylko w tej przeglądarce)
+  useEffect(() => {
     try {
-      const result = await createServiceOrder({
-        items: cart.map((item) => ({ productId: item.product.id, quantity: item.quantity })),
-        deliveryAddress: formData.deliveryAddress,
-        neededDate: formData.neededDate || undefined,
-        notes: formData.notes || undefined,
-      });
+      const saved = JSON.parse(localStorage.getItem(CART_KEY) || "{}") as Cart;
+      setCart(Object.fromEntries(Object.entries(saved).filter(([id, n]) => byId.has(id) && n > 0)));
+    } catch {}
+  }, [byId]);
+  useEffect(() => { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch {} }, [cart]);
 
-      if (result.success) {
-        setSuccess(`✓ Zamówienie ${result.data?.code} utworzone!`);
-        setCart([]);
-        setFormData({ deliveryAddress: "", notes: "", neededDate: "" });
-        setShowForm(false);
-        setTimeout(() => {
-          window.location.href = `/service-technician/dashboard`;
-        }, 2000);
-      } else {
-        setError(result.error || "Błąd przy tworzeniu zamówienia");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  const setQty = (id: string, n: number) => setCart((c) => {
+    const next = { ...c };
+    const v = clamp(n);
+    if (v === 0) delete next[id]; else next[id] = v;
+    return next;
+  });
+  const flash = (t: string) => { setToast(t); setTimeout(() => setToast(""), 2200); };
+
+  const types = [...new Set(products.map((p) => p.machineType))];
+  const locs = [...new Set(products.map((p) => p.location).filter(Boolean))] as string[];
+  const term = q.trim().toLowerCase();
+  const list = products.filter((p) =>
+    (!type || p.machineType === type) && (!loc || p.location === loc) &&
+    (!term || p.name.toLowerCase().includes(term) || p.sku.toLowerCase().includes(term) || p.description.toLowerCase().includes(term))
+  );
+  const lines = Object.entries(cart).map(([id, n]) => ({ p: byId.get(id)!, n })).filter((l) => l.p);
+  const pieces = lines.reduce((s, l) => s + l.n, 0);
+
+  function applyTemplate(id: string) {
+    const t = templates.find((x) => x.id === id);
+    if (!t) return;
+    setCart((c) => {
+      const next = { ...c };
+      for (const it of t.items) if (byId.has(it.productId)) next[it.productId] = clamp((next[it.productId] ?? 0) + it.quantity);
+      return next;
+    });
+    flash(`Dodano zestaw „${t.name}”`);
+  }
+
+  function submit() {
+    setError("");
+    if (address.trim().length < 5) return setError("Podaj pełny adres dostawy.");
+    start(async () => {
+      const r = await createServiceOrder({
+        items: lines.map((l) => ({ productId: l.p.id, quantity: l.n })),
+        deliveryAddress: address,
+        neededDate: neededDate || undefined,
+        notes: notes || undefined,
+      });
+      if (!r.success) return setError(r.error);
+      setCreated(r.data!);
+      setCart({});
+      setNotes(""); setNeededDate("");
+      setStep("done");
+    });
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
 
   return (
-    <div style={{ maxWidth: "1400px" }}>
-      {error && (
-        <div
-          style={{
-            padding: 12,
-            background: "var(--danger-soft)",
-            color: "var(--danger)",
-            borderRadius: "var(--r-sm)",
-            marginBottom: 16,
-            fontSize: 13,
-          }}
-        >
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div
-          style={{
-            padding: 12,
-            background: "var(--success-soft)",
-            color: "var(--success)",
-            borderRadius: "var(--r-sm)",
-            marginBottom: 16,
-            fontSize: 13,
-          }}
-        >
-          {success}
-        </div>
-      )}
-
-      {/* Product Details Modal */}
-      {selectedProduct && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-            padding: 16,
-          }}
-          onClick={() => setSelectedProduct(null)}
-        >
-          <div
-            style={{
-              background: "var(--paper)",
-              borderRadius: "var(--r)",
-              maxWidth: 600,
-              maxHeight: "90vh",
-              overflow: "auto",
-              padding: 24,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 16 }}>
-              <div>
-                <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>{selectedProduct.name}</h2>
-                <div style={{ fontSize: 12, color: "var(--ink-3)" }}>SKU: {selectedProduct.sku}</div>
-              </div>
-              <button
-                onClick={() => setSelectedProduct(null)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: 20,
-                  cursor: "pointer",
-                  color: "var(--ink-3)",
-                }}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Image */}
-            {selectedProduct.image && (
-              <div
-                style={{
-                  width: "100%",
-                  height: 300,
-                  background: "var(--surface-2)",
-                  borderRadius: "var(--r-sm)",
-                  marginBottom: 16,
-                  overflow: "hidden",
-                }}
-              >
-                <img
-                  src={selectedProduct.image}
-                  alt={selectedProduct.name}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-              </div>
-            )}
-
-            {/* Description */}
-            {selectedProduct.description && (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 8, fontWeight: 600 }}>
-                  Opis
-                </div>
-                <div style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
-                  {selectedProduct.description}
-                </div>
-              </div>
-            )}
-
-            {/* Add to cart */}
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input
-                type="number"
-                min="1"
-                defaultValue="1"
-                id="product-detail-qty"
-                style={{
-                  width: 80,
-                  padding: "8px 12px",
-                  border: "1px solid var(--ink-2)",
-                  borderRadius: "var(--r-sm)",
-                  fontSize: 13,
-                }}
-              />
-              <button
-                onClick={() => {
-                  const qty = parseInt(
-                    (document.getElementById("product-detail-qty") as HTMLInputElement)?.value || "1"
-                  );
-                  addToCart(selectedProduct, qty);
-                  setSelectedProduct(null);
-                }}
-                style={{
-                  flex: 1,
-                  padding: "8px 12px",
-                  background: "var(--brand)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "var(--r-sm)",
-                  cursor: "pointer",
-                  fontSize: 13,
-                  fontWeight: 600,
-                }}
-              >
-                + Dodaj do koszyka
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
-        {/* Products List */}
+    <div className="fadeup">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap", marginBottom: 18 }}>
         <div>
-          <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>
-            Dostępne części ({filteredProducts.length})
-          </h2>
-
-          <input
-            type="text"
-            placeholder="Szukaj po nazwie lub SKU..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "8px 12px",
-              border: "1px solid var(--ink-2)",
-              borderRadius: "var(--r-sm)",
-              marginBottom: 16,
-              fontSize: 13,
-            }}
-          />
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                style={{
-                  padding: 12,
-                  background: "var(--paper)",
-                  border: "1px solid var(--ink-2)",
-                  borderRadius: "var(--r-sm)",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = "var(--brand)";
-                  (e.currentTarget as HTMLElement).style.boxShadow = "0 2px 8px rgba(0,102,255,0.1)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = "var(--ink-2)";
-                  (e.currentTarget as HTMLElement).style.boxShadow = "none";
-                }}
-              >
-                <div
-                  style={{ marginBottom: 8, cursor: "pointer" }}
-                  onClick={() => setSelectedProduct(product)}
-                >
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--brand)" }}>
-                    {product.name}
-                  </div>
-                  <div style={{ fontSize: 11, color: "var(--ink-3)" }}>
-                    SKU: {product.sku}
-                  </div>
-                  <div style={{ fontSize: 10, color: "var(--ink-3)", marginTop: 4 }}>
-                    Kliknij aby zobaczyć szczegóły
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <input
-                    type="number"
-                    min="1"
-                    defaultValue="1"
-                    id={`qty-${product.id}`}
-                    style={{
-                      width: 60,
-                      padding: "6px 8px",
-                      border: "1px solid var(--ink-2)",
-                      borderRadius: "var(--r-sm)",
-                      fontSize: 12,
-                    }}
-                  />
-                  <button
-                    onClick={() => {
-                      const qty = parseInt(
-                        (document.getElementById(`qty-${product.id}`) as HTMLInputElement)?.value || "1"
-                      );
-                      addToCart(product, qty);
-                    }}
-                    style={{
-                      padding: "6px 12px",
-                      background: "var(--brand)",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "var(--r-sm)",
-                      cursor: "pointer",
-                      fontSize: 12,
-                      fontWeight: 600,
-                    }}
-                  >
-                    + Dodaj
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Cart & Form */}
-        <div>
-          <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>
-            Koszyk ({cart.length} części)
-          </h2>
-
-          {templates.length > 0 && (
-            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 14 }}>
-              <select className="select" value="" onChange={(e) => applyTemplate(e.target.value)} style={{ flex: 1 }}>
-                <option value="">+ Dodaj zestaw z szablonu…</option>
-                {templates.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.items.length} części)</option>)}
-              </select>
-              <a href="/partner/templates" style={{ fontSize: 12.5, color: "var(--brand)", whiteSpace: "nowrap" }}>Zarządzaj</a>
-            </div>
-          )}
-
-          {cart.length === 0 ? (
-            <div
-              style={{
-                padding: 24,
-                textAlign: "center",
-                background: "var(--surface-2)",
-                borderRadius: "var(--r)",
-                color: "var(--ink-3)",
-                marginBottom: 16,
-              }}
-            >
-              Koszyk pusty. Dodaj części po lewej.
-            </div>
-          ) : (
-            <div
-              style={{
-                background: "var(--paper)",
-                border: "1px solid var(--ink-2)",
-                borderRadius: "var(--r)",
-                overflow: "hidden",
-                marginBottom: 16,
-              }}
-            >
-              {cart.map((item, idx) => (
-                <div
-                  key={item.product.id}
-                  style={{
-                    padding: 12,
-                    borderBottom: idx < cart.length - 1 ? "1px solid var(--ink-2)" : "none",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{item.product.name}</div>
-                    <div style={{ fontSize: 11, color: "var(--ink-3)" }}>SKU: {item.product.sku}</div>
-                  </div>
-
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <input
-                      type="number"
-                      min="1"
-                      max={999}
-                      value={item.quantity}
-                      onChange={(e) =>
-                        updateQuantity(item.product.id, parseInt(e.target.value) || 1)
-                      }
-                      style={{
-                        width: 50,
-                        padding: "4px 6px",
-                        border: "1px solid var(--ink-2)",
-                        borderRadius: "var(--r-sm)",
-                        fontSize: 12,
-                      }}
-                    />
-
-                    <button
-                      onClick={() => removeFromCart(item.product.id)}
-                      style={{
-                        padding: "4px 8px",
-                        background: "var(--danger-soft)",
-                        color: "var(--danger)",
-                        border: "none",
-                        borderRadius: "var(--r-sm)",
-                        cursor: "pointer",
-                        fontSize: 11,
-                      }}
-                    >
-                      Usuń
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {cart.length > 0 && !showForm && (
-            <button
-              onClick={() => setShowForm(true)}
-              style={{
-                width: "100%",
-                padding: "12px",
-                background: "var(--brand)",
-                color: "white",
-                border: "none",
-                borderRadius: "var(--r-sm)",
-                cursor: "pointer",
-                fontSize: 14,
-                fontWeight: 600,
-              }}
-            >
-              Dalej — Adres i uwagi
-            </button>
-          )}
-
-          {showForm && (
-            <div
-              style={{
-                padding: 16,
-                background: "var(--paper)",
-                border: "1px solid var(--ink-2)",
-                borderRadius: "var(--r)",
-              }}
-            >
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: "block", marginBottom: 4, fontSize: 12, fontWeight: 600 }}>
-                  Adres dostawy *
-                </label>
-                <textarea
-                  value={formData.deliveryAddress}
-                  onChange={(e) =>
-                    setFormData({ ...formData, deliveryAddress: e.target.value })
-                  }
-                  placeholder="np. ul. Kwiatowa 15, 80-001 Gdańsk"
-                  style={{
-                    width: "100%",
-                    minHeight: 80,
-                    padding: "8px 12px",
-                    border: "1px solid var(--ink-2)",
-                    borderRadius: "var(--r-sm)",
-                    fontSize: 13,
-                    fontFamily: "inherit",
-                    resize: "vertical",
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: "block", marginBottom: 4, fontSize: 12, fontWeight: 600 }}>
-                  Data potrzeby (opcjonalnie)
-                </label>
-                <input
-                  type="date"
-                  value={formData.neededDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, neededDate: e.target.value })
-                  }
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    border: "1px solid var(--ink-2)",
-                    borderRadius: "var(--r-sm)",
-                    fontSize: 13,
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: "block", marginBottom: 4, fontSize: 12, fontWeight: 600 }}>
-                  Uwagi (opcjonalnie)
-                </label>
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) =>
-                    setFormData({ ...formData, notes: e.target.value })
-                  }
-                  placeholder="np. Dostarczyć przed godz. 14:00"
-                  style={{
-                    width: "100%",
-                    minHeight: 60,
-                    padding: "8px 12px",
-                    border: "1px solid var(--ink-2)",
-                    borderRadius: "var(--r-sm)",
-                    fontSize: 13,
-                    fontFamily: "inherit",
-                    resize: "vertical",
-                  }}
-                />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                <button
-                  onClick={() => setShowForm(false)}
-                  disabled={loading}
-                  style={{
-                    padding: "10px",
-                    background: "var(--surface-2)",
-                    color: "var(--ink)",
-                    border: "none",
-                    borderRadius: "var(--r-sm)",
-                    cursor: "pointer",
-                    fontSize: 13,
-                    fontWeight: 600,
-                  }}
-                >
-                  Cofnij
-                </button>
-
-                <button
-                  onClick={handleSubmit}
-                  disabled={loading}
-                  style={{
-                    padding: "10px",
-                    background: "var(--brand)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "var(--r-sm)",
-                    cursor: loading ? "not-allowed" : "pointer",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    opacity: loading ? 0.6 : 1,
-                  }}
-                >
-                  {loading ? "Tworzę..." : "✓ Wyślij zamówienie"}
-                </button>
-              </div>
-            </div>
-          )}
+          <Link href="/service-technician/dashboard" className="backlink">← Moje zamówienia</Link>
+          <h1 style={{ fontSize: 27, letterSpacing: "-.02em", marginTop: 8 }}>Zamów części</h1>
+          <p style={{ color: "var(--ink-3)", marginTop: 4, fontSize: 14.5 }}>Wybierz części, podaj adres — magazyn wyceni i wyśle. Braki magazyn wyśle osobno, z terminem.</p>
         </div>
       </div>
+
+      <div className="shop-grid">
+        {/* ── Katalog ── */}
+        <div>
+          <div className="shop-search" style={{ marginBottom: 12 }}>
+            <Icon name="search" size={18} />
+            <input className="input" placeholder="Szukaj części: nazwa, numer, opis…" value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
+          </div>
+          {(types.length > 1 || locs.length > 1) && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
+              {types.length > 1 && (
+                <div className="chips">
+                  <button type="button" className={`chip ${!type ? "sel" : ""}`} onClick={() => setType(null)}>Wszystkie automaty</button>
+                  {types.map((t) => <button key={t} type="button" className={`chip ${type === t ? "sel" : ""}`} onClick={() => setType(t)}>{t}</button>)}
+                </div>
+              )}
+              {locs.length > 1 && (
+                <div className="chips">
+                  <button type="button" className={`chip ${!loc ? "sel" : ""}`} onClick={() => setLoc(null)}>Wszystkie miejsca</button>
+                  {locs.map((l) => <button key={l} type="button" className={`chip ${loc === l ? "sel" : ""}`} onClick={() => setLoc(l)}>{l}</button>)}
+                </div>
+              )}
+            </div>
+          )}
+          <div style={{ fontSize: 13, color: "var(--ink-3)", marginBottom: 10 }}>{list.length} {list.length === 1 ? "część" : "części"}</div>
+
+          {list.length === 0 ? (
+            <div className="card"><EmptyState icon="search" title="Nic nie znaleziono" sub="Zmień wyszukiwanie albo filtry." /></div>
+          ) : (
+            <div className="shop-products">
+              {list.map((p) => {
+                const n = cart[p.id] ?? 0;
+                return (
+                  <div key={p.id} className={`shop-card ${n ? "in-cart" : ""}`}>
+                    <div className="shop-img" onClick={() => { setDetails(p); setImg(0); }}>
+                      <SafeImg src={p.images[0]} alt={p.name} fallback={<Icon name="grid" size={36} style={{ color: "var(--ink-4)" }} />} />
+                    </div>
+                    <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+                      <div className="shop-name" onClick={() => { setDetails(p); setImg(0); }}>{p.name}</div>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                        <span className="mono" style={{ fontSize: 12, color: "var(--ink-3)" }}>{p.sku}</span>
+                        {p.location && <span className="badge st-new" style={{ fontSize: 11 }}>{p.location}</span>}
+                      </div>
+                      <div style={{ marginTop: "auto", paddingTop: 6 }}>
+                        {n ? (
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <Stepper value={n} onChange={(v) => setQty(p.id, v)} />
+                            <span className="shop-incart" style={{ fontSize: 12, color: "var(--brand)", fontWeight: 600 }}>w koszyku</span>
+                          </div>
+                        ) : (
+                          <button type="button" className="btn btn-soft btn-sm" style={{ width: "100%" }} onClick={() => { setQty(p.id, 1); flash(`Dodano: ${p.name}`); }}>
+                            <Icon name="plus" size={14} />Dodaj
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ── Koszyk / dostawa ── */}
+        <div className="shop-cart" id="cart">
+          <div className="card" style={{ padding: 18 }}>
+            {step === "done" && created ? (
+              <div style={{ textAlign: "center", padding: "10px 4px" }}>
+                <div style={{ color: "var(--ok)", display: "flex", justifyContent: "center" }}><Icon name="checkCircle" size={46} /></div>
+                <h3 style={{ fontSize: 19, marginTop: 10 }}>Zamówienie wysłane</h3>
+                <div className="mono" style={{ fontSize: 18, fontWeight: 700, marginTop: 6 }}>{created.code}</div>
+                <p style={{ fontSize: 13.5, color: "var(--ink-3)", marginTop: 8 }}>Magazyn je wyceni i wyśle. Status zobaczysz w „Moje zamówienia”.</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
+                  <Link className="btn btn-primary" href={`/service-technician/orders/${created.id}`}>Zobacz zamówienie</Link>
+                  <button type="button" className="btn btn-ghost" onClick={() => { setStep("cart"); setCreated(null); }}>Nowe zamówienie</button>
+                </div>
+              </div>
+            ) : step === "delivery" ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <button type="button" onClick={() => setStep("cart")} style={{ alignSelf: "flex-start", background: "none", border: "none", color: "var(--brand)", fontWeight: 600, cursor: "pointer", padding: 0 }}>← Koszyk ({pieces} szt.)</button>
+                <h3 style={{ fontSize: 18 }}>Dostawa</h3>
+                <Field label="Adres dostawy" req hint={lastAddress && address === lastAddress ? "Ostatnio używany adres" : undefined}>
+                  <textarea className="textarea" style={{ minHeight: 70 }} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="ul. Przykładowa 1, 00-000 Miasto" />
+                </Field>
+                <Field label="Potrzebne do" hint="Opcjonalnie">
+                  <input className="input" type="date" min={today} value={neededDate} onChange={(e) => setNeededDate(e.target.value)} />
+                </Field>
+                <Field label="Uwagi dla magazynu" hint="Opcjonalnie">
+                  <textarea className="textarea" style={{ minHeight: 60 }} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="np. dostawa do 14:00, kontakt na miejscu…" />
+                </Field>
+                <div style={{ fontSize: 13, color: "var(--ink-3)" }}>{lines.length} {lines.length === 1 ? "pozycja" : "pozycje"} · {pieces} szt. · ceny ustala magazyn</div>
+                {error && <div className="nip-note" style={{ marginTop: 0, background: "var(--danger-soft)", color: "#97271b" }}><Icon name="alert" size={18} />{error}</div>}
+                <button type="button" className="btn btn-primary btn-lg" disabled={busy || !lines.length} onClick={submit}>
+                  <Icon name="send" size={16} />{busy ? "Wysyłanie…" : "Wyślij zamówienie"}
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <h3 style={{ fontSize: 18 }}>Koszyk</h3>
+                  {pieces > 0 && <span className="badge st-new">{lines.length} poz. · {pieces} szt.</span>}
+                </div>
+                {templates.length > 0 && (
+                  <select className="select" value="" onChange={(e) => applyTemplate(e.target.value)}>
+                    <option value="">+ Dodaj zestaw z szablonu…</option>
+                    {templates.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.items.length} części)</option>)}
+                  </select>
+                )}
+                {lines.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "26px 8px", color: "var(--ink-3)", fontSize: 14 }}>
+                    <Icon name="grid" size={28} style={{ color: "var(--ink-4)" }} />
+                    <div style={{ marginTop: 8 }}>Koszyk jest pusty.<br />Dodaj części z katalogu.</div>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: "48vh", overflowY: "auto", paddingRight: 2 }}>
+                    {lines.map(({ p, n }) => (
+                      <div key={p.id} style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                        <Thumb src={p.images[0]} size={44} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, fontSize: 13.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
+                          <div className="mono" style={{ fontSize: 11.5, color: "var(--ink-3)" }}>{p.sku}</div>
+                        </div>
+                        <Stepper size="sm" value={n} onChange={(v) => setQty(p.id, v)} />
+                        <button type="button" aria-label="usuń" onClick={() => setQty(p.id, 0)} style={{ background: "none", border: "none", color: "var(--ink-4)", cursor: "pointer", padding: 4 }}><Icon name="trash" size={15} /></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {lines.length > 0 && (
+                  <>
+                    <button type="button" className="btn btn-primary btn-lg" onClick={() => setStep("delivery")}>Dalej — dostawa <Icon name="arrowRight" size={16} /></button>
+                    <button type="button" onClick={() => setCart({})} style={{ background: "none", border: "none", color: "var(--ink-3)", fontSize: 12.5, cursor: "pointer" }}>Wyczyść koszyk</button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+          {toast && <div className="nip-note" style={{ background: "var(--ok-soft)", color: "#14633f", marginTop: 10 }}><Icon name="checkCircle" size={18} />{toast}</div>}
+        </div>
+      </div>
+
+      {/* ── Pasek koszyka na telefonie ── */}
+      {pieces > 0 && step === "cart" && (
+        <button type="button" className="shop-mobilebar btn btn-primary" onClick={() => document.getElementById("cart")?.scrollIntoView({ behavior: "smooth" })}>
+          Koszyk · {lines.length} poz. · {pieces} szt. <Icon name="arrowRight" size={16} />
+        </button>
+      )}
+
+      {/* ── Szczegóły części ── */}
+      <Modal open={!!details} onClose={() => setDetails(null)} width={720}>
+        {details && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20, padding: 22 }}>
+            <div>
+              <div className="shop-img" style={{ borderRadius: "var(--r)", cursor: "default" }}>
+                <SafeImg key={details.images[img] ?? "none"} src={details.images[img]} alt={details.name} fallback={<Icon name="grid" size={48} style={{ color: "var(--ink-4)" }} />} />
+              </div>
+              {details.images.length > 1 && (
+                <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
+                  {details.images.map((src, i) => (
+                    <button key={src} type="button" onClick={() => setImg(i)} style={{ border: `2px solid ${i === img ? "var(--brand)" : "transparent"}`, borderRadius: 8, padding: 0, background: "none", cursor: "pointer" }}>
+                      <Thumb src={src} size={52} />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <h3 style={{ fontSize: 20 }}>{details.name}</h3>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                <span className="mono" style={{ fontSize: 13, color: "var(--ink-3)" }}>{details.sku}</span>
+                <span className="badge st-new">{details.machineType}</span>
+                {details.location && <span className="badge st-new">{details.location}</span>}
+              </div>
+              <p style={{ fontSize: 14, lineHeight: 1.6, color: "var(--ink-2)", whiteSpace: "pre-wrap" }}>{details.description || "Brak opisu."}</p>
+              <div style={{ marginTop: "auto", display: "flex", gap: 10, alignItems: "center" }}>
+                {cart[details.id] ? (
+                  <><Stepper value={cart[details.id]} onChange={(v) => setQty(details.id, v)} /><span style={{ fontSize: 13, color: "var(--brand)", fontWeight: 600 }}>w koszyku</span></>
+                ) : (
+                  <button type="button" className="btn btn-primary" onClick={() => { setQty(details.id, 1); flash(`Dodano: ${details.name}`); }}><Icon name="plus" size={15} />Dodaj do koszyka</button>
+                )}
+                <button type="button" className="btn btn-ghost" style={{ marginLeft: "auto" }} onClick={() => setDetails(null)}>Zamknij</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

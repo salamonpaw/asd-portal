@@ -5,6 +5,28 @@ Wszystkie istotne zmiany w ASD Partner Portal będą dokumentowane w tym pliku.
 Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 projekt przestrzega [Wersjonowania Semantycznego](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.0] - 2026-10-08
+
+Wycena bez wychodzenia z zamówienia i nowy sklep części dla serwisanta.
+
+### Dodane — wycena (magazyn)
+- **Cena ręczna** w każdej pozycji („✎ cena ręczna”) — także gdy produkt nie ma ceny
+  w cenniku; przycisk „↺ z cennika” przywraca cenę katalogową
+- **Uzupełnianie cennika z ekranu wyceny** („+ uzupełnij cennik” / „✎ cennik”) — cena
+  zakupu i sprzedaży zapisywana od razu w produkcie (magazyn i admin)
+- **Potwierdzenie „na własną odpowiedzialność”** — wymagane przy cenie ręcznej lub marży
+  poniżej minimum partnera; magazyn może je zatwierdzić sam. W historii zamówienia
+  zapisuje się kto zatwierdził, które ceny były ręczne i gdzie marża była za niska
+- Pozycja z ceną ręczną jest oznaczona (kolumna `manualPrice`), także po podziale zamówienia
+
+### Zmienione — sklep części (serwisant)
+- Nowy wygląd: siatka kart ze zdjęciami, wyszukiwarka, filtry (typ maszyny, lokalizacja),
+  szczegóły produktu z galerią, licznik ilości na karcie
+- Koszyk z boku (na telefonie pasek „Koszyk” na dole), zapamiętywany w przeglądarce,
+  dodawanie zestawów z szablonu, krok „Dostawa” z ostatnim adresem i datą, potwierdzenie
+  z numerem zamówienia
+- Niedziałające zdjęcia pokazują zaślepkę zamiast tekstu alternatywnego
+
 ## [0.21.0] - 2026-10-08
 
 Przebudowa zamówień części serwisowych: jedno źródło danych i jedna logika

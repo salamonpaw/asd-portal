@@ -73,7 +73,7 @@ export default async function WarehouseOrderPage({ params }: { params: Promise<{
           <OrderPricingClient
             orderId={order.id}
             editable={editable}
-            isAdmin={user.role === "ADMIN"}
+            userName={user.name}
             currency={order.currency}
             partnerCurrency={order.partner.currency}
             minMargin={num(order.partner.minProfitMargin) ?? 0}
@@ -81,6 +81,8 @@ export default async function WarehouseOrderPage({ params }: { params: Promise<{
             rates={rates}
             items={items.map((i) => ({
               id: i.id,
+              productId: i.productId,
+              manualPrice: i.manualPrice,
               sku: i.product.sku,
               name: i.product.name,
               quantity: i.quantity,

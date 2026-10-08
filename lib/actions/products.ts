@@ -190,11 +190,14 @@ export async function updateProductPricing(
       return { success: false, error: "Nie zalogowany" };
     }
 
-    if (session.user.role !== "WAREHOUSE_SPECIALIST") {
+    if (!["WAREHOUSE_SPECIALIST", "ADMIN"].includes(session.user.role)) {
       return { success: false, error: "Brak uprawnień" };
     }
 
-    if (costPrice < 0 || sellingPrice < 0) {
+    if (!Number.isFinite(costPrice) || !Number.isFinite(sellingPrice) || costPrice > 1_000_000 || sellingPrice > 1_000_000) {
+      return { success: false, error: "Podaj poprawne ceny." };
+    }
+    if (costPrice < 0 || sellingPrice <= 0) {
       return { success: false, error: "Ceny nie mogą być ujemne" };
     }
 
@@ -204,7 +207,7 @@ export async function updateProductPricing(
 
     const product = await db.product.update({
       where: { id: productId },
-      data: { costPrice, sellingPrice },
+      data: { costPrice: Math.round(costPrice * 100) / 100, sellingPrice: Math.round(sellingPrice * 100) / 100 },
       select: { id: true, name: true, costPrice: true, sellingPrice: true },
     });
 

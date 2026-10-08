@@ -325,7 +325,8 @@ model ServiceOrderItem {
   product            Product      @relation(fields: [productId], references: [id])
   quantity           Int
   // Wszystkie kwoty: za 1 szt., w walucie zamówienia, zapamiętane w chwili wyceny
-  unitPrice          Decimal?     // cena katalogowa (Product.sellingPrice przeliczona)
+  unitPrice          Decimal?     // cena katalogowa (Product.sellingPrice przeliczona) albo ręczna
+  manualPrice        Boolean      @default(false) // cena wpisana ręcznie przez magazyn (na odpowiedzialność, w historii)
   costPrice          Decimal?     // cena zakupu (Product.costPrice przeliczona) — do marży
   discountType       DiscountType?
   discountValue      Decimal?     // PERCENT: %; AMOUNT: kwota na 1 szt.

@@ -105,8 +105,10 @@ export async function priceServiceOrder(
   orderId: string,
   input: {
     currency: Currency;
-    lines: { itemId: string; discountType: DiscountType | null; discountValue: number | null }[];
-    acceptLowMargin?: boolean; // tylko ADMIN może zatwierdzić cenę poniżej minimalnej marży
+    lines: { itemId: string; discountType: DiscountType | null; discountValue: number | null; manualUnitPrice?: number | null }[];
+    // Ręczne ceny i marża poniżej minimum partnera wymagają potwierdzenia „na własną odpowiedzialność”
+    // (zapisywane w historii z nazwiskiem). Dotyczy magazynu i admina.
+    confirmResponsibility?: boolean;
   }
 ): Promise<Res<{ total: string }>> {
   try {
@@ -124,15 +126,26 @@ export async function priceServiceOrder(
     const byId = new Map(input.lines.map((l) => [l.itemId, l]));
     if (items.some((i) => !byId.has(i.id))) throw new UserError("Wycena musi obejmować wszystkie pozycje — odśwież stronę.");
 
-    const noPrice = items.filter((i) => num(i.product.sellingPrice) === null).map((i) => i.product.sku);
-    if (noPrice.length) throw new UserError(`Brak ceny sprzedaży w katalogu dla: ${noPrice.join(", ")}. Uzupełnij ją w produkcie.`);
+    const manualOf = (id: string) => {
+      const v = byId.get(id)?.manualUnitPrice;
+      return v === null || v === undefined ? null : Number(v);
+    };
+    for (const i of items) {
+      const m = manualOf(i.id);
+      if (m !== null && !(Number.isFinite(m) && m > 0 && m <= 1_000_000)) throw new UserError(`${i.product.sku}: nieprawidłowa cena ręczna.`);
+    }
+    const noPrice = items.filter((i) => manualOf(i.id) === null && num(i.product.sellingPrice) === null).map((i) => i.product.sku);
+    if (noPrice.length) throw new UserError(`Brak ceny dla: ${noPrice.join(", ")} — uzupełnij cennik albo wpisz cenę ręcznie.`);
 
     const minMargin = num(partner?.minProfitMargin) ?? 0;
     const lowMargin: string[] = [];
+    const manual: string[] = [];
 
     const updates = items.map((i) => {
       const l = byId.get(i.id)!;
-      const unitPrice = plnToCurrency(num(i.product.sellingPrice)!, rate.rate);
+      const manualPrice = manualOf(i.id);
+      const unitPrice = manualPrice !== null ? Math.round(manualPrice * 100) / 100 : plnToCurrency(num(i.product.sellingPrice)!, rate.rate);
+      if (manualPrice !== null) manual.push(`${i.product.sku} ${fmtMoney(unitPrice, input.currency)}`);
       const costPln = num(i.product.costPrice);
       const costPrice = costPln === null ? null : plnToCurrency(costPln, rate.rate);
       const type = l.discountType && (l.discountValue ?? 0) > 0 ? l.discountType : null;
@@ -143,13 +156,16 @@ export async function priceServiceOrder(
       const finalPrice = finalUnitPrice(unitPrice, type, value);
       const m = marginPct(finalPrice, costPrice);
       if (m !== null && m < minMargin) lowMargin.push(`${i.product.sku} (${m}%)`);
-      return { id: i.id, quantity: i.quantity, unitPrice, costPrice, discountType: type, discountValue: value, finalPrice };
+      return { id: i.id, quantity: i.quantity, unitPrice, costPrice, discountType: type, discountValue: value, finalPrice, manualPrice: manualPrice !== null };
     });
 
-    if (lowMargin.length && !(input.acceptLowMargin && user.role === "ADMIN")) {
+    if ((lowMargin.length || manual.length) && !input.confirmResponsibility) {
       throw new UserError(
-        `Marża poniżej minimum partnera (${minMargin}%): ${lowMargin.join(", ")}. ` +
-          (user.role === "ADMIN" ? "Zaznacz „Zatwierdzam niską marżę”, aby zapisać." : "Zmniejsz rabat albo poproś administratora o zatwierdzenie.")
+        [
+          lowMargin.length ? `Marża poniżej minimum partnera (${minMargin}%): ${lowMargin.join(", ")}.` : "",
+          manual.length ? `Ceny ręczne: ${manual.join(", ")}.` : "",
+          "Zaznacz potwierdzenie „na własną odpowiedzialność”, aby zapisać.",
+        ].filter(Boolean).join(" ")
       );
     }
 
@@ -158,7 +174,7 @@ export async function priceServiceOrder(
       ...updates.map((u) =>
         db.serviceOrderItem.update({
           where: { id: u.id },
-          data: { unitPrice: u.unitPrice, costPrice: u.costPrice, discountType: u.discountType, discountValue: u.discountValue, finalPrice: u.finalPrice },
+          data: { unitPrice: u.unitPrice, costPrice: u.costPrice, discountType: u.discountType, discountValue: u.discountValue, finalPrice: u.finalPrice, manualPrice: u.manualPrice },
         })
       ),
       db.serviceOrder.update({
@@ -168,7 +184,12 @@ export async function priceServiceOrder(
       db.serviceOrderHistory.create({
         data: {
           serviceOrderId: orderId, changedBy: user.email, action: "WYCENA",
-          notes: `Wycena: ${fmtMoney(total, input.currency)}${input.currency !== "PLN" ? ` (${rate.label})` : ""}${lowMargin.length ? ` · zatwierdzona niska marża: ${lowMargin.join(", ")}` : ""}`,
+          notes: [
+            `Wycena: ${fmtMoney(total, input.currency)}${input.currency !== "PLN" ? ` (${rate.label})` : ""}`,
+            manual.length ? `ceny ręczne: ${manual.join(", ")}` : "",
+            lowMargin.length ? `marża poniżej minimum: ${lowMargin.join(", ")}` : "",
+            manual.length || lowMargin.length ? `zatwierdził na własną odpowiedzialność: ${user.name} (${user.email})` : "",
+          ].filter(Boolean).join(" · "),
         },
       }),
     ]);
@@ -273,7 +294,7 @@ export async function fulfillServiceOrder(orderId: string, input: { expectedDate
               create: plan.filter((l) => l.wait > 0).map((l) => {
                 const src = order.items.find((i) => i.id === l.itemId)!;
                 return {
-                  productId: src.productId, quantity: l.wait, unitPrice: src.unitPrice, costPrice: src.costPrice,
+                  productId: src.productId, quantity: l.wait, unitPrice: src.unitPrice, manualPrice: src.manualPrice, costPrice: src.costPrice,
                   discountType: src.discountType, discountValue: src.discountValue, finalPrice: src.finalPrice, notes: src.notes,
                 };
               }),
